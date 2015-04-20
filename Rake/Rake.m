@@ -196,7 +196,7 @@ static NSArray* defaultValueBlackList = nil;
                                selector:@selector(applicationWillEnterForeground:)
                                    name:UIApplicationWillEnterForegroundNotification
                                  object:nil];
-        [self unarchive];
+        [self unarchiveAndFlush];
     }
 
     return self;
@@ -888,6 +888,15 @@ static NSArray* defaultValueBlackList = nil;
     }
 }
 
+- (void)unarchiveAndFlush {
+    // unarchive events from disk
+    [self unarchive];
+    NSUInteger numOfEvents = [self.eventsQueue count];
+    
+    // flush iff count > 0
+    if (numOfEvents > 0) [self flush];
+}
+
 - (void)unarchive
 {
     [self unarchiveEvents];
@@ -971,10 +980,6 @@ static NSArray* defaultValueBlackList = nil;
     }];
     RakeDebug(@"%@ starting background cleanup task %lu", self, (unsigned long)self.taskId);
 
-    if (self.flushOnBackground) {
-        [self flush];
-    }
-
     dispatch_async(_serialQueue, ^{
         [self archive];
         RakeDebug(@"%@ ending background cleanup task %lu", self, (unsigned long)self.taskId);
@@ -988,21 +993,11 @@ static NSArray* defaultValueBlackList = nil;
 - (void)applicationWillEnterForeground:(NSNotificationCenter *)notification
 {
     RakeDebug(@"%@ will enter foreground", self);
-    dispatch_async(self.serialQueue, ^{
-        if (self.taskId != UIBackgroundTaskInvalid) {
-            [[UIApplication sharedApplication] endBackgroundTask:self.taskId];
-            self.taskId = UIBackgroundTaskInvalid;
-            //            [self updateNetworkActivityIndicator:NO];
-        }
-    });
+    [self unarchiveAndFlush];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
-    RakeDebug(@"%@ application will terminate", self);
-    dispatch_async(_serialQueue, ^{
-        [self archive];
-    });
 }
 
 @end
