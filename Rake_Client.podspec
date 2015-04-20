@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name         = "Rake_Client"
-  s.version      = "1.7.6"
+  s.version      = "1.7.7"
   s.summary      = "Log Tracker for iPhone"
   s.homepage     = "https://github.com/sentinel-skp/rake-iphone"
   s.license      = 'Apache License, Version 2.0'
