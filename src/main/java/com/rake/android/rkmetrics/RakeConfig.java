@@ -28,7 +28,7 @@ public class RakeConfig {
     // LONS
     public static boolean DEBUG = false;
     // LONS
-    public static boolean TRUSTED_SERVER = false;
+    public static boolean TRUSTED_SERVER = true;
     // LONS
 //    public static int CONNECTION_TIMEOUT = 5000;
 //    public static int SO_TIMEOUT = 5000;
