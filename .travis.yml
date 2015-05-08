@@ -7,3 +7,6 @@ script:
 
 after_success:
 - gradle cobertura coveralls
+
+notifications:
+  slack: skp-di:c0VSovqSCgaZd8qT7cClh799
