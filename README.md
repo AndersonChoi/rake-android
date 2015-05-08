@@ -6,6 +6,16 @@
 - [Rake Android Manual](https://github.com/sentinel-rake/rake-document/wiki/Rake-Android)
 - [Rake Android Example](https://github.com/sentinel-rake/rake-android-example)
 
+## Development
+
+- add `android-api-19.jar` in libraries. (**IntelliJ Project Setting**)
+
+## Build
+
+```gradle
+> gradle clean build
+```
+
 ### License
 
 **Apache V2** 를 따릅니다. 이는 개발에 사용된 [Mixpanel](https://github.com/mixpanel) 이 Apache V2 를 따르기 때문입니다. 라이센스에 따라, 이를 사용하는 앱에서는 라이브러리 사용 여부를 표시해야 하기 때문에 라이센스 전문을 링크합니다.
