@@ -13,7 +13,9 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RakeAPI {
-    // TODO: replace automatically when building. remove server dependency.
+
+    // TODO: remove r0.5.0_c. also need to modify server dep.
+    // version number will be replaced automatically when building.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.16";
     private static final String LOGTAG = "RakeAPI";
 

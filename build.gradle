@@ -37,6 +37,7 @@ tasks.withType(JavaCompile) {
     archivesBaseName = 'rake-android'
 }
 
+
 repositories {
     mavenCentral()
     maven {
@@ -81,3 +82,23 @@ uploadArchives {
         }
     }
 }
+
+// replace version in RakeAPI.java
+task updateVersion(type: Copy) {
+
+    String v = version.tokenize('-')[0]
+
+    def pattern = ~/"r0.5.0_c(.)*"/
+    def client = "\"r0.5.0_c${v}\""
+
+    def rakeApi = new File('src/main/java/com/rake/android/rkmetrics/RakeAPI.java')
+
+    String content = rakeApi.getText('UTF-8')
+    content = content.replaceAll(pattern, client) /* replace version number */
+
+    rakeApi.write(content, 'UTF-8')
+
+    println "[INFO] version number in RakeAPI.java replace with $v"
+}
+
+compileJava.dependsOn updateVersion
