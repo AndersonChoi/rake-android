@@ -13,33 +13,27 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RakeAPI {
-    public static final String VERSION = "r0.5.0_c0.3.15";
-    private boolean isDevServer = false;
-
+    // TODO: replace automatically when building. remove server dependency.
+    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.16";
     private static final String LOGTAG = "RakeAPI";
 
+    private boolean isDevServer = false;
+
     private static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-
-    static {
-        baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul"));
-    }
-
     private static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+
+    static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
 
     // Maps each token to a singleton RakeAPI instance
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
-
     private final Context mContext;
     private final SystemInformation mSystemInformation;
     private final AnalyticsMessages mMessages;
-
     private final String mToken;
-
     private final SharedPreferences mStoredPreferences;
 
-    // Persistent members. These are loaded and stored from our preferences.
-    private JSONObject mSuperProperties;
+    private JSONObject mSuperProperties; /* Persistent members loaded and stored from out pref */
 
     // Device Info - black list
     private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
@@ -274,7 +268,7 @@ public class RakeAPI {
         JSONObject ret = new JSONObject();
 
         ret.put("rake_lib", "android");
-        ret.put("rake_lib_version", VERSION);
+        ret.put("rake_lib_version", RAKE_LIB_VERSION);
         ret.put("os_name", "Android");
         ret.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
         ret.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);

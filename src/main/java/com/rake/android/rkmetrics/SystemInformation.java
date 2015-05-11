@@ -129,7 +129,6 @@ class SystemInformation {
 
     // Note this is the *current*, not the canonical network, because it
     // doesn't require special permissions to access. Unreliable for CDMA phones,
-    //
     public String getCurrentNetworkOperator() {
         String ret = null;
 

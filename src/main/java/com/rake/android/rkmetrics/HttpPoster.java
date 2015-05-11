@@ -36,14 +36,14 @@ public class HttpPoster {
     private static final String LOGTAG = "RakeAPI";
     private final String mDefaultHost;
 
-    public static enum PostResult {
+    public static final int CONNECTION_TIMEOUT = 3000;
+    public static final int SOCKET_TIMEOUT = 120000;
 
+    public static enum PostResult {
         SUCCEEDED,
         FAILED_RECOVERABLE,
         FAILED_UNRECOVERABLE
     }
-
-    ;
 
     public HttpPoster(String defaultHost) {
         mDefaultHost = defaultHost;
@@ -65,16 +65,12 @@ public class HttpPoster {
         return ret;
     }
 
-
     public HttpParams setParamsTimeout() {
         HttpParams httpParameters = new BasicHttpParams();
-        int timeoutConnection = 3000;
-        HttpConnectionParams.setConnectionTimeout(httpParameters, timeoutConnection);
-        int timeoutSocket = 120000;
-        HttpConnectionParams.setSoTimeout(httpParameters, timeoutSocket);
+        HttpConnectionParams.setConnectionTimeout(httpParameters, CONNECTION_TIMEOUT);
+        HttpConnectionParams.setSoTimeout(httpParameters, SOCKET_TIMEOUT);
         return httpParameters;
     }
-
 
     private PostResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
         PostResult ret = PostResult.FAILED_UNRECOVERABLE;
@@ -82,21 +78,24 @@ public class HttpPoster {
         HttpParams params = setParamsTimeout();
         HttpClient httpclient = new DefaultHttpClient(params);
 
-        if (endpointUrl.indexOf("https") >= 0 && RakeConfig.TRUSTED_SERVER) {
-            httpclient = sslClientDebug(httpclient);
-        }
-
         HttpPost httppost = new HttpPost(endpointUrl);
+        // TODO: remove
         httppost.setHeader("Accept-Encoding", "gzip");
         httppost.setHeader("Content-Encoding", "gzip");
 
+
         try {
+            if (endpointUrl.indexOf("https") >= 0 && RakeConfig.TRUSTED_SERVER) {
+                httpclient = sslClientDebug(httpclient);
+            }
 
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
 
             HttpResponse response = httpclient.execute(httppost);
             HttpEntity entity = response.getEntity();
 
+
+            // TODO: recover from other states (e.g 204, 404, 400, 50x...)
             if (entity != null) {
                 String result = StringUtils.inputStreamToString(entity.getContent());
                 if (result.equals("1\n")) {
@@ -109,36 +108,34 @@ public class HttpPoster {
         } catch (OutOfMemoryError e) {
             Log.e(LOGTAG, "Cannot post message to Rake Servers, will not retry.", e);
             ret = PostResult.FAILED_UNRECOVERABLE;
+        } catch (GeneralSecurityException e) {
+            Log.e(LOGTAG, "Cannot build SSL Client", e);
         }
 
         return ret;
     }
 
+    private HttpClient sslClientDebug(HttpClient client) throws GeneralSecurityException {
+        X509TrustManager tm = new X509TrustManager() {
+            public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+            }
 
-    private HttpClient sslClientDebug(HttpClient client) {
-        try {
-            X509TrustManager tm = new X509TrustManager() {
-                public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
-                }
+            public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
+            }
 
-                public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
-                }
+            public X509Certificate[] getAcceptedIssuers() {
+                return null;
+            }
+        };
 
-                public X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-            };
-            SSLContext ctx = SSLContext.getInstance("TLS");
-            ctx.init(null, new TrustManager[]{tm}, null);
-            SSLSocketFactory ssf = new MySSLSocketFactory(ctx);
-            ssf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-            ClientConnectionManager ccm = client.getConnectionManager();
-            SchemeRegistry sr = ccm.getSchemeRegistry();
-            sr.register(new Scheme("https", ssf, 443));
-            return new DefaultHttpClient(ccm, client.getParams());
-        } catch (Exception ex) {
-            return null;
-        }
+        SSLContext ctx = SSLContext.getInstance("TLS");
+        ctx.init(null, new TrustManager[]{tm}, null);
+        SSLSocketFactory ssf = new MySSLSocketFactory(ctx);
+        ssf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
+        ClientConnectionManager ccm = client.getConnectionManager();
+        SchemeRegistry sr = ccm.getSchemeRegistry();
+        sr.register(new Scheme("https", ssf, 443));
+        return new DefaultHttpClient(ccm, client.getParams());
     }
 
     public class MySSLSocketFactory extends SSLSocketFactory {

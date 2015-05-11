@@ -24,7 +24,6 @@ class RakeDbAdapter {
 
     public enum Table {
         EVENTS("events");
-//        PEOPLE("people");
 
         Table(String name) {
             mTableName = name;
@@ -47,16 +46,9 @@ class RakeDbAdapter {
             "CREATE TABLE " + Table.EVENTS.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     KEY_DATA + " STRING NOT NULL, " +
                     KEY_CREATED_AT + " INTEGER NOT NULL);";
-    //    private static final String CREATE_PEOPLE_TABLE =
-//            "CREATE TABLE " + Table.PEOPLE.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-//                    KEY_DATA + " STRING NOT NULL, " +
-//                    KEY_CREATED_AT + " INTEGER NOT NULL);";
     private static final String EVENTS_TIME_INDEX =
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + KEY_CREATED_AT + ");";
-//    private static final String PEOPLE_TIME_INDEX =
-//            "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.PEOPLE.getName() +
-//                    " (" + KEY_CREATED_AT + ");";
 
     private final MPDatabaseHelper mDb;
 
@@ -79,9 +71,7 @@ class RakeDbAdapter {
             if (RakeConfig.DEBUG) Log.d(LOGTAG, "Creating a new Rake events DB");
 
             db.execSQL(CREATE_EVENTS_TABLE);
-//            db.execSQL(CREATE_PEOPLE_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
-//            db.execSQL(PEOPLE_TIME_INDEX);
         }
 
         @Override
@@ -89,11 +79,8 @@ class RakeDbAdapter {
             if (RakeConfig.DEBUG) Log.d(LOGTAG, "Upgrading app, replacing Rake events DB");
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-//            db.execSQL("DROP TABLE IF EXISTS " + Table.PEOPLE.getName());
             db.execSQL(CREATE_EVENTS_TABLE);
-//            db.execSQL(CREATE_PEOPLE_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
-//            db.execSQL(PEOPLE_TIME_INDEX);
         }
 
         private final File mDatabaseFile;
@@ -115,7 +102,7 @@ class RakeDbAdapter {
      * to the SQLiteDatabase.
      *
      * @param j     the JSON to record
-     * @param table the table to insert into, either "events" or "people"
+     * @param table the table to insert into, either "events"
      * @return the number of rows in the table, or -1 on failure
      */
     public int addJSON(JSONObject j, Table table) {
@@ -159,7 +146,7 @@ class RakeDbAdapter {
      * Removes events with an _id <= last_id from table
      *
      * @param last_id the last id to delete
-     * @param table   the table to remove events from, either "events" or "people"
+     * @param table   the table to remove events from, either "events"
      */
     public void cleanupEvents(String last_id, Table table) {
         String tableName = table.getName();
@@ -187,7 +174,7 @@ class RakeDbAdapter {
      * Removes events before time.
      *
      * @param time  the unix epoch in milliseconds to remove events before
-     * @param table the table to remove events from, either "events" or "people"
+     * @param table the table to remove events from, either "events"
      */
     public void cleanupEvents(long time, Table table) {
         String tableName = table.getName();
@@ -220,7 +207,7 @@ class RakeDbAdapter {
      * Returns the data string to send to Rake and the maximum ID of the row that
      * we're sending, so we know what rows to delete when a track request was successful.
      *
-     * @param table the table to read the JSON from, either "events" or "people"
+     * @param table the table to read the JSON from, either "events"
      * @return String array containing the maximum ID and the data string
      * representing the events, or null if none could be successfully retrieved.
      */
