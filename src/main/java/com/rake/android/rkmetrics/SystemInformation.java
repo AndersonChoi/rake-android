@@ -1,8 +1,5 @@
 package com.rake.android.rkmetrics;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.PackageInfo;
@@ -18,6 +15,8 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 /**
  * Abstracts away possibly non-present system information classes,
  * and handles permission-dependent queries for default system information.

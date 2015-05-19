@@ -19,11 +19,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>This class straddles the thread boundary between user threads and
  * a logical Rake thread.
  */
-/* package */ class AnalyticsMessages {
+class AnalyticsMessages {
+
+    // Used across thread boundaries
+    private final AtomicBoolean mLogRakeMessages;
+    private final Worker mWorker;
+    private final Context mContext;
+
+    // Messages for our thread
+    private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
+    private static int FLUSH_QUEUE = 2; // push given JSON message to events DB
+    private static int SET_FLUSH_INTERVAL = 4; // Reset frequency of flush interval
+    private static int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue.
+    private static int SET_ENDPOINT_HOST = 6; // Use obj.toString() as the first part of the URL for api requests.
+    private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
+
+    private static final String TAG = "RakeAPI";
+    private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();
+
     /**
      * Do not call directly. You should call AnalyticsMessages.getInstance()
      */
-    /* package */ AnalyticsMessages(Context context) {
+    AnalyticsMessages(Context context) {
         mContext = context;
         mLogRakeMessages = new AtomicBoolean(false);
         mWorker = new Worker();
@@ -34,14 +51,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
             Context appContext = messageContext.getApplicationContext();
             AnalyticsMessages ret;
             if (!sInstances.containsKey(appContext)) {
-                if (RakeConfig.DEBUG) Log.d(LOGTAG, "Constructing new AnalyticsMessages for Context " + appContext);
+                if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new AnalyticsMessages for Context " + appContext);
                 ret = new AnalyticsMessages(appContext);
                 sInstances.put(appContext, ret);
             } else {
                 if (RakeConfig.DEBUG)
-                    Log.d(LOGTAG, "AnalyticsMessages for Context " + appContext + " already exists- returning");
+                    Log.d(TAG, "AnalyticsMessages for Context " + appContext + " already exists- returning");
                 ret = sInstances.get(appContext);
             }
+
             return ret;
         }
     }
@@ -92,7 +110,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
         mWorker.runMessage(m);
     }
 
-    /////////////////////////////////////////////////////////
     // For testing, to allow for Mocking.
 
     /* package */ boolean isDead() {
@@ -107,13 +124,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
         return new HttpPoster(endpointBase);
     }
 
-    ////////////////////////////////////////////////////
-
     // Sends a message if and only if we are running with Rake Message log enabled.
     // Will be called from the Rake thread.
     private void logAboutMessageToRake(String message) {
         if (mLogRakeMessages.get() || RakeConfig.DEBUG) {
-            Log.i(LOGTAG, message + " (Thread " + Thread.currentThread().getId() + ")");
+            Log.i(TAG, message + " (Thread " + Thread.currentThread().getId() + ")");
         }
     }
 
@@ -152,7 +167,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
                 @Override
                 public void run() {
                     if (RakeConfig.DEBUG)
-                        Log.i(LOGTAG, "Starting worker thread " + this.getId());
+                        Log.i(TAG, "Starting worker thread " + this.getId());
 
                     Looper.prepare();
 
@@ -165,7 +180,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
                     try {
                         Looper.loop();
                     } catch (RuntimeException e) {
-                        Log.e(LOGTAG, "Rake Thread dying from RuntimeException", e);
+                        Log.e(TAG, "Rake Thread dying from RuntimeException", e);
                     }
                 }
             };
@@ -213,17 +228,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         updateFlushFrequency();
                         sendAllData();
                     } else if (msg.what == KILL_WORKER) {
-                        Log.w(LOGTAG, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                        Log.w(TAG, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                         synchronized (mHandlerLock) {
                             mDbAdapter.deleteDB();
                             mHandler = null;
                             Looper.myLooper().quit();
                         }
                     } else {
-                        Log.e(LOGTAG, "Unexpected message recieved by Rake worker: " + msg);
+                        Log.e(TAG, "Unexpected message recieved by Rake worker: " + msg);
                     }
-
-                    ///////////////////////////
 
                     if (queueDepth >= RakeConfig.BULK_UPLOAD_LIMIT) {
                         logAboutMessageToRake("Flushing queue due to bulk upload limit");
@@ -241,13 +254,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
                         }
                     }
                 } catch (RuntimeException e) {
-                    Log.e(LOGTAG, "Worker threw an unhandled exception- will not send any more Rake messages", e);
+                    Log.e(TAG, "Worker threw an unhandled exception- will not send any more Rake messages", e);
                     synchronized (mHandlerLock) {
                         mHandler = null;
                         try {
                             Looper.myLooper().quit();
                         } catch (Exception tooLate) {
-                            Log.e(LOGTAG, "Could not halt looper", tooLate);
+                            Log.e(TAG, "Could not halt looper", tooLate);
                         }
                     }
                     throw e;
@@ -256,7 +269,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
             private void sendAllData() {
                 logAboutMessageToRake("Sending records to Rake");
-
                 sendData(RakeDbAdapter.Table.EVENTS, "/track");
             }
 
@@ -316,23 +328,4 @@ import java.util.concurrent.atomic.AtomicBoolean;
         private long mLastFlushTime = -1;
     }
 
-    /////////////////////////////////////////////////////////
-
-    // Used across thread boundaries
-    private final AtomicBoolean mLogRakeMessages;
-    private final Worker mWorker;
-    private final Context mContext;
-
-    // Messages for our thread
-    private static int ENQUEUE_PEOPLE = 0; // submit events and people data
-    private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
-    private static int FLUSH_QUEUE = 2; // push given JSON message to events DB
-    private static int SET_FLUSH_INTERVAL = 4; // Reset frequency of flush interval
-    private static int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue.
-    private static int SET_ENDPOINT_HOST = 6; // Use obj.toString() as the first part of the URL for api requests.
-    private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
-
-    private static final String LOGTAG = "RakeAPI";
-
-    private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();
 }
