@@ -19,12 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>This class straddles the thread boundary between user threads and
  * a logical Rake thread.
  */
-class AnalyticsMessages {
-
-    // Used across thread boundaries
-    private final AtomicBoolean mLogRakeMessages;
-    private final Worker mWorker;
-    private final Context mContext;
+class WorkerSupervisor {
 
     // Messages for our thread
     private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
@@ -35,28 +30,41 @@ class AnalyticsMessages {
     private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
 
     private static final String TAG = "RakeAPI";
-    private static final Map<Context, AnalyticsMessages> sInstances = new HashMap<Context, AnalyticsMessages>();
+    private static final Map<Context, WorkerSupervisor> sInstances = new HashMap<Context, WorkerSupervisor>();
+
+    private final Object mHandlerLock = new Object();
+    private Handler mHandler;
+
+    private long mFlushInterval = RakeConfig.FLUSH_RATE;
+    private long mFlushCount = 0;
+    private long mAveFlushFrequency = 0;
+    private long mLastFlushTime = -1;
+
+    // Used across thread boundaries
+    private final AtomicBoolean mLogRakeMessages;
+    private final Worker mWorker;
+    private final Context mContext;
 
     /**
-     * Do not call directly. You should call AnalyticsMessages.getInstance()
+     * Do not call directly. You should call WorkerSupervisor.getInstance()
      */
-    AnalyticsMessages(Context context) {
+    WorkerSupervisor(Context context) {
         mContext = context;
         mLogRakeMessages = new AtomicBoolean(false);
         mWorker = new Worker();
     }
 
-    public static AnalyticsMessages getInstance(Context messageContext) {
+    public static WorkerSupervisor getInstance(Context messageContext) {
         synchronized (sInstances) {
             Context appContext = messageContext.getApplicationContext();
-            AnalyticsMessages ret;
+            WorkerSupervisor ret;
             if (!sInstances.containsKey(appContext)) {
-                if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new AnalyticsMessages for Context " + appContext);
-                ret = new AnalyticsMessages(appContext);
+                if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new WorkerSupervisor for Context " + appContext);
+                ret = new WorkerSupervisor(appContext);
                 sInstances.put(appContext, ret);
             } else {
                 if (RakeConfig.DEBUG)
-                    Log.d(TAG, "AnalyticsMessages for Context " + appContext + " already exists- returning");
+                    Log.d(TAG, "WorkerSupervisor for Context " + appContext + " already exists- returning");
                 ret = sInstances.get(appContext);
             }
 
@@ -133,7 +141,7 @@ class AnalyticsMessages {
     }
 
     // Worker will manage the (at most single) IO thread associated with
-    // this AnalyticsMessages instance.
+    // this WorkerSupervisor instance.
     private class Worker {
         public Worker() {
             mHandler = restartWorkerThread();
@@ -318,14 +326,5 @@ class AnalyticsMessages {
             mLastFlushTime = now;
             mFlushCount = newFlushCount;
         }
-
-        private final Object mHandlerLock = new Object();
-        private Handler mHandler;
-
-        private long mFlushInterval = RakeConfig.FLUSH_RATE;
-        private long mFlushCount = 0;
-        private long mAveFlushFrequency = 0;
-        private long mLastFlushTime = -1;
     }
-
 }

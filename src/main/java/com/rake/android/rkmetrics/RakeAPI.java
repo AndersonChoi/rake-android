@@ -19,7 +19,7 @@ public class RakeAPI {
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.16";
     private static final String TAG = "RakeAPI";
 
-    private boolean isDevServer = false;
+    private boolean isDev = false;
 
     private static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
     private static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
@@ -29,13 +29,12 @@ public class RakeAPI {
     // Maps each token to a singleton RakeAPI instance
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
-    private final Context mContext;
-    private final SystemInformation mSystemInformation;
-    private final AnalyticsMessages mMessages;
-    private final String mToken;
-    private final SharedPreferences mStoredPreferences;
-
-    private JSONObject mSuperProperties; /* the place where persistent members loaded and stored */
+    private final Context context;
+    private final SystemInformation sysInfo;
+    private final WorkerSupervisor am;
+    private final String token;
+    private final SharedPreferences storedPreferences;
+    private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
     // Device Info - black list
     private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
@@ -43,13 +42,13 @@ public class RakeAPI {
     }};
 
     private RakeAPI(Context context, String token) {
-        mContext = context;
-        mToken = token;
+        this.context = context;
+        this.token = token;
 
-        mMessages = getAnalyticsMessages();
-        mSystemInformation = getSystemInformation();
+        am = getAnalyticsMessages();
+        sysInfo = getSystemInformation();
 
-        mStoredPreferences = context.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
+        storedPreferences = context.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
         readSuperProperties();
     }
 
@@ -69,7 +68,7 @@ public class RakeAPI {
                 instance = new RakeAPI(appContext, token);
                 instances.put(appContext, instance);
 
-                instance.isDevServer = isDevServer;
+                instance.isDev = isDevServer;
                 if (isDevServer) {
                     instance.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
                 } else {
@@ -81,7 +80,7 @@ public class RakeAPI {
     }
 
     public static void setFlushInterval(Context context, long milliseconds) {
-        AnalyticsMessages msgs = AnalyticsMessages.getInstance(context);
+        WorkerSupervisor msgs = WorkerSupervisor.getInstance(context);
         msgs.setFlushInterval(milliseconds);
     }
 
@@ -93,10 +92,10 @@ public class RakeAPI {
             JSONObject propertiesObj = new JSONObject();
 
             // 1. super properties
-            synchronized (mSuperProperties) {
-                for (Iterator<?> keys = mSuperProperties.keys(); keys.hasNext(); ) {
+            synchronized (superProperties) {
+                for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
                     String key = (String) keys.next();
-                    propertiesObj.put(key, mSuperProperties.get(key));
+                    propertiesObj.put(key, superProperties.get(key));
                 }
             }
 
@@ -162,7 +161,7 @@ public class RakeAPI {
             }
 
             // rake token
-            propertiesObj.put("token", mToken);
+            propertiesObj.put("token", token);
 
             // time
             propertiesObj.put("base_time", baseTimeFormat.format(now));
@@ -172,11 +171,11 @@ public class RakeAPI {
             // 4. put properties
             dataObj.put("properties", propertiesObj);
 
-            synchronized (mMessages) {
-                mMessages.eventsMessage(dataObj);
+            synchronized (am) {
+                am.eventsMessage(dataObj);
             }
 
-            if (isDevServer) {
+            if (isDev) {
                 flush();
             }
         } catch (JSONException e) {
@@ -185,7 +184,7 @@ public class RakeAPI {
     }
 
     public void setRakeServer(Context context, String server) {
-        AnalyticsMessages msgs = AnalyticsMessages.getInstance(context);
+        WorkerSupervisor msgs = WorkerSupervisor.getInstance(context);
         msgs.setEndpointHost(server);
     }
 
@@ -198,8 +197,8 @@ public class RakeAPI {
         if (RakeConfig.DEBUG) {
             Log.d(TAG, "flushEvents");
         }
-        synchronized (mMessages) {
-            mMessages.postToServer();
+        synchronized (am) {
+            am.postToServer();
         }
     }
 
@@ -211,8 +210,8 @@ public class RakeAPI {
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
             try {
-                synchronized (mSuperProperties) {
-                    mSuperProperties.put(key, superProperties.get(key));
+                synchronized (this.superProperties) {
+                    this.superProperties.put(key, superProperties.get(key));
                 }
             } catch (JSONException e) {
                 Log.e(TAG, "Exception registering super property.", e);
@@ -223,8 +222,8 @@ public class RakeAPI {
     }
 
     public void unregisterSuperProperty(String superPropertyName) {
-        synchronized (mSuperProperties) {
-            mSuperProperties.remove(superPropertyName);
+        synchronized (superProperties) {
+            superProperties.remove(superPropertyName);
         }
 
         storeSuperProperties();
@@ -238,10 +237,10 @@ public class RakeAPI {
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
-            synchronized (mSuperProperties) {
-                if (!mSuperProperties.has(key)) {
+            synchronized (this.superProperties) {
+                if (!this.superProperties.has(key)) {
                     try {
-                        mSuperProperties.put(key, superProperties.get(key));
+                        this.superProperties.put(key, superProperties.get(key));
                     } catch (JSONException e) {
                         Log.e(TAG, "Exception registering super property.", e);
                     }
@@ -256,7 +255,7 @@ public class RakeAPI {
         if (RakeConfig.DEBUG) {
             Log.d(TAG, "clearSuperProperties");
         }
-        mSuperProperties = new JSONObject();
+        superProperties = new JSONObject();
     }
 
 
@@ -270,9 +269,9 @@ public class RakeAPI {
         ret.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
         ret.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);
         ret.put("device_model", Build.MODEL == null ? "UNKNOWN" : Build.MODEL);
-        ret.put("device_id", mSystemInformation.getDeviceId());
+        ret.put("device_id", sysInfo.getDeviceId());
 
-        DisplayMetrics displayMetrics = mSystemInformation.getDisplayMetrics();
+        DisplayMetrics displayMetrics = sysInfo.getDisplayMetrics();
         int displayWidth = displayMetrics.widthPixels;
         int displayHeight = displayMetrics.heightPixels;
         StringBuilder resolutionBuilder = new StringBuilder();
@@ -281,61 +280,62 @@ public class RakeAPI {
         ret.put("screen_width", displayHeight);
         ret.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
-        String applicationVersionName = mSystemInformation.getAppVersionName();
-        ret.put("app_version", applicationVersionName == null ? "UNKNOWN" : applicationVersionName);
+        // application versionName, buildDate(iff dev mode)
+        String appVersionName = sysInfo.getAppVersionName();
+        String appBuildDate = sysInfo.getAppBuildDate();
+        if (isDev && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
+        ret.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
 
-        String carrier = mSystemInformation.getCurrentNetworkOperator();
+        String carrier = sysInfo.getCurrentNetworkOperator();
         ret.put("carrier_name", (null != carrier && carrier.length() > 0) ? carrier : "UNKNOWN");
 
-        Boolean isWifi = mSystemInformation.isWifiConnected();
+        Boolean isWifi = sysInfo.isWifiConnected();
         ret.put("network_type", isWifi == null ? "UNKNOWN" : isWifi.booleanValue() == true ? "WIFI" : "NOT WIFI");
 
-        ret.put("language_code", mContext.getResources().getConfiguration().locale.getCountry());
+        ret.put("language_code", context.getResources().getConfiguration().locale.getCountry());
 
         return ret;
     }
 
-
     private void readSuperProperties() {
-        String props = mStoredPreferences.getString("super_properties", "{}");
+        String props = storedPreferences.getString("super_properties", "{}");
         if (RakeConfig.DEBUG) {
             Log.d(TAG, "Loading Super Properties " + props);
         }
 
         try {
-            mSuperProperties = new JSONObject(props);
+            superProperties = new JSONObject(props);
         } catch (JSONException e) {
             Log.e(TAG, "Cannot parse stored superProperties");
-            mSuperProperties = new JSONObject();
+            superProperties = new JSONObject();
             storeSuperProperties();
         }
     }
 
     private void storeSuperProperties() {
-        String props = mSuperProperties.toString();
+        String props = superProperties.toString();
 
         if (RakeConfig.DEBUG)
             Log.d(TAG, "Storing Super Properties " + props);
-        SharedPreferences.Editor prefsEditor = mStoredPreferences.edit();
+        SharedPreferences.Editor prefsEditor = storedPreferences.edit();
         prefsEditor.putString("super_properties", props);
         prefsEditor.commit();   // synchronous
     }
 
 
-    private AnalyticsMessages getAnalyticsMessages() {
-        return AnalyticsMessages.getInstance(mContext);
+    private WorkerSupervisor getAnalyticsMessages() {
+        return WorkerSupervisor.getInstance(context);
     }
 
     private SystemInformation getSystemInformation() {
-        return new SystemInformation(mContext);
+        return new SystemInformation(context);
     }
 
     void clearPreferences() {
         // Will clear distinct_ids, superProperties,
         // and waiting People Analytics properties. Will have no effect
-        // on messages already queued to send with AnalyticsMessages.
-
-        SharedPreferences.Editor prefsEdit = mStoredPreferences.edit();
+        // on am already queued to send with WorkerSupervisor.
+        SharedPreferences.Editor prefsEdit = storedPreferences.edit();
         prefsEdit.clear().commit();
         readSuperProperties();
     }

@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics;
 
 import android.Manifest;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -15,36 +16,43 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.TimeZone;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
+
 /**
  * Abstracts away possibly non-present system information classes,
  * and handles permission-dependent queries for default system information.
  */
 class SystemInformation {
-    public static final String LOGTAG = "RakeAPI";
+    public static final String TAG = "RakeAPI";
+
+    private Context context;
+    private Boolean hasNFC;
+    private Boolean hasTelephony;
+    private DisplayMetrics displayMetrics;
+    private String appVersionName;
+    private Integer appVersionCode;
+    private String deviceId;
+    private String appBuildDate; /* for dev environment */
 
     public SystemInformation(Context context) {
-        mContext = context;
+        this.context = context;
 
-        PackageManager packageManager = mContext.getPackageManager();
+        PackageManager pm = context.getPackageManager();
 
-        String foundAppVersionName = null;
-        Integer foundAppVersionCode = null;
-        try {
-            PackageInfo packageInfo = packageManager.getPackageInfo(mContext.getPackageName(), 0);
-            foundAppVersionName = packageInfo.versionName;
-            foundAppVersionCode = packageInfo.versionCode;
-        } catch (NameNotFoundException e) {
-            Log.w(LOGTAG, "System information constructed with a context that apparently doesn't exist.");
-        }
-
-        mAppVersionName = foundAppVersionName;
-        mAppVersionCode = foundAppVersionCode;
+        // config versionName, versionCode, buildDate
+        configAppVersionAndBuildNumber(pm);
+        appBuildDate = configAppBuildDate(pm);
 
         // We can't count on these features being available, since we need to
         // run on old devices. Thus, the reflection fandango below...
-        Class<? extends PackageManager> packageManagerClass = packageManager.getClass();
+        Class<? extends PackageManager> packageManagerClass = pm.getClass();
 
         Method hasSystemFeatureMethod = null;
         try {
@@ -57,53 +65,57 @@ class SystemInformation {
         Boolean foundTelephony = null;
         if (null != hasSystemFeatureMethod) {
             try {
-                foundNFC = (Boolean) hasSystemFeatureMethod.invoke(packageManager, "android.hardware.nfc");
-                foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(packageManager, "android.hardware.telephony");
+                foundNFC = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.nfc");
+                foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.telephony");
             } catch (InvocationTargetException e) {
-                Log.w(LOGTAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                Log.w(TAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             } catch (IllegalAccessException e) {
-                Log.w(LOGTAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                Log.w(TAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             }
         }
 
-        mHasNFC = foundNFC;
-        mHasTelephony = foundTelephony;
-        mDisplayMetrics = new DisplayMetrics();
+        hasNFC = foundNFC;
+        hasTelephony = foundTelephony;
+        displayMetrics = new DisplayMetrics();
 
-        Display display = ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
-        display.getMetrics(mDisplayMetrics);
+        Display display = ((WindowManager) this.context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay();
+        display.getMetrics(displayMetrics);
 
-        mDeviceId = Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+        deviceId = Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+    }
+
+    public String getAppBuildDate() {
+        return appBuildDate;
     }
 
     public String getDeviceId() {
-        return mDeviceId;
+        return deviceId;
     }
 
     public String getAppVersionName() {
-        return mAppVersionName;
+        return appVersionName;
     }
 
     public Integer getAppVersionCode() {
-        return mAppVersionCode;
+        return appVersionCode;
     }
 
     public boolean hasNFC() {
-        return mHasNFC;
+        return hasNFC;
     }
 
     public boolean hasTelephony() {
-        return mHasTelephony;
+        return hasTelephony;
     }
 
     public DisplayMetrics getDisplayMetrics() {
-        return mDisplayMetrics;
+        return displayMetrics;
     }
 
     public String getPhoneRadioType() {
         String ret = null;
 
-        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (null != telephonyManager) {
             switch (telephonyManager.getPhoneType()) {
                 case 0x00000000: // TelephonyManager.PHONE_TYPE_NONE
@@ -126,24 +138,59 @@ class SystemInformation {
         return ret;
     }
 
+    private void configAppVersionAndBuildNumber(PackageManager pm) {
+        // set App VersionName, VersionCode
+        try {
+            PackageInfo packageInfo = pm.getPackageInfo(context.getPackageName(), 0);
+            appVersionName = packageInfo.versionName;
+            appVersionCode = packageInfo.versionCode;
+        } catch (NameNotFoundException e) {
+            Log.w(TAG, "System information constructed with a context that apparently doesn't exist.");
+        }
+    }
+
+    public String configAppBuildDate(PackageManager pm) {
+        String buildDate = null;
+
+        try {
+            ApplicationInfo ai = pm.getApplicationInfo(context.getPackageName(), 0);
+            ZipFile zf = new ZipFile(ai.sourceDir);
+            ZipEntry ze = zf.getEntry("classes.dex");
+            long time = ze.getTime();
+
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
+            TimeZone tz = TimeZone.getTimeZone("Asia/Seoul");
+            formatter.setTimeZone(tz);
+
+            buildDate = formatter.format(new Date(time));
+
+            zf.close();
+        } catch(NameNotFoundException e) {
+            Log.e(TAG, "System information constructed with a context that apparently doesn't exist.");
+        } catch(IOException e) {
+            Log.e(TAG, "Can't create ZipFile Instance using given ApplicationInfo");
+        }
+
+        return buildDate;
+    }
+
     // Note this is the *current*, not the canonical network, because it
     // doesn't require special permissions to access. Unreliable for CDMA phones,
     public String getCurrentNetworkOperator() {
         String ret = null;
 
-        TelephonyManager telephonyManager = (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (null != telephonyManager)
             ret = telephonyManager.getNetworkOperatorName();
 
         return ret;
     }
 
-
     public Boolean isWifiConnected() {
         Boolean ret = null;
 
-        if (PackageManager.PERMISSION_GRANTED == mContext.checkCallingOrSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE)) {
-            ConnectivityManager connManager = (ConnectivityManager) this.mContext.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (PackageManager.PERMISSION_GRANTED == context.checkCallingOrSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE)) {
+            ConnectivityManager connManager = (ConnectivityManager) this.context.getSystemService(Context.CONNECTIVITY_SERVICE);
             NetworkInfo wifiInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
             ret = wifiInfo.isConnected();
         }
@@ -151,13 +198,4 @@ class SystemInformation {
         return ret;
     }
 
-    private final Context mContext;
-
-    // Unchanging facts
-    private final Boolean mHasNFC;
-    private final Boolean mHasTelephony;
-    private final DisplayMetrics mDisplayMetrics;
-    private final String mAppVersionName;
-    private final Integer mAppVersionCode;
-    private final String mDeviceId;
 }
