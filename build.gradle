@@ -66,6 +66,8 @@ dependencies {
     testCompile 'com.github.tomakehurst:wiremock:1.55'
     testCompile 'ch.qos.logback:logback-core:1.1.3'
     testCompile 'ch.qos.logback:logback-classic:1.1.3'
+
+    testCompile fileTree(dir: 'src/test/libs', include: ['*.jar'])
 }
 
 jar {
@@ -89,16 +91,21 @@ task updateVersion(type: Copy) {
     String v = version.tokenize('-')[0]
 
     def pattern = ~/"r0.5.0_c(.)*"/
-    def client = "\"r0.5.0_c${v}\""
+    def newVersion = "\"r0.5.0_c${v}\""
 
-    def rakeApi = new File('src/main/java/com/rake/android/rkmetrics/RakeAPI.java')
+    def configFile = new File('src/main/java/com/rake/android/rkmetrics/RakeAPI.java')
 
-    String content = rakeApi.getText('UTF-8')
-    content = content.replaceAll(pattern, client) /* replace version number */
+    String content = configFile.getText('UTF-8')
+    String oldVersion = content.find(pattern)
+    content = content.replaceAll(pattern, newVersion) /* replace version number */
 
-    rakeApi.write(content, 'UTF-8')
+    String replacedVersion = content.find(pattern)
 
-    println "[INFO] version number in RakeAPI.java replace with $v"
+    assert(newVersion == replacedVersion)
+
+    configFile.write(content, 'UTF-8')
+
+    println "[INFO] version $oldVersion in RakeAPI.java was replaced with $newVersion"
 }
 
 compileJava.dependsOn updateVersion

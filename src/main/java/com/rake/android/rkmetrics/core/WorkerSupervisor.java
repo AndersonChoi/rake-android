@@ -1,10 +1,13 @@
-package com.rake.android.rkmetrics;
+package com.rake.android.rkmetrics.core;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import com.rake.android.rkmetrics.RakeConfig;
+import com.rake.android.rkmetrics.network.HttpPoster;
+import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
 import org.json.JSONObject;
 
 import java.util.HashMap;
@@ -19,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p>This class straddles the thread boundary between user threads and
  * a logical Rake thread.
  */
-class WorkerSupervisor {
+public class WorkerSupervisor {
 
     // Messages for our thread
     private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
@@ -30,42 +33,42 @@ class WorkerSupervisor {
     private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
 
     private static final String TAG = "RakeAPI";
-    private static final Map<Context, WorkerSupervisor> sInstances = new HashMap<Context, WorkerSupervisor>();
+    private static final Map<Context, WorkerSupervisor> instances = new HashMap<Context, WorkerSupervisor>();
 
-    private final Object mHandlerLock = new Object();
-    private Handler mHandler;
+    private final Object handlerLock = new Object();
+    private Handler handler;
 
-    private long mFlushInterval = RakeConfig.FLUSH_RATE;
-    private long mFlushCount = 0;
-    private long mAveFlushFrequency = 0;
-    private long mLastFlushTime = -1;
+    private long flushInterval = RakeConfig.FLUSH_RATE;
+    private long flushCount = 0;
+    private long aveFlushFrequency = 0;
+    private long lastFlushTime = -1;
 
     // Used across thread boundaries
-    private final AtomicBoolean mLogRakeMessages;
-    private final Worker mWorker;
-    private final Context mContext;
+    private final AtomicBoolean logRakeMessages;
+    private final Worker worker;
+    private final Context context;
 
     /**
      * Do not call directly. You should call WorkerSupervisor.getInstance()
      */
     WorkerSupervisor(Context context) {
-        mContext = context;
-        mLogRakeMessages = new AtomicBoolean(false);
-        mWorker = new Worker();
+        this.context = context;
+        logRakeMessages = new AtomicBoolean(false);
+        worker = new Worker();
     }
 
     public static WorkerSupervisor getInstance(Context messageContext) {
-        synchronized (sInstances) {
+        synchronized (instances) {
             Context appContext = messageContext.getApplicationContext();
             WorkerSupervisor ret;
-            if (!sInstances.containsKey(appContext)) {
+            if (!instances.containsKey(appContext)) {
                 if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new WorkerSupervisor for Context " + appContext);
                 ret = new WorkerSupervisor(appContext);
-                sInstances.put(appContext, ret);
+                instances.put(appContext, ret);
             } else {
                 if (RakeConfig.DEBUG)
                     Log.d(TAG, "WorkerSupervisor for Context " + appContext + " already exists- returning");
-                ret = sInstances.get(appContext);
+                ret = instances.get(appContext);
             }
 
             return ret;
@@ -77,14 +80,14 @@ class WorkerSupervisor {
         m.what = ENQUEUE_EVENTS;
         m.obj = eventsJson;
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     public void postToServer() {
         Message m = Message.obtain();
         m.what = FLUSH_QUEUE;
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     public void setFlushInterval(long milliseconds) {
@@ -92,7 +95,7 @@ class WorkerSupervisor {
         m.what = SET_FLUSH_INTERVAL;
         m.obj = new Long(milliseconds);
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     public void setFallbackHost(String fallbackHost) {
@@ -100,7 +103,7 @@ class WorkerSupervisor {
         m.what = SET_FALLBACK_HOST;
         m.obj = fallbackHost;
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     public void setEndpointHost(String endpointHost) {
@@ -108,20 +111,20 @@ class WorkerSupervisor {
         m.what = SET_ENDPOINT_HOST;
         m.obj = endpointHost;
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     public void hardKill() {
         Message m = Message.obtain();
         m.what = KILL_WORKER;
 
-        mWorker.runMessage(m);
+        worker.runMessage(m);
     }
 
     // For testing, to allow for Mocking.
 
     /* package */ boolean isDead() {
-        return mWorker.isDead();
+        return worker.isDead();
     }
 
     protected RakeDbAdapter makeDbAdapter(Context context) {
@@ -135,7 +138,7 @@ class WorkerSupervisor {
     // Sends a message if and only if we are running with Rake Message log enabled.
     // Will be called from the Rake thread.
     private void logAboutMessageToRake(String message) {
-        if (mLogRakeMessages.get() || RakeConfig.DEBUG) {
+        if (logRakeMessages.get() || RakeConfig.DEBUG) {
             Log.i(TAG, message + " (Thread " + Thread.currentThread().getId() + ")");
         }
     }
@@ -144,12 +147,12 @@ class WorkerSupervisor {
     // this WorkerSupervisor instance.
     private class Worker {
         public Worker() {
-            mHandler = restartWorkerThread();
+            handler = restartWorkerThread();
         }
 
         public boolean isDead() {
-            synchronized (mHandlerLock) {
-                return mHandler == null;
+            synchronized (handlerLock) {
+                return handler == null;
             }
         }
 
@@ -158,8 +161,8 @@ class WorkerSupervisor {
                 // We died under suspicious circumstances. Don't try to send any more events.
                 logAboutMessageToRake("Dead rake worker dropping a message: " + msg);
             } else {
-                synchronized (mHandlerLock) {
-                    if (mHandler != null) mHandler.sendMessage(msg);
+                synchronized (handlerLock) {
+                    if (handler != null) handler.sendMessage(msg);
                 }
             }
         }
@@ -207,7 +210,7 @@ class WorkerSupervisor {
         private class AnalyticsMessageHandler extends Handler {
             public AnalyticsMessageHandler() {
                 super();
-                mDbAdapter = makeDbAdapter(mContext);
+                mDbAdapter = makeDbAdapter(context);
                 mDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION, RakeDbAdapter.Table.EVENTS);
             }
 
@@ -219,7 +222,7 @@ class WorkerSupervisor {
                     if (msg.what == SET_FLUSH_INTERVAL) {
                         Long newIntervalObj = (Long) msg.obj;
                         logAboutMessageToRake("Changing flush interval to " + newIntervalObj);
-                        mFlushInterval = newIntervalObj.longValue();
+                        flushInterval = newIntervalObj.longValue();
                         removeMessages(FLUSH_QUEUE);
                     } else if (msg.what == SET_ENDPOINT_HOST) {
                         logAboutMessageToRake("Setting endpoint API host to " + mEndpointHost);
@@ -237,9 +240,9 @@ class WorkerSupervisor {
                         sendAllData();
                     } else if (msg.what == KILL_WORKER) {
                         Log.w(TAG, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
-                        synchronized (mHandlerLock) {
+                        synchronized (handlerLock) {
                             mDbAdapter.deleteDB();
-                            mHandler = null;
+                            handler = null;
                             Looper.myLooper().quit();
                         }
                     } else {
@@ -252,19 +255,19 @@ class WorkerSupervisor {
                         sendAllData();
                     } else if (queueDepth > 0) {
                         if (!hasMessages(FLUSH_QUEUE)) {
-                            logAboutMessageToRake("Queue depth " + queueDepth + " - Adding flush in " + mFlushInterval);
+                            logAboutMessageToRake("Queue depth " + queueDepth + " - Adding flush in " + flushInterval);
                             // The hasMessages check is a courtesy for the common case
                             // of delayed flushes already enqueued from inside of this thread.
                             // Callers outside of this thread can still send
                             // a flush right here, so we may end up with two flushes
                             // in our queue, but we're ok with that.
-                            sendEmptyMessageDelayed(FLUSH_QUEUE, mFlushInterval);
+                            sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval);
                         }
                     }
                 } catch (RuntimeException e) {
                     Log.e(TAG, "Worker threw an unhandled exception- will not send any more Rake messages", e);
-                    synchronized (mHandlerLock) {
-                        mHandler = null;
+                    synchronized (handlerLock) {
+                        handler = null;
                         try {
                             Looper.myLooper().quit();
                         } catch (Exception tooLate) {
@@ -298,7 +301,7 @@ class WorkerSupervisor {
                     } else if (eventsPosted == HttpPoster.PostResult.FAILED_RECOVERABLE) {
                         // Try again later
                         if (!hasMessages(FLUSH_QUEUE)) {
-                            sendEmptyMessageDelayed(FLUSH_QUEUE, mFlushInterval);
+                            sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval);
                         }
                     } else { // give up, we have an unrecoverable failure.
                         mDbAdapter.cleanupEvents(lastId, table);
@@ -312,19 +315,19 @@ class WorkerSupervisor {
 
         private void updateFlushFrequency() {
             long now = System.currentTimeMillis();
-            long newFlushCount = mFlushCount + 1;
+            long newFlushCount = flushCount + 1;
 
-            if (mLastFlushTime > 0) {
-                long flushInterval = now - mLastFlushTime;
-                long totalFlushTime = flushInterval + (mAveFlushFrequency * mFlushCount);
-                mAveFlushFrequency = totalFlushTime / newFlushCount;
+            if (lastFlushTime > 0) {
+                long flushInterval = now - lastFlushTime;
+                long totalFlushTime = flushInterval + (aveFlushFrequency * flushCount);
+                aveFlushFrequency = totalFlushTime / newFlushCount;
 
-                long seconds = mAveFlushFrequency / 1000;
+                long seconds = aveFlushFrequency / 1000;
                 logAboutMessageToRake("Average send frequency approximately " + seconds + " seconds.");
             }
 
-            mLastFlushTime = now;
-            mFlushCount = newFlushCount;
+            lastFlushTime = now;
+            flushCount = newFlushCount;
         }
     }
 }

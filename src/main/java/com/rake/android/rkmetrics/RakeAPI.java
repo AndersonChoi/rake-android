@@ -5,6 +5,8 @@ import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.DisplayMetrics;
 import android.util.Log;
+import com.rake.android.rkmetrics.android.SystemInformation;
+import com.rake.android.rkmetrics.core.WorkerSupervisor;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -14,7 +16,7 @@ import java.util.*;
 
 public class RakeAPI {
 
-    // TODO: remove r0.5.0_c. also need to modify server dep.
+    // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically when building.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.16";
     private static final String TAG = "RakeAPI";
@@ -257,7 +259,6 @@ public class RakeAPI {
         }
         superProperties = new JSONObject();
     }
-
 
     private JSONObject getDefaultEventProperties() throws JSONException {
 

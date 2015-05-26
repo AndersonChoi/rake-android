@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics;
+package com.rake.android.rkmetrics.persistent;
 
 import android.content.ContentValues;
 import android.content.Context;
@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
+import com.rake.android.rkmetrics.RakeConfig;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,21 +20,21 @@ import java.io.File;
  * <p>Not thread-safe. Instances of this class should only be used
  * by a single thread.
  */
-class RakeDbAdapter {
-    private static final String LOGTAG = "RakeAPI";
+public class RakeDbAdapter {
+    private static final String TAG = "RakeAPI";
 
     public enum Table {
         EVENTS("events");
 
         Table(String name) {
-            mTableName = name;
+            tableName = name;
         }
 
         public String getName() {
-            return mTableName;
+            return tableName;
         }
 
-        private final String mTableName;
+        private final String tableName;
     }
 
     private static final String DATABASE_NAME = "rake";
@@ -50,12 +51,14 @@ class RakeDbAdapter {
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + KEY_CREATED_AT + ");";
 
-    private final MPDatabaseHelper mDb;
+    private final MPDatabaseHelper dbHelper;
 
     private static class MPDatabaseHelper extends SQLiteOpenHelper {
+
+        private final File databaseFile;
         MPDatabaseHelper(Context context, String dbName) {
             super(context, dbName, null, DATABASE_VERSION);
-            mDatabaseFile = context.getDatabasePath(dbName);
+            databaseFile = context.getDatabasePath(dbName);
         }
 
         /**
@@ -63,12 +66,12 @@ class RakeDbAdapter {
          */
         public void deleteDatabase() {
             close();
-            mDatabaseFile.delete();
+            databaseFile.delete();
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            if (RakeConfig.DEBUG) Log.d(LOGTAG, "Creating a new Rake events DB");
+            if (RakeConfig.DEBUG) Log.d(TAG, "Creating a new Rake events DB");
 
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
@@ -76,14 +79,12 @@ class RakeDbAdapter {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if (RakeConfig.DEBUG) Log.d(LOGTAG, "Upgrading app, replacing Rake events DB");
+            if (RakeConfig.DEBUG) Log.d(TAG, "Upgrading app, replacing Rake events DB");
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
         }
-
-        private final File mDatabaseFile;
     }
 
     public RakeDbAdapter(Context context) {
@@ -92,9 +93,9 @@ class RakeDbAdapter {
 
     public RakeDbAdapter(Context context, String dbName) {
         if (RakeConfig.DEBUG)
-            Log.d(LOGTAG, "Rake Database (" + dbName + ") adapter constructed in context " + context);
+            Log.d(TAG, "Rake Database (" + dbName + ") adapter constructed in context " + context);
 
-        mDb = new MPDatabaseHelper(context, dbName);
+        dbHelper = new MPDatabaseHelper(context, dbName);
     }
 
     /**
@@ -108,14 +109,14 @@ class RakeDbAdapter {
     public int addJSON(JSONObject j, Table table) {
         String tableName = table.getName();
         if (RakeConfig.DEBUG) {
-            Log.d(LOGTAG, "addJSON " + tableName);
+            Log.d(TAG, "addJSON " + tableName);
         }
 
         Cursor c = null;
         int count = -1;
 
         try {
-            SQLiteDatabase db = mDb.getWritableDatabase();
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
 
             ContentValues cv = new ContentValues();
             cv.put(KEY_DATA, j.toString());
@@ -126,15 +127,15 @@ class RakeDbAdapter {
             c.moveToFirst();
             count = c.getInt(0);
         } catch (SQLiteException e) {
-            Log.e(LOGTAG, "addJSON " + tableName + " FAILED. Deleting DB.", e);
+            Log.e(TAG, "addJSON " + tableName + " FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            mDb.deleteDatabase();
+            dbHelper.deleteDatabase();
         } finally {
-            mDb.close();
+            dbHelper.close();
             if (c != null) {
                 c.close();
             }
@@ -151,22 +152,22 @@ class RakeDbAdapter {
     public void cleanupEvents(String last_id, Table table) {
         String tableName = table.getName();
         if (RakeConfig.DEBUG) {
-            Log.d(LOGTAG, "cleanupEvents _id " + last_id + " from table " + tableName);
+            Log.d(TAG, "cleanupEvents _id " + last_id + " from table " + tableName);
         }
 
         try {
-            SQLiteDatabase db = mDb.getWritableDatabase();
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, "_id <= " + last_id, null);
         } catch (SQLiteException e) {
-            Log.e(LOGTAG, "cleanupEvents " + tableName + " by id FAILED. Deleting DB.", e);
+            Log.e(TAG, "cleanupEvents " + tableName + " by id FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            mDb.deleteDatabase();
+            dbHelper.deleteDatabase();
         } finally {
-            mDb.close();
+            dbHelper.close();
         }
     }
 
@@ -179,27 +180,27 @@ class RakeDbAdapter {
     public void cleanupEvents(long time, Table table) {
         String tableName = table.getName();
         if (RakeConfig.DEBUG) {
-            Log.d(LOGTAG, "cleanupEvents time " + time + " from table " + tableName);
+            Log.d(TAG, "cleanupEvents time " + time + " from table " + tableName);
         }
 
         try {
-            SQLiteDatabase db = mDb.getWritableDatabase();
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, KEY_CREATED_AT + " <= " + time, null);
         } catch (SQLiteException e) {
-            Log.e(LOGTAG, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
+            Log.e(TAG, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            mDb.deleteDatabase();
+            dbHelper.deleteDatabase();
         } finally {
-            mDb.close();
+            dbHelper.close();
         }
     }
 
     public void deleteDB() {
-        mDb.deleteDatabase();
+        dbHelper.deleteDatabase();
     }
 
 
@@ -218,7 +219,7 @@ class RakeDbAdapter {
         String tableName = table.getName();
 
         try {
-            SQLiteDatabase db = mDb.getReadableDatabase();
+            SQLiteDatabase db = dbHelper.getReadableDatabase();
             c = db.rawQuery("SELECT * FROM " + tableName +
                     " ORDER BY " + KEY_CREATED_AT + " ASC LIMIT 50", null);
             JSONArray arr = new JSONArray();
@@ -239,7 +240,7 @@ class RakeDbAdapter {
                 data = arr.toString();
             }
         } catch (SQLiteException e) {
-            Log.e(LOGTAG, "generateDataString " + tableName, e);
+            Log.e(TAG, "generateDataString " + tableName, e);
 
             // We'll dump the DB on write failures, but with reads we can
             // let things ride in hopes the issue clears up.
@@ -248,7 +249,7 @@ class RakeDbAdapter {
             last_id = null;
             data = null;
         } finally {
-            mDb.close();
+            dbHelper.close();
             if (c != null) {
                 c.close();
             }

@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics;
+package com.rake.android.rkmetrics.android;
 
 import android.Manifest;
 import android.content.Context;
@@ -29,7 +29,7 @@ import java.util.zip.ZipFile;
  * Abstracts away possibly non-present system information classes,
  * and handles permission-dependent queries for default system information.
  */
-class SystemInformation {
+public class SystemInformation {
     public static final String TAG = "RakeAPI";
 
     private Context context;
@@ -45,10 +45,18 @@ class SystemInformation {
         this.context = context;
 
         PackageManager pm = context.getPackageManager();
+        String name = context.getPackageName();
 
-        // config versionName, versionCode, buildDate
-        configAppVersionAndBuildNumber(pm);
-        appBuildDate = configAppBuildDate(pm);
+        // configure versionName, versionCode, buildDate
+        appBuildDate = configAppBuildDate(pm, name);
+
+        try {
+            PackageInfo info = getPackageInfo(pm, name);
+            appVersionName = info.versionName;
+            appVersionCode = info.versionCode;
+        } catch (NameNotFoundException e) {
+            Log.e(TAG, "Can't get versionName, versionCode from PackageInfo");
+        }
 
         // We can't count on these features being available, since we need to
         // run on old devices. Thus, the reflection fandango below...
@@ -138,28 +146,22 @@ class SystemInformation {
         return ret;
     }
 
-    private void configAppVersionAndBuildNumber(PackageManager pm) {
-        // set App VersionName, VersionCode
-        try {
-            PackageInfo packageInfo = pm.getPackageInfo(context.getPackageName(), 0);
-            appVersionName = packageInfo.versionName;
-            appVersionCode = packageInfo.versionCode;
-        } catch (NameNotFoundException e) {
-            Log.w(TAG, "System information constructed with a context that apparently doesn't exist.");
-        }
+    private PackageInfo getPackageInfo(PackageManager manager, String packageName)
+        throws NameNotFoundException {
+        return manager.getPackageInfo(packageName, 0);
     }
 
-    public String configAppBuildDate(PackageManager pm) {
+    public String configAppBuildDate(PackageManager manager, String packageName) {
         String buildDate = null;
 
         try {
-            ApplicationInfo ai = pm.getApplicationInfo(context.getPackageName(), 0);
+            ApplicationInfo ai = manager.getApplicationInfo(packageName, 0);
             ZipFile zf = new ZipFile(ai.sourceDir);
             ZipEntry ze = zf.getEntry("classes.dex");
             long time = ze.getTime();
 
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
-            TimeZone tz = TimeZone.getTimeZone("Asia/Seoul");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            TimeZone tz = TimeZone.getDefault(); /* current TimeZone */
             formatter.setTimeZone(tz);
 
             buildDate = formatter.format(new Date(time));

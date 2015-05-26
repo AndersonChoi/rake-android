@@ -1,8 +1,9 @@
-package com.rake.android.rkmetrics;
+package com.rake.android.rkmetrics.network;
 
 import android.util.Log;
-import com.rake.android.util.Base64Coder;
-import com.rake.android.util.StringUtils;
+import com.rake.android.rkmetrics.RakeConfig;
+import com.rake.android.rkmetrics.util.Base64Coder;
+import com.rake.android.rkmetrics.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
