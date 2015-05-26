@@ -17,3 +17,5 @@ bin/
 gradle/
 gradlew
 gradlew.bat
+.idea
+*.iml

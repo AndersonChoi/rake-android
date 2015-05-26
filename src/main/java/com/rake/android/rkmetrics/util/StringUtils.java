@@ -1,4 +1,4 @@
-package com.rake.android.util;
+package com.rake.android.rkmetrics.util;
 
 import java.io.BufferedReader;
 import java.io.IOException;
