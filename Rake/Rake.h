@@ -1,6 +1,13 @@
 #import <Foundation/Foundation.h>
 #import <UIKit/UIKit.h>
 
+//! Project version number for Rake.
+FOUNDATION_EXPORT double RakeVersionNumber;
+
+//! Project version string for Rake.
+FOUNDATION_EXPORT const unsigned char RakeVersionString[];
+
+// In this header, you should import all the public headers of your framework using statements like #import <Rake/PublicHeader.h>
 
 @protocol RakeDelegate;
 
@@ -320,3 +327,4 @@
 - (BOOL)RakeWillFlush:(Rake *)Rake;
 
 @end
+

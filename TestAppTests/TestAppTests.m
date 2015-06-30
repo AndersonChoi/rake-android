@@ -1,11 +1,11 @@
 #import <UIKit/UIKit.h>
 #import <XCTest/XCTest.h>
 
-@interface RakeTests : XCTestCase
+@interface TestAppTests : XCTestCase
 
 @end
 
-@implementation RakeTests
+@implementation TestAppTests
 
 - (void)setUp {
     [super setUp];
