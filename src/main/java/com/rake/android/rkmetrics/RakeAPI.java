@@ -18,7 +18,7 @@ public class RakeAPI {
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically when building.
-    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.16";
+    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.17";
     private static final String TAG = "RakeAPI";
 
     private boolean isDev = false;
@@ -86,7 +86,7 @@ public class RakeAPI {
         msgs.setFlushInterval(milliseconds);
     }
 
-    public void track(JSONObject properties) {
+    public void track(JSONObject shuttle) {
         Date now = new Date();
 
         try {
@@ -102,13 +102,13 @@ public class RakeAPI {
             }
 
             JSONObject sentinel_meta;
-            if (properties.has("sentinel_meta")) {
-                sentinel_meta = properties.getJSONObject("sentinel_meta");
+            if (shuttle.has("sentinel_meta")) {
+                sentinel_meta = shuttle.getJSONObject("sentinel_meta");
                 for (Iterator<?> sentinel_meta_keys = sentinel_meta.keys(); sentinel_meta_keys.hasNext(); ) {
                     String sentinel_meta_key = (String) sentinel_meta_keys.next();
                     dataObj.put(sentinel_meta_key, sentinel_meta.get(sentinel_meta_key));
                 }
-                properties.remove("sentinel_meta");
+                shuttle.remove("sentinel_meta");
             } else {
                 // no sentinel shuttle
                 // need to do something here?
@@ -123,17 +123,17 @@ public class RakeAPI {
             }
 
             // 2-2. custom properties
-            if (properties != null) {
-                for (Iterator<?> keys = properties.keys(); keys.hasNext(); ) {
+            if (shuttle != null) {
+                for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
                     String key = (String) keys.next();
                     if (fieldOrder != null && fieldOrder.has(key)) {    // field defined in schema
-                        if (propertiesObj.has(key) && properties.get(key).toString().length() == 0) {
+                        if (propertiesObj.has(key) && shuttle.get(key).toString().length() == 0) {
                             // Do not overwrite super properties with empty string of properties.
                         } else {
-                            propertiesObj.put(key, properties.get(key));
+                            propertiesObj.put(key, shuttle.get(key));
                         }
                     } else if (fieldOrder == null) { // no fieldOrder (maybe no shuttle)
-                        propertiesObj.put(key, properties.get(key));
+                        propertiesObj.put(key, shuttle.get(key));
                     }
                 }
             }
@@ -177,9 +177,8 @@ public class RakeAPI {
                 am.eventsMessage(dataObj);
             }
 
-            if (isDev) {
-                flush();
-            }
+            if (isDev) { flush(); }
+
         } catch (JSONException e) {
             Log.e(TAG, "Exception tracking event ", e);
         }
@@ -261,7 +260,6 @@ public class RakeAPI {
     }
 
     private JSONObject getDefaultEventProperties() throws JSONException {
-
         JSONObject ret = new JSONObject();
 
         ret.put("rake_lib", "android");
@@ -277,6 +275,7 @@ public class RakeAPI {
         int displayHeight = displayMetrics.heightPixels;
         StringBuilder resolutionBuilder = new StringBuilder();
 
+        // TODO
         ret.put("screen_height", displayWidth);
         ret.put("screen_width", displayHeight);
         ret.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());

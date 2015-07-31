@@ -15,10 +15,8 @@ import org.json.JSONObject;
 import java.io.File;
 
 /**
- * SQLite database adapter for RakeAPI.
- * <p/>
- * <p>Not thread-safe. Instances of this class should only be used
- * by a single thread.
+ * Not thread-safe.
+ * Instances of this class should only be used by a single thread.
  */
 public class RakeDbAdapter {
     private static final String TAG = "RakeAPI";

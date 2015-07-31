@@ -195,6 +195,7 @@ public class WorkerSupervisor {
                     }
                 }
             };
+
             thread.setPriority(Thread.MIN_PRIORITY);
             thread.start();
 
