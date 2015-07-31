@@ -79,10 +79,6 @@ public class HttpPoster {
         HttpClient httpclient = new DefaultHttpClient(params);
 
         HttpPost httppost = new HttpPost(endpointUrl);
-        // TODO: remove
-        httppost.setHeader("Accept-Encoding", "gzip");
-        httppost.setHeader("Content-Encoding", "gzip");
-
 
         try {
             if (endpointUrl.indexOf("https") >= 0 && RakeConfig.TRUSTED_SERVER) {
