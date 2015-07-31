@@ -57,9 +57,10 @@ public class WorkerSupervisor {
         worker = new Worker();
     }
 
-    public static WorkerSupervisor getInstance(Context messageContext) {
+    public static WorkerSupervisor getInstance(Context context) {
         synchronized (instances) {
-            Context appContext = messageContext.getApplicationContext();
+            Context appContext = context.getApplicationContext();
+
             WorkerSupervisor ret;
             if (!instances.containsKey(appContext)) {
                 if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new WorkerSupervisor for Context " + appContext);
@@ -281,38 +282,36 @@ public class WorkerSupervisor {
 
             private void sendAllData() {
                 logAboutMessageToRake("Sending records to Rake");
-                sendData(RakeDbAdapter.Table.EVENTS, "/track");
-            }
 
-            private void sendData(RakeDbAdapter.Table table, String endpointUrl) {
-                String[] eventsData = mDbAdapter.generateDataString(table);
+                String trackPath = "/track";
+                RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
+
+                String[] eventsData = mDbAdapter.generateDataString(trackLogTable);
 
                 if (eventsData != null) {
                     String lastId = eventsData[0];
                     String rawMessage = eventsData[1];
 
-                    // check rawMessageLength
-
                     HttpPoster poster = getPoster(mEndpointHost);
-                    HttpPoster.PostResult eventsPosted = poster.postData(rawMessage, endpointUrl);
+                    HttpPoster.PostResult eventsPosted = poster.postData(rawMessage, trackPath);
 
                     if (eventsPosted == HttpPoster.PostResult.SUCCEEDED) {
-                        logAboutMessageToRake("Posted to " + endpointUrl);
-                        mDbAdapter.cleanupEvents(lastId, table);
+                        logAboutMessageToRake("Posted to " + trackPath);
+                        mDbAdapter.cleanupEvents(lastId, trackLogTable);
                     } else if (eventsPosted == HttpPoster.PostResult.FAILED_RECOVERABLE) {
                         // Try again later
                         if (!hasMessages(FLUSH_QUEUE)) {
                             sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval);
                         }
                     } else { // give up, we have an unrecoverable failure.
-                        mDbAdapter.cleanupEvents(lastId, table);
+                        mDbAdapter.cleanupEvents(lastId, trackLogTable);
                     }
                 }
             }
 
             private String mEndpointHost = RakeConfig.BASE_ENDPOINT;
             private final RakeDbAdapter mDbAdapter;
-        }// AnalyticsMessageHandler
+        } // AnalyticsMessageHandler
 
         private void updateFlushFrequency() {
             long now = System.currentTimeMillis();
