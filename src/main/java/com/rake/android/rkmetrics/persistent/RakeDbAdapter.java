@@ -6,13 +6,13 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.util.Log;
-import com.rake.android.rkmetrics.RakeConfig;
+import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static com.rake.android.rkmetrics.RakeConfig.LOG_TAG;
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 import java.io.File;
 
@@ -69,7 +69,7 @@ public class RakeDbAdapter {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            if (RakeConfig.DEBUG) Log.d(LOG_TAG, "Creating a new Rake events DB");
+            RakeLogger.d(LOG_TAG_PREFIX, "Creating a new Rake events DB");
 
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
@@ -77,7 +77,7 @@ public class RakeDbAdapter {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            if (RakeConfig.DEBUG) Log.d(LOG_TAG, "Upgrading app, replacing Rake events DB");
+            RakeLogger.d(LOG_TAG_PREFIX, "Upgrading app, replacing Rake events DB");
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
             db.execSQL(CREATE_EVENTS_TABLE);
@@ -90,8 +90,7 @@ public class RakeDbAdapter {
     }
 
     public RakeDbAdapter(Context context, String dbName) {
-        if (RakeConfig.DEBUG)
-            Log.d(LOG_TAG, "Rake Database (" + dbName + ") adapter constructed in context " + context);
+        RakeLogger.d(LOG_TAG_PREFIX, "Rake Database (" + dbName + ") adapter constructed in context " + context);
 
         dbHelper = new MPDatabaseHelper(context, dbName);
     }
@@ -106,9 +105,7 @@ public class RakeDbAdapter {
      */
     public int addJSON(JSONObject j, Table table) {
         String tableName = table.getName();
-        if (RakeConfig.DEBUG) {
-            Log.d(LOG_TAG, "addJSON " + tableName);
-        }
+        RakeLogger.d(LOG_TAG_PREFIX, "addJSON " + tableName);
 
         Cursor c = null;
         int count = -1;
@@ -125,7 +122,7 @@ public class RakeDbAdapter {
             c.moveToFirst();
             count = c.getInt(0);
         } catch (SQLiteException e) {
-            Log.e(LOG_TAG, "addJSON " + tableName + " FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "addJSON " + tableName + " FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -149,15 +146,13 @@ public class RakeDbAdapter {
      */
     public void cleanupEvents(String last_id, Table table) {
         String tableName = table.getName();
-        if (RakeConfig.DEBUG) {
-            Log.d(LOG_TAG, "cleanupEvents _id " + last_id + " from table " + tableName);
-        }
+        RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents _id " + last_id + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, "_id <= " + last_id, null);
         } catch (SQLiteException e) {
-            Log.e(LOG_TAG, "cleanupEvents " + tableName + " by id FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "cleanupEvents " + tableName + " by id FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -177,15 +172,13 @@ public class RakeDbAdapter {
      */
     public void cleanupEvents(long time, Table table) {
         String tableName = table.getName();
-        if (RakeConfig.DEBUG) {
-            Log.d(LOG_TAG, "cleanupEvents time " + time + " from table " + tableName);
-        }
+        RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents time " + time + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, KEY_CREATED_AT + " <= " + time, null);
         } catch (SQLiteException e) {
-            Log.e(LOG_TAG, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -238,7 +231,7 @@ public class RakeDbAdapter {
                 data = arr.toString();
             }
         } catch (SQLiteException e) {
-            Log.e(LOG_TAG, "generateDataString " + tableName, e);
+            RakeLogger.e(LOG_TAG_PREFIX, "generateDataString " + tableName, e);
 
             // We'll dump the DB on write failures, but with reads we can
             // let things ride in hopes the issue clears up.

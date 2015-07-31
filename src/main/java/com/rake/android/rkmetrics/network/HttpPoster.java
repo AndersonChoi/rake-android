@@ -1,10 +1,10 @@
 package com.rake.android.rkmetrics.network;
 
-import static com.rake.android.rkmetrics.RakeConfig.LOG_TAG;
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
-import android.util.Log;
-import com.rake.android.rkmetrics.RakeConfig;
+import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
+import com.rake.android.rkmetrics.util.RakeLogger;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -82,7 +82,7 @@ public class HttpPoster {
         HttpPost httppost = new HttpPost(endpointUrl);
 
         try {
-            if (endpointUrl.indexOf("https") >= 0 && RakeConfig.TRUSTED_SERVER) {
+            if (endpointUrl.indexOf("https") >= 0 && RakeConfig.USE_HTTPS) {
                 httpclient = sslClientDebug(httpclient);
             }
 
@@ -99,15 +99,15 @@ public class HttpPoster {
                 }
             }
         } catch (IOException e) {
-            Log.i(LOG_TAG, "Cannot post message to Rake Servers (May Retry)", e);
+            RakeLogger.i(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
             ret = PostResult.FAILED_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            Log.e(LOG_TAG, "Cannot post message to Rake Servers, will not retry.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
             ret = PostResult.FAILED_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
-            Log.e(LOG_TAG, "Cannot build SSL Client", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
         } catch (Exception e) {
-            Log.e(LOG_TAG, "caused by", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "caused by", e);
         }
 
         return ret;

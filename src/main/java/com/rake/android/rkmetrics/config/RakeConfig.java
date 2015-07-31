@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics;
+package com.rake.android.rkmetrics.config;
 
 /**
  * Stores global configuration options for the Rake library.
@@ -18,9 +18,8 @@ public class RakeConfig {
     public static String BASE_ENDPOINT = "https://rake.skplanet.com:8443/log";
     public static String DEV_BASE_ENDPOINT = "https://pg.rake.skplanet.com:8443/log";
 
-    public static boolean DEBUG = false;
-    public static boolean TRUSTED_SERVER = true;
+    public static boolean USE_HTTPS = true;
 
-    public static final String LOG_TAG = "RakeAPI";
+    public static final String LOG_TAG_PREFIX = "RakeAPI";
     public static final String TRACK_PATH = "/track";
 }
