@@ -106,6 +106,8 @@ public class HttpPoster {
             ret = PostResult.FAILED_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
             Log.e(LOGTAG, "Cannot build SSL Client", e);
+        } catch (Exception e) {
+            Log.e(LOGTAG, "caused by", e);
         }
 
         return ret;
