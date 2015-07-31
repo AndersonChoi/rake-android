@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.network;
 
+import static com.rake.android.rkmetrics.RakeConfig.LOG_TAG;
+
 import android.util.Log;
 import com.rake.android.rkmetrics.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
@@ -33,7 +35,6 @@ import java.util.List;
 
 public class HttpPoster {
 
-    private static final String LOGTAG = "RakeAPI";
     private final String mDefaultHost;
 
     public static final int CONNECTION_TIMEOUT = 3000;
@@ -90,7 +91,6 @@ public class HttpPoster {
             HttpResponse response = httpclient.execute(httppost);
             HttpEntity entity = response.getEntity();
 
-
             // TODO: recover from other states (e.g 204, 404, 400, 50x...)
             if (entity != null) {
                 String result = StringUtils.inputStreamToString(entity.getContent());
@@ -99,15 +99,15 @@ public class HttpPoster {
                 }
             }
         } catch (IOException e) {
-            Log.i(LOGTAG, "Cannot post message to Rake Servers (May Retry)", e);
+            Log.i(LOG_TAG, "Cannot post message to Rake Servers (May Retry)", e);
             ret = PostResult.FAILED_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            Log.e(LOGTAG, "Cannot post message to Rake Servers, will not retry.", e);
+            Log.e(LOG_TAG, "Cannot post message to Rake Servers, will not retry.", e);
             ret = PostResult.FAILED_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
-            Log.e(LOGTAG, "Cannot build SSL Client", e);
+            Log.e(LOG_TAG, "Cannot build SSL Client", e);
         } catch (Exception e) {
-            Log.e(LOGTAG, "caused by", e);
+            Log.e(LOG_TAG, "caused by", e);
         }
 
         return ret;

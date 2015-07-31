@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics;
 
+import static com.rake.android.rkmetrics.RakeConfig.LOG_TAG;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -19,7 +21,6 @@ public class RakeAPI {
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically when building.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.17";
-    private static final String TAG = "RakeAPI";
 
     private boolean isDev = false;
 
@@ -180,7 +181,7 @@ public class RakeAPI {
             if (isDev) { flush(); }
 
         } catch (JSONException e) {
-            Log.e(TAG, "Exception tracking event ", e);
+            Log.e(LOG_TAG, "Exception tracking event ", e);
         }
     }
 
@@ -191,12 +192,12 @@ public class RakeAPI {
 
     public static void setDebug(Boolean debug) {
         RakeConfig.DEBUG = debug;
-        Log.d(TAG, "RakeConfig.DEBUG : " + RakeConfig.DEBUG);
+        Log.d(LOG_TAG, "RakeConfig.DEBUG : " + RakeConfig.DEBUG);
     }
 
     public void flush() {
         if (RakeConfig.DEBUG) {
-            Log.d(TAG, "flushEvents");
+            Log.d(LOG_TAG, "flushEvents");
         }
         synchronized (am) {
             am.postToServer();
@@ -205,7 +206,7 @@ public class RakeAPI {
 
     public void registerSuperProperties(JSONObject superProperties) {
         if (RakeConfig.DEBUG) {
-            Log.d(TAG, "registerSuperProperties");
+            Log.d(LOG_TAG, "registerSuperProperties");
         }
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
@@ -215,7 +216,7 @@ public class RakeAPI {
                     this.superProperties.put(key, superProperties.get(key));
                 }
             } catch (JSONException e) {
-                Log.e(TAG, "Exception registering super property.", e);
+                Log.e(LOG_TAG, "Exception registering super property.", e);
             }
         }
 
@@ -233,7 +234,7 @@ public class RakeAPI {
 
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
         if (RakeConfig.DEBUG) {
-            Log.d(TAG, "registerSuperPropertiesOnce");
+            Log.d(LOG_TAG, "registerSuperPropertiesOnce");
         }
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
@@ -243,7 +244,7 @@ public class RakeAPI {
                     try {
                         this.superProperties.put(key, superProperties.get(key));
                     } catch (JSONException e) {
-                        Log.e(TAG, "Exception registering super property.", e);
+                        Log.e(LOG_TAG, "Exception registering super property.", e);
                     }
                 }
             }
@@ -254,7 +255,7 @@ public class RakeAPI {
 
     public synchronized void clearSuperProperties() {
         if (RakeConfig.DEBUG) {
-            Log.d(TAG, "clearSuperProperties");
+            Log.d(LOG_TAG, "clearSuperProperties");
         }
         superProperties = new JSONObject();
     }
@@ -300,13 +301,13 @@ public class RakeAPI {
     private void readSuperProperties() {
         String props = storedPreferences.getString("super_properties", "{}");
         if (RakeConfig.DEBUG) {
-            Log.d(TAG, "Loading Super Properties " + props);
+            Log.d(LOG_TAG, "Loading Super Properties " + props);
         }
 
         try {
             superProperties = new JSONObject(props);
         } catch (JSONException e) {
-            Log.e(TAG, "Cannot parse stored superProperties");
+            Log.e(LOG_TAG, "Cannot parse stored superProperties");
             superProperties = new JSONObject();
             storeSuperProperties();
         }
@@ -316,7 +317,7 @@ public class RakeAPI {
         String props = superProperties.toString();
 
         if (RakeConfig.DEBUG)
-            Log.d(TAG, "Storing Super Properties " + props);
+            Log.d(LOG_TAG, "Storing Super Properties " + props);
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
         prefsEditor.putString("super_properties", props);
         prefsEditor.commit();   // synchronous

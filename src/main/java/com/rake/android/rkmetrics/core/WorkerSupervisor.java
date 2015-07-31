@@ -1,5 +1,8 @@
 package com.rake.android.rkmetrics.core;
 
+import static com.rake.android.rkmetrics.RakeConfig.LOG_TAG;
+import static com.rake.android.rkmetrics.RakeConfig.TRACK_PATH;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -32,13 +35,12 @@ public class WorkerSupervisor {
     private static int SET_ENDPOINT_HOST = 6; // Use obj.toString() as the first part of the URL for api requests.
     private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
 
-    private static final String TAG = "RakeAPI";
     private static final Map<Context, WorkerSupervisor> instances = new HashMap<Context, WorkerSupervisor>();
 
     private final Object handlerLock = new Object();
     private Handler handler;
 
-    private long flushInterval = RakeConfig.FLUSH_RATE;
+    private long flushInterval = RakeConfig.DEFAULT_FLUSH_RAKE;
     private long flushCount = 0;
     private long aveFlushFrequency = 0;
     private long lastFlushTime = -1;
@@ -63,12 +65,12 @@ public class WorkerSupervisor {
 
             WorkerSupervisor ret;
             if (!instances.containsKey(appContext)) {
-                if (RakeConfig.DEBUG) Log.d(TAG, "Constructing new WorkerSupervisor for Context " + appContext);
+                if (RakeConfig.DEBUG) Log.d(LOG_TAG, "Constructing new WorkerSupervisor for Context " + appContext);
                 ret = new WorkerSupervisor(appContext);
                 instances.put(appContext, ret);
             } else {
                 if (RakeConfig.DEBUG)
-                    Log.d(TAG, "WorkerSupervisor for Context " + appContext + " already exists- returning");
+                    Log.d(LOG_TAG, "WorkerSupervisor for Context " + appContext + " already exists- returning");
                 ret = instances.get(appContext);
             }
 
@@ -140,7 +142,7 @@ public class WorkerSupervisor {
     // Will be called from the Rake thread.
     private void logAboutMessageToRake(String message) {
         if (logRakeMessages.get() || RakeConfig.DEBUG) {
-            Log.i(TAG, message + " (Thread " + Thread.currentThread().getId() + ")");
+            Log.i(LOG_TAG, message + " (Thread " + Thread.currentThread().getId() + ")");
         }
     }
 
@@ -179,7 +181,7 @@ public class WorkerSupervisor {
                 @Override
                 public void run() {
                     if (RakeConfig.DEBUG)
-                        Log.i(TAG, "Starting worker thread " + this.getId());
+                        Log.i(LOG_TAG, "Starting worker thread " + this.getId());
 
                     Looper.prepare();
 
@@ -192,7 +194,7 @@ public class WorkerSupervisor {
                     try {
                         Looper.loop();
                     } catch (RuntimeException e) {
-                        Log.e(TAG, "Rake Thread dying from RuntimeException", e);
+                        Log.e(LOG_TAG, "Rake Thread dying from RuntimeException", e);
                     }
                 }
             };
@@ -212,8 +214,8 @@ public class WorkerSupervisor {
         private class AnalyticsMessageHandler extends Handler {
             public AnalyticsMessageHandler() {
                 super();
-                mDbAdapter = makeDbAdapter(context);
-                mDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION, RakeDbAdapter.Table.EVENTS);
+                rakeDbAdapter = makeDbAdapter(context);
+                rakeDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION, RakeDbAdapter.Table.EVENTS);
             }
 
             @Override
@@ -226,35 +228,41 @@ public class WorkerSupervisor {
                         logAboutMessageToRake("Changing flush interval to " + newIntervalObj);
                         flushInterval = newIntervalObj.longValue();
                         removeMessages(FLUSH_QUEUE);
+
                     } else if (msg.what == SET_ENDPOINT_HOST) {
-                        logAboutMessageToRake("Setting endpoint API host to " + mEndpointHost);
-                        mEndpointHost = msg.obj == null ? null : msg.obj.toString();
+                        logAboutMessageToRake("Setting endpoint API host to " + endPoint);
+                        endPoint = msg.obj == null ? null : msg.obj.toString();
+
                     } else if (msg.what == ENQUEUE_EVENTS) {
                         JSONObject message = (JSONObject) msg.obj;
 
                         logAboutMessageToRake("Queuing event for sending later");
                         logAboutMessageToRake("    " + message.toString());
 
-                        queueDepth = mDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
+                        queueDepth = rakeDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
+
                     } else if (msg.what == FLUSH_QUEUE) {
                         logAboutMessageToRake("Flushing queue due to scheduled or forced flush");
                         updateFlushFrequency();
                         sendAllData();
+
                     } else if (msg.what == KILL_WORKER) {
-                        Log.w(TAG, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                        Log.w(LOG_TAG, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                         synchronized (handlerLock) {
-                            mDbAdapter.deleteDB();
+                            rakeDbAdapter.deleteDB();
                             handler = null;
                             Looper.myLooper().quit();
                         }
+
                     } else {
-                        Log.e(TAG, "Unexpected message recieved by Rake worker: " + msg);
+                        Log.e(LOG_TAG, "Unexpected message recieved by Rake worker: " + msg);
                     }
 
                     if (queueDepth >= RakeConfig.BULK_UPLOAD_LIMIT) {
                         logAboutMessageToRake("Flushing queue due to bulk upload limit");
                         updateFlushFrequency();
                         sendAllData();
+
                     } else if (queueDepth > 0) {
                         if (!hasMessages(FLUSH_QUEUE)) {
                             logAboutMessageToRake("Queue depth " + queueDepth + " - Adding flush in " + flushInterval);
@@ -267,50 +275,47 @@ public class WorkerSupervisor {
                         }
                     }
                 } catch (RuntimeException e) {
-                    Log.e(TAG, "Worker threw an unhandled exception- will not send any more Rake messages", e);
+                    Log.e(LOG_TAG, "Worker threw an unhandled exception- will not send any more Rake messages", e);
+
                     synchronized (handlerLock) {
                         handler = null;
-                        try {
-                            Looper.myLooper().quit();
-                        } catch (Exception tooLate) {
-                            Log.e(TAG, "Could not halt looper", tooLate);
-                        }
+                        try { Looper.myLooper().quit(); }
+                        catch (Exception tooLate) { Log.e(LOG_TAG, "Could not halt looper", tooLate); }
                     }
+
                     throw e;
                 }
-            }// handleMessage
+            } // handleMessage
 
             private void sendAllData() {
                 logAboutMessageToRake("Sending records to Rake");
 
-                String trackPath = "/track";
                 RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
 
-                String[] eventsData = mDbAdapter.generateDataString(trackLogTable);
+                String[] eventsData = rakeDbAdapter.generateDataString(trackLogTable);
 
                 if (eventsData != null) {
                     String lastId = eventsData[0];
                     String rawMessage = eventsData[1];
 
-                    HttpPoster poster = getPoster(mEndpointHost);
-                    HttpPoster.PostResult eventsPosted = poster.postData(rawMessage, trackPath);
+                    HttpPoster poster = getPoster(endPoint);
+                    HttpPoster.PostResult eventsPosted = poster.postData(rawMessage, TRACK_PATH);
 
                     if (eventsPosted == HttpPoster.PostResult.SUCCEEDED) {
-                        logAboutMessageToRake("Posted to " + trackPath);
-                        mDbAdapter.cleanupEvents(lastId, trackLogTable);
+                        logAboutMessageToRake("Posted to " + TRACK_PATH);
+                        rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
                     } else if (eventsPosted == HttpPoster.PostResult.FAILED_RECOVERABLE) {
-                        // Try again later
-                        if (!hasMessages(FLUSH_QUEUE)) {
-                            sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval);
-                        }
-                    } else { // give up, we have an unrecoverable failure.
-                        mDbAdapter.cleanupEvents(lastId, trackLogTable);
+                        // try again later
+                        if (!hasMessages(FLUSH_QUEUE)) { sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval); }
+                    } else {
+                        // give up, we have an unrecoverable failure.
+                        rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
                     }
                 }
             }
 
-            private String mEndpointHost = RakeConfig.BASE_ENDPOINT;
-            private final RakeDbAdapter mDbAdapter;
+            private String endPoint = RakeConfig.BASE_ENDPOINT;
+            private final RakeDbAdapter rakeDbAdapter;
         } // AnalyticsMessageHandler
 
         private void updateFlushFrequency() {

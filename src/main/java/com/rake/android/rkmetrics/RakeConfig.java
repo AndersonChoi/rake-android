@@ -8,8 +8,7 @@ public class RakeConfig {
     // When we've reached this many track calls, flush immediately
     public static final int BULK_UPLOAD_LIMIT = 40;
 
-    // Time interval in ms events/people requests are flushed at.
-    public static final long FLUSH_RATE = 60 * 1000;
+    public static final long DEFAULT_FLUSH_RAKE = 60 * 1000; /* 60 seconds */
 
     // Remove events that have sat around for this many milliseconds
     // on first initialization of the library. Default is 48 hours.
@@ -21,4 +20,7 @@ public class RakeConfig {
 
     public static boolean DEBUG = false;
     public static boolean TRUSTED_SERVER = true;
+
+    public static final String LOG_TAG = "RakeAPI";
+    public static final String TRACK_PATH = "/track";
 }
