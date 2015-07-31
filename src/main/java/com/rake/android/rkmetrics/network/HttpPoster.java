@@ -3,7 +3,6 @@ package com.rake.android.rkmetrics.network;
 import android.util.Log;
 import com.rake.android.rkmetrics.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
-import com.rake.android.rkmetrics.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -66,7 +65,7 @@ public class HttpPoster {
         return ret;
     }
 
-    public HttpParams setParamsTimeout() {
+    public HttpParams getDefaultHttpParams() {
         HttpParams httpParameters = new BasicHttpParams();
         HttpConnectionParams.setConnectionTimeout(httpParameters, CONNECTION_TIMEOUT);
         HttpConnectionParams.setSoTimeout(httpParameters, SOCKET_TIMEOUT);
@@ -76,7 +75,7 @@ public class HttpPoster {
     private PostResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
         PostResult ret = PostResult.FAILED_UNRECOVERABLE;
 
-        HttpParams params = setParamsTimeout();
+        HttpParams params = getDefaultHttpParams();
         HttpClient httpclient = new DefaultHttpClient(params);
 
         HttpPost httppost = new HttpPost(endpointUrl);
