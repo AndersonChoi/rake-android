@@ -5,6 +5,7 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
@@ -33,25 +34,28 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpPoster {
+final public class RakeHttpSender {
+    public enum RequestResult {
+        SUCCESS("SUCCESS"),
+        FAILURE_RECOVERABLE("FAILURE_RECOVERABLE"),
+        FAILURE_UNRECOVERABLE("FAILURE_UNRECOVERABLE");
 
-    private final String mDefaultHost;
+        private String result;
+        RequestResult(String result) { this.result = result; }
+        @Override public String toString() { return result; }
+    }
+
+    private final String baseEndpoint;
 
     public static final int CONNECTION_TIMEOUT = 3000;
     public static final int SOCKET_TIMEOUT = 120000;
 
-    public static enum PostResult {
-        SUCCEEDED,
-        FAILED_RECOVERABLE,
-        FAILED_UNRECOVERABLE
+    public RakeHttpSender(String baseEndpoint) {
+        this.baseEndpoint = baseEndpoint;
     }
 
-    public HttpPoster(String defaultHost) {
-        mDefaultHost = defaultHost;
-    }
-
-    // Will return true only if the request was successful
-    public PostResult postData(String rawMessage, String endpointPath) {
+    // return true only if the request was successful
+    public RequestResult postData(String rawMessage, String endpointPath) {
         List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
         String encodedData = null;
         String compress = "plain";
@@ -60,8 +64,8 @@ public class HttpPoster {
         nameValuePairs.add(new BasicNameValuePair("compress", compress));
         nameValuePairs.add(new BasicNameValuePair("data", encodedData));
 
-        String defaultUrl = mDefaultHost + endpointPath;
-        PostResult ret = postHttpRequest(defaultUrl, nameValuePairs);
+        String defaultUrl = baseEndpoint + endpointPath;
+        RequestResult ret = postHttpRequest(defaultUrl, nameValuePairs);
 
         return ret;
     }
@@ -73,8 +77,8 @@ public class HttpPoster {
         return httpParameters;
     }
 
-    private PostResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
-        PostResult ret = PostResult.FAILED_UNRECOVERABLE;
+    private RequestResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
+        RequestResult ret = RequestResult.FAILURE_UNRECOVERABLE;
 
         HttpParams params = getDefaultHttpParams();
         HttpClient httpclient = new DefaultHttpClient(params);
@@ -87,23 +91,29 @@ public class HttpPoster {
             }
 
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
             HttpResponse response = httpclient.execute(httppost);
             HttpEntity entity = response.getEntity();
 
             // TODO: recover from other states (e.g 204, 404, 400, 50x...)
+//            if (entity != null) {
+//                int statusCode = response.getStatusLine().getStatusCode();
+//
+//                if (200 == statusCode) { ret = RequestResult.SUCCESS; }
+//                else if (500 == statusCode) { ret = RequestResult.FAILURE_RECOVERABLE; /* retry */ }
+//                else { ret = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */ }
+//            }
+
             if (entity != null) {
                 String result = StringUtils.inputStreamToString(entity.getContent());
-                if (result.equals("1\n")) {
-                    ret = PostResult.SUCCEEDED;
-                }
+                if ("1\n".equals(result)) { ret = RequestResult.SUCCESS; }
             }
+
         } catch (IOException e) {
             RakeLogger.i(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
-            ret = PostResult.FAILED_RECOVERABLE;
+            ret = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
-            ret = PostResult.FAILED_UNRECOVERABLE;
+            ret = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
         } catch (Exception e) {
@@ -172,4 +182,5 @@ public class HttpPoster {
             return sslContext.getSocketFactory().createSocket();
         }
     }
+
 }

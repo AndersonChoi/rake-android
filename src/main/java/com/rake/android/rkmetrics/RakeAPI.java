@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -37,14 +35,14 @@ public class RakeAPI {
     private final String loggingTag;
     private final Context context;
     private final SystemInformation sysInfo;
-    private final WorkerSupervisor am;
+    private final WorkerSupervisor workerSupervisor;
     private final String token;
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
-    // Device Info - black list
     private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
-//        add("mdn");
+        // black list
+        // usage: add("mdn");
     }};
 
     private RakeAPI(Context context, String token) {
@@ -52,7 +50,7 @@ public class RakeAPI {
         this.token = token;
         this.loggingTag = String.format("%s[%s]", RakeConfig.LOG_TAG_PREFIX, token);
 
-        am = getAnalyticsMessages();
+        workerSupervisor = getAnalyticsMessages();
         sysInfo = getSystemInformation();
 
         storedPreferences = context.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
@@ -79,7 +77,7 @@ public class RakeAPI {
                 if (isDevServer) {
                     instance.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
                 } else {
-                    instance.setRakeServer(context, RakeConfig.BASE_ENDPOINT);
+                    instance.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
             return instance;
@@ -178,7 +176,7 @@ public class RakeAPI {
             // 4. put properties
             dataObj.put("properties", propertiesObj);
 
-            synchronized (am) { am.eventsMessage(dataObj); }
+            synchronized (workerSupervisor) { workerSupervisor.track(dataObj); }
             if (isDev) { flush(); }
 
         } catch (JSONException e) {
@@ -216,8 +214,8 @@ public class RakeAPI {
     public void flush() {
         RakeLogger.d(loggingTag, "flush");
 
-        synchronized (am) {
-            am.postToServer();
+        synchronized (workerSupervisor) {
+            workerSupervisor.flush();
         }
     }
 
@@ -341,7 +339,7 @@ public class RakeAPI {
     void clearPreferences() {
         // Will clear distinct_ids, superProperties,
         // and waiting People Analytics properties. Will have no effect
-        // on am already queued to send with WorkerSupervisor.
+        // on workerSupervisor already queued to send with WorkerSupervisor.
         SharedPreferences.Editor prefsEdit = storedPreferences.edit();
         prefsEdit.clear().commit();
         readSuperProperties();

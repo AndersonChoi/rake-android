@@ -1,14 +1,14 @@
 package com.rake.android.rkmetrics.core;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-import static com.rake.android.rkmetrics.config.RakeConfig.TRACK_PATH;
+import static com.rake.android.rkmetrics.config.RakeConfig.ENDPOINT_TRACK_PATH;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.network.HttpPoster;
+import com.rake.android.rkmetrics.network.RakeHttpSender;
 import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
@@ -24,7 +24,7 @@ import java.util.concurrent.SynchronousQueue;
  * <p>This class straddles the thread boundary between user threads and
  * a logical Rake thread.
  */
-public class WorkerSupervisor {
+final public class WorkerSupervisor {
 
     // Messages for our thread
     private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
@@ -32,7 +32,6 @@ public class WorkerSupervisor {
     private static int SET_FLUSH_INTERVAL = 4; // Reset frequency of flush interval
     private static int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue.
     private static int SET_ENDPOINT_HOST = 6; // Use obj.toString() as the first part of the URL for api requests.
-    private static int SET_FALLBACK_HOST = 7; // Use obj.toString() as the (possibly null) string for api fallback requests.
 
     private static final Map<Context, WorkerSupervisor> instances = new HashMap<Context, WorkerSupervisor>();
 
@@ -51,7 +50,7 @@ public class WorkerSupervisor {
     /**
      * Do not call directly. You should call WorkerSupervisor.getInstance()
      */
-    WorkerSupervisor(Context context) {
+    private WorkerSupervisor(Context context) {
         this.context = context;
         worker = new Worker();
     }
@@ -66,7 +65,7 @@ public class WorkerSupervisor {
                 ret = new WorkerSupervisor(appContext);
                 instances.put(appContext, ret);
             } else {
-                RakeLogger.d(LOG_TAG_PREFIX, "WorkerSupervisor for Context " + appContext + " already exists- returning");
+                RakeLogger.d(LOG_TAG_PREFIX, "WorkerSupervisor for Context " + appContext + " already exists");
                 ret = instances.get(appContext);
             }
 
@@ -74,15 +73,15 @@ public class WorkerSupervisor {
         }
     }
 
-    public void eventsMessage(JSONObject eventsJson) {
+    public void track(JSONObject trackable) {
         Message m = Message.obtain();
         m.what = ENQUEUE_EVENTS;
-        m.obj = eventsJson;
+        m.obj = trackable;
 
         worker.runMessage(m);
     }
 
-    public void postToServer() {
+    public void flush() {
         Message m = Message.obtain();
         m.what = FLUSH_QUEUE;
 
@@ -93,14 +92,6 @@ public class WorkerSupervisor {
         Message m = Message.obtain();
         m.what = SET_FLUSH_INTERVAL;
         m.obj = new Long(milliseconds);
-
-        worker.runMessage(m);
-    }
-
-    public void setFallbackHost(String fallbackHost) {
-        Message m = Message.obtain();
-        m.what = SET_FALLBACK_HOST;
-        m.obj = fallbackHost;
 
         worker.runMessage(m);
     }
@@ -126,25 +117,19 @@ public class WorkerSupervisor {
         return worker.isDead();
     }
 
-    protected RakeDbAdapter makeDbAdapter(Context context) {
+    protected RakeDbAdapter createRakeDbAdapter(Context context) {
         return new RakeDbAdapter(context);
     }
 
-    protected HttpPoster getPoster(String endpointBase) {
-        return new HttpPoster(endpointBase);
-    }
-
-    // Sends a message if and only if we are running with Rake Message log enabled.
-    // Will be called from the Rake thread.
-    private void logAboutMessageToRake(String message) {
-        RakeLogger.t(LOG_TAG_PREFIX, message);
+    protected RakeHttpSender getHttpSender(String endpointBase) {
+        return new RakeHttpSender(endpointBase);
     }
 
     // Worker will manage the (at most single) IO thread associated with
     // this WorkerSupervisor instance.
     private class Worker {
         public Worker() {
-            handler = restartWorkerThread();
+            handler = createWorkerMessageHandler();
         }
 
         public boolean isDead() {
@@ -155,7 +140,8 @@ public class WorkerSupervisor {
 
         public void runMessage(Message msg) {
             if (isDead()) {
-                // We died under suspicious circumstances. Don't try to send any more events.
+                // thread died under suspicious circumstances.
+                // don't try to send any more events.
                 RakeLogger.t(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
             } else {
                 synchronized (handlerLock) {
@@ -164,9 +150,8 @@ public class WorkerSupervisor {
             }
         }
 
-        // NOTE that the returned worker will run FOREVER, unless you send a hard kill
-        // (which you really shouldn't)
-        private Handler restartWorkerThread() {
+        // NOTE that the returned worker will run FOREVER, unless you send a hard kill which you really shouldn't
+        private Handler createWorkerMessageHandler() {
             Handler ret = null;
 
             final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
@@ -179,7 +164,7 @@ public class WorkerSupervisor {
                     Looper.prepare();
 
                     try {
-                        handlerQueue.put(new AnalyticsMessageHandler());
+                        handlerQueue.put(new WorkerMessageHandler());
                     } catch (InterruptedException e) {
                         throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
                     }
@@ -204,10 +189,10 @@ public class WorkerSupervisor {
             return ret;
         }
 
-        private class AnalyticsMessageHandler extends Handler {
-            public AnalyticsMessageHandler() {
+        private class WorkerMessageHandler extends Handler {
+            public WorkerMessageHandler() {
                 super();
-                rakeDbAdapter = makeDbAdapter(context);
+                rakeDbAdapter = createRakeDbAdapter(context);
                 rakeDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION, RakeDbAdapter.Table.EVENTS);
             }
 
@@ -223,16 +208,16 @@ public class WorkerSupervisor {
                         removeMessages(FLUSH_QUEUE);
 
                     } else if (msg.what == SET_ENDPOINT_HOST) {
-                        RakeLogger.t(LOG_TAG_PREFIX, "Setting endpoint API host to " + endPoint);
                         endPoint = msg.obj == null ? null : msg.obj.toString();
+                        RakeLogger.t(LOG_TAG_PREFIX, "Setting endpoint API host to " + endPoint);
 
                     } else if (msg.what == ENQUEUE_EVENTS) {
                         JSONObject message = (JSONObject) msg.obj;
+                        queueDepth = rakeDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
 
                         RakeLogger.t(LOG_TAG_PREFIX, "Queuing event for sending later");
                         RakeLogger.t(LOG_TAG_PREFIX, "    " + message.toString());
 
-                        queueDepth = rakeDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
 
                     } else if (msg.what == FLUSH_QUEUE) {
                         RakeLogger.t(LOG_TAG_PREFIX, "Flushing queue due to scheduled or forced flush");
@@ -240,7 +225,7 @@ public class WorkerSupervisor {
                         sendAllData();
 
                     } else if (msg.what == KILL_WORKER) {
-                        RakeLogger.w(LOG_TAG_PREFIX, "Worker recieved a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                        RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                         synchronized (handlerLock) {
                             rakeDbAdapter.deleteDB();
                             handler = null;
@@ -248,7 +233,7 @@ public class WorkerSupervisor {
                         }
 
                     } else {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message recieved by Rake worker: " + msg);
+                        RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
                     }
 
                     if (queueDepth >= RakeConfig.BULK_UPLOAD_LIMIT) {
@@ -292,25 +277,25 @@ public class WorkerSupervisor {
                     String lastId = eventsData[0];
                     String rawMessage = eventsData[1];
 
-                    HttpPoster poster = getPoster(endPoint);
-                    HttpPoster.PostResult eventsPosted = poster.postData(rawMessage, TRACK_PATH);
+                    RakeHttpSender poster = getHttpSender(endPoint);
+                    RakeHttpSender.RequestResult result = poster.postData(rawMessage, ENDPOINT_TRACK_PATH);
 
-                    if (eventsPosted == HttpPoster.PostResult.SUCCEEDED) {
-                        RakeLogger.t(LOG_TAG_PREFIX, "Posted to " + TRACK_PATH);
+                    if (RakeHttpSender.RequestResult.SUCCESS == result) {
+                        RakeLogger.t(LOG_TAG_PREFIX, "Posted to " + ENDPOINT_TRACK_PATH);
                         rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
-                    } else if (eventsPosted == HttpPoster.PostResult.FAILED_RECOVERABLE) {
-                        // try again later
+                    } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                         if (!hasMessages(FLUSH_QUEUE)) { sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval); }
-                    } else {
-                        // give up, we have an unrecoverable failure.
+                    } else if (RakeHttpSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                         rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
+                    } else {
+                        RakeLogger.t(LOG_TAG_PREFIX, "invalid HttpRequestResponse: " + result);
                     }
                 }
             }
 
-            private String endPoint = RakeConfig.BASE_ENDPOINT;
+            private String endPoint = RakeConfig.LIVE_BASE_ENDPOINT;
             private final RakeDbAdapter rakeDbAdapter;
-        } // AnalyticsMessageHandler
+        } // WorkerMessageHandler
 
         private void updateFlushFrequency() {
             long now = System.currentTimeMillis();

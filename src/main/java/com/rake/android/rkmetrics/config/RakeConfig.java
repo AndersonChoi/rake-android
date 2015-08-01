@@ -15,11 +15,11 @@ public class RakeConfig {
     // Must be reconfigured before the library is initialized for the first time.
     public static final int DATA_EXPIRATION = 1000 * 60 * 60 * 48;
 
-    public static String BASE_ENDPOINT = "https://rake.skplanet.com:8443/log";
+    public static String LIVE_BASE_ENDPOINT = "https://rake.skplanet.com:8443/log";
     public static String DEV_BASE_ENDPOINT = "https://pg.rake.skplanet.com:8443/log";
 
     public static boolean USE_HTTPS = true;
 
     public static final String LOG_TAG_PREFIX = "RakeAPI";
-    public static final String TRACK_PATH = "/track";
+    public static final String ENDPOINT_TRACK_PATH = "/track";
 }
