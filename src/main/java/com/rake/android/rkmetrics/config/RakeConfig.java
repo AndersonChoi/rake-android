@@ -13,8 +13,8 @@ final public class RakeConfig {
     private RakeConfig() {}
 
     public static final int TRACK_MAX_LOG_COUNT = 40;
-    public static final long DEFAULT_FLUSH_RAKE = 60 * 1000; /* 60 seconds */
-    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48;
+    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
 
     public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
     public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");

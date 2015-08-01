@@ -31,7 +31,7 @@ import java.util.zip.ZipFile;
  * Abstracts away possibly non-present system information classes,
  * and handles permission-dependent queries for default system information.
  */
-public class SystemInformation {
+final public class SystemInformation {
     private Context context;
     private Boolean hasNFC;
     private Boolean hasTelephony;

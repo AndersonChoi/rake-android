@@ -38,7 +38,7 @@ final public class WorkerSupervisor {
     private final Object handlerLock = new Object();
     private Handler handler;
 
-    private long flushInterval = RakeConfig.DEFAULT_FLUSH_RAKE;
+    private long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
     private long flushCount = 0;
     private long aveFlushFrequency = 0;
     private long lastFlushTime = -1;
@@ -65,7 +65,7 @@ final public class WorkerSupervisor {
                 ret = new WorkerSupervisor(appContext);
                 instances.put(appContext, ret);
             } else {
-                RakeLogger.d(LOG_TAG_PREFIX, "WorkerSupervisor for Context " + appContext + " already exists");
+                RakeLogger.d(LOG_TAG_PREFIX, "WorkerSupervisor for Context " + appContext + " already exist");
                 ret = instances.get(appContext);
             }
 
@@ -117,13 +117,7 @@ final public class WorkerSupervisor {
         return worker.isDead();
     }
 
-    protected RakeDbAdapter createRakeDbAdapter(Context context) {
-        return new RakeDbAdapter(context);
-    }
-
-    protected RakeHttpSender getHttpSender(String endpointBase) {
-        return new RakeHttpSender(endpointBase);
-    }
+    protected RakeDbAdapter createRakeDbAdapter(Context context) { return new RakeDbAdapter(context); }
 
     // Worker will manage the (at most single) IO thread associated with
     // this WorkerSupervisor instance.
@@ -190,6 +184,9 @@ final public class WorkerSupervisor {
         }
 
         private class WorkerMessageHandler extends Handler {
+            private String baseEndpoint = RakeConfig.LIVE_BASE_ENDPOINT;
+            private final RakeDbAdapter rakeDbAdapter;
+
             public WorkerMessageHandler() {
                 super();
                 rakeDbAdapter = createRakeDbAdapter(context);
@@ -208,8 +205,8 @@ final public class WorkerSupervisor {
                         removeMessages(FLUSH_QUEUE);
 
                     } else if (msg.what == SET_ENDPOINT_HOST) {
-                        endPoint = msg.obj == null ? null : msg.obj.toString();
-                        RakeLogger.t(LOG_TAG_PREFIX, "Setting endpoint API host to " + endPoint);
+                        baseEndpoint = msg.obj == null ? null : msg.obj.toString();
+                        RakeLogger.t(LOG_TAG_PREFIX, "Setting endpoint API host to " + baseEndpoint);
 
                     } else if (msg.what == ENQUEUE_EVENTS) {
                         JSONObject message = (JSONObject) msg.obj;
@@ -217,7 +214,6 @@ final public class WorkerSupervisor {
 
                         RakeLogger.t(LOG_TAG_PREFIX, "Queuing event for sending later");
                         RakeLogger.t(LOG_TAG_PREFIX, "    " + message.toString());
-
 
                     } else if (msg.what == FLUSH_QUEUE) {
                         RakeLogger.t(LOG_TAG_PREFIX, "Flushing queue due to scheduled or forced flush");
@@ -277,8 +273,7 @@ final public class WorkerSupervisor {
                     String lastId = eventsData[0];
                     String rawMessage = eventsData[1];
 
-                    RakeHttpSender poster = getHttpSender(endPoint);
-                    RakeHttpSender.RequestResult result = poster.postData(rawMessage, ENDPOINT_TRACK_PATH);
+                    RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(rawMessage, baseEndpoint, ENDPOINT_TRACK_PATH);
 
                     if (RakeHttpSender.RequestResult.SUCCESS == result) {
                         RakeLogger.t(LOG_TAG_PREFIX, "Posted to " + ENDPOINT_TRACK_PATH);
@@ -293,8 +288,6 @@ final public class WorkerSupervisor {
                 }
             }
 
-            private String endPoint = RakeConfig.LIVE_BASE_ENDPOINT;
-            private final RakeDbAdapter rakeDbAdapter;
         } // WorkerMessageHandler
 
         private void updateFlushFrequency() {

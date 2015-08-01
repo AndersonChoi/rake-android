@@ -20,7 +20,7 @@ import java.io.File;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-public class RakeDbAdapter {
+final public class RakeDbAdapter {
     public enum Table {
         EVENTS("events");
 
