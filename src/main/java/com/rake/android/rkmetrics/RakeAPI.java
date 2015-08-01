@@ -11,8 +11,6 @@ import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
 import java.util.*;
 
 public class RakeAPI {
@@ -24,13 +22,6 @@ public class RakeAPI {
         @Override public String toString() { return mode; }
     }
 
-    // TODO: remove r0.5.0_c. it requires to modify server dep.
-    // version number will be replaced automatically when building.
-    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.17";
-
-    private static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-    private static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-    static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
 
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
@@ -173,8 +164,8 @@ public class RakeAPI {
             propertiesObj.put("token", token);
 
             // time
-            propertiesObj.put("base_time", baseTimeFormat.format(now));
-            propertiesObj.put("local_time", localTimeFormat.format(now));
+            propertiesObj.put("base_time", RakeConfig.baseTimeFormat.format(now));
+            propertiesObj.put("local_time", RakeConfig.localTimeFormat.format(now));
 
             // 4. put properties
             dataObj.put("properties", propertiesObj);
@@ -274,7 +265,7 @@ public class RakeAPI {
         JSONObject ret = new JSONObject();
 
         ret.put("rake_lib", "android");
-        ret.put("rake_lib_version", RAKE_LIB_VERSION);
+        ret.put("rake_lib_version", RakeConfig.RAKE_LIB_VERSION);
         ret.put("os_name", "Android");
         ret.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
         ret.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);

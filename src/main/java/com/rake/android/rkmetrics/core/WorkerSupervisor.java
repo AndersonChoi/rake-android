@@ -193,7 +193,7 @@ final public class WorkerSupervisor {
             public WorkerMessageHandler() {
                 super();
                 rakeDbAdapter = createRakeDbAdapter(context);
-                rakeDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION, RakeDbAdapter.Table.EVENTS);
+                rakeDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME, RakeDbAdapter.Table.EVENTS);
             }
 
             @Override
@@ -236,7 +236,7 @@ final public class WorkerSupervisor {
                         RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
                     }
 
-                    if (queueDepth >= RakeConfig.BULK_UPLOAD_LIMIT) {
+                    if (queueDepth >= RakeConfig.TRACK_MAX_LOG_COUNT) {
                         RakeLogger.t(LOG_TAG_PREFIX, "Flushing queue due to bulk upload limit");
                         updateFlushFrequency();
                         sendAllData();
