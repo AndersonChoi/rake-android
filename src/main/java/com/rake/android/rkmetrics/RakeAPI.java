@@ -6,7 +6,6 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.config.RakeLoggingMode;
 import com.rake.android.rkmetrics.core.WorkerSupervisor;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
@@ -16,10 +15,14 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-/**
- * @author SK Planet
- */
 public class RakeAPI {
+    public enum Logging {
+        DISABLE("DISABLE"), ENABLE("ENABLE");
+
+        private String mode;
+        Logging(String mode) { this.mode = mode; }
+        @Override public String toString() { return mode; }
+    }
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically when building.
@@ -194,20 +197,20 @@ public class RakeAPI {
      *
      * @param debug indicate whether enable logging or not
      * @deprecated As of 0.3.17, replaced by
-     *             {@link #enableLogging(RakeLoggingMode)}
+     *             {@link #enableLogging(Logging)}
      */
     public static void setDebug(Boolean debug) {
-        if (debug)  enableLogging(RakeLoggingMode.YES);
-        else enableLogging(RakeLoggingMode.NO);
+        if (debug)  enableLogging(Logging.ENABLE);
+        else enableLogging(Logging.DISABLE);
     }
 
     /**
      * enable, disable logging
      *
-     * @param loggingMode RakeLoggingMode.YES or RakeLoggingMode.NO
-     * @see com.rake.android.rkmetrics.config.RakeLoggingMode
+     * @param loggingMode Logging.ENABLE or Logging.DISABLE
+     * @see Logging
      */
-    public static void enableLogging(RakeLoggingMode loggingMode) {
+    public static void enableLogging(Logging loggingMode) {
         RakeLogger.loggingMode = loggingMode;
     }
 
@@ -344,4 +347,5 @@ public class RakeAPI {
         prefsEdit.clear().commit();
         readSuperProperties();
     }
+
 }

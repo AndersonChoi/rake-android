@@ -1,14 +1,14 @@
 package com.rake.android.rkmetrics.util;
 
 import android.util.Log;
-import com.rake.android.rkmetrics.config.RakeLoggingMode;
+import com.rake.android.rkmetrics.RakeAPI;
 
 final public class RakeLogger {
 
-    public static RakeLoggingMode loggingMode = RakeLoggingMode.NO;
+    public static RakeAPI.Logging loggingMode = RakeAPI.Logging.DISABLE;
 
     public RakeLogger() throws InstantiationException { throw new InstantiationException("default constructor of RakeLogger is not supported"); }
-    private static boolean isEnabled() { return (RakeLoggingMode.YES == loggingMode) ? true : false; }
+    private static boolean isEnabled() { return (RakeAPI.Logging.ENABLE == loggingMode) ? true : false; }
 
     public static int v(String tag, String msg) {
         if (isEnabled()) return Log.v(tag, msg);
