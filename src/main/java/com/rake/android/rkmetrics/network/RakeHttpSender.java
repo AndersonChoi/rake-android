@@ -75,50 +75,64 @@ final public class RakeHttpSender {
         return httpParameters;
     }
 
-    private static RequestResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
-        RequestResult ret = RequestResult.FAILURE_UNRECOVERABLE;
+    private static RequestResult postHttpRequest(String url, List<NameValuePair> nameValuePairs) {
+        RequestResult result = RequestResult.FAILURE_UNRECOVERABLE;
 
         HttpParams params = getDefaultHttpParams();
         HttpClient httpclient = new DefaultHttpClient(params);
-
-        HttpPost httppost = new HttpPost(endpointUrl);
+        HttpPost httppost = new HttpPost(url);
 
         try {
-            if (endpointUrl.indexOf("https") >= 0 && RakeConfig.USE_HTTPS) {
+            if (url.indexOf("https") >= 0 && RakeConfig.USE_HTTPS) {
                 httpclient = createSSLClient(httpclient);
             }
 
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
             HttpResponse response = httpclient.execute(httppost);
+
+            if (null == response) {
+                RakeLogger.d(LOG_TAG_PREFIX, "HttpResponse is null. Retry later");
+                return RequestResult.FAILURE_RECOVERABLE;
+            }
+
             HttpEntity entity = response.getEntity();
 
+            if (null == entity) {
+                RakeLogger.d(LOG_TAG_PREFIX, "HttpEntity is null. retry later");
+                return RequestResult.FAILURE_RECOVERABLE;
+            }
+
+            String responseBody = StringUtils.inputStreamToString(entity.getContent());
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
+            RakeLogger.d(LOG_TAG_PREFIX, message);
+
+            if ("1\n".equals(responseBody)) {
+                result = RequestResult.SUCCESS;
+            } else {
+                RakeLogger.e(LOG_TAG_PREFIX, "server returned -1. make sure that your token is valid");
+            }
+
             // TODO: recover from other states (e.g 204, 404, 400, 50x...)
-//            if (entity != null) {
-//                int statusCode = response.getStatusLine().getStatusCode();
-//
 //                if (200 == statusCode) { ret = RequestResult.SUCCESS; }
 //                else if (500 == statusCode) { ret = RequestResult.FAILURE_RECOVERABLE; /* retry */ }
 //                else { ret = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */ }
-//            }
 
-            if (entity != null) {
-                String result = StringUtils.inputStreamToString(entity.getContent());
-                if ("1\n".equals(result)) { ret = RequestResult.SUCCESS; }
-            }
 
         } catch (IOException e) {
-            RakeLogger.i(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
-            ret = RequestResult.FAILURE_RECOVERABLE;
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
+            result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
-            ret = RequestResult.FAILURE_UNRECOVERABLE;
+            result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
         } catch (Exception e) {
             RakeLogger.e(LOG_TAG_PREFIX, "caused by", e);
         }
 
-        return ret;
+        return result;
     }
 
     private static HttpClient createSSLClient(HttpClient client) throws GeneralSecurityException {

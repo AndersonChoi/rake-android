@@ -40,7 +40,7 @@ final public class WorkerSupervisor {
 
     private long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
     private long flushCount = 0;
-    private long aveFlushFrequency = 0;
+    private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
 
     // Used across thread boundaries
@@ -267,11 +267,11 @@ final public class WorkerSupervisor {
                 RakeLogger.t(LOG_TAG_PREFIX, "Sending records to Rake");
 
                 RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
-                String[] eventsData = rakeDbAdapter.generateDataString(trackLogTable);
+                String[] event = rakeDbAdapter.generateDataString(trackLogTable);
 
-                if (eventsData != null) {
-                    String lastId = eventsData[0];
-                    String rawMessage = eventsData[1];
+                if (event != null) {
+                    String lastId = event[0];
+                    String rawMessage = event[1];
 
                     RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(rawMessage, baseEndpoint, ENDPOINT_TRACK_PATH);
 
@@ -296,10 +296,10 @@ final public class WorkerSupervisor {
 
             if (lastFlushTime > 0) {
                 long flushInterval = now - lastFlushTime;
-                long totalFlushTime = flushInterval + (aveFlushFrequency * flushCount);
-                aveFlushFrequency = totalFlushTime / newFlushCount;
+                long totalFlushTime = flushInterval + (avgFlushFrequency * flushCount);
+                avgFlushFrequency = totalFlushTime / newFlushCount;
 
-                long seconds = aveFlushFrequency / 1000;
+                long seconds = avgFlushFrequency / 1000;
                 RakeLogger.t(LOG_TAG_PREFIX, "Average send frequency approximately " + seconds + " seconds.");
             }
 
