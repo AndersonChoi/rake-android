@@ -22,9 +22,17 @@ public class RakeAPI {
         @Override public String toString() { return mode; }
     }
 
+    public enum Env {
+        LIVE("LIVE"), DEV("DEV");
+
+        private String env;
+        Env(String env) { this.env = env; }
+        @Override public String toString() { return this.env; }
+    }
+
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
-    private boolean isDev = false;
+    private Env env = Env.DEV;
     private final String loggingTag;
     private final Context context;
     private final SystemInformation sysInfo;
@@ -38,19 +46,30 @@ public class RakeAPI {
         // usage: add("mdn");
     }};
 
-    private RakeAPI(Context context, String token) {
-        this.context = context;
+    private RakeAPI(Context appContext, String token) {
+        this.context = appContext;
         this.token = token;
         this.loggingTag = String.format("%s[%s]", RakeConfig.LOG_TAG_PREFIX, token);
 
-        rakeMessageDelegator = RakeMessageDelegator.getInstance(context);
+        rakeMessageDelegator = RakeMessageDelegator.getInstance(appContext);
         sysInfo = getSystemInformation();
 
-        storedPreferences = context.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
+        storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
         readSuperProperties();
     }
 
+    /**
+     * @deprecated As of 0.3.17, replaced by
+     *             {@link #getInstance(Context, String, Env, Logging)}}
+     */
     public static RakeAPI getInstance(Context context, String token, Boolean isDevServer) {
+        Env env = (isDevServer == true) ? Env.DEV : Env.LIVE;
+        return getInstance(context, token, env, RakeLogger.loggingMode /* use current logging mode */);
+    }
+
+    public static RakeAPI getInstance(Context context, String token, Env env, Logging loggingMode) {
+        setLogging(loggingMode);
+
         synchronized (sInstanceMap) {
             Context appContext = context.getApplicationContext();
             Map<Context, RakeAPI> instances = sInstanceMap.get(token);
@@ -66,10 +85,10 @@ public class RakeAPI {
                 instance = new RakeAPI(appContext, token);
                 instances.put(appContext, instance);
 
-                instance.isDev = isDevServer;
-                if (isDevServer) {
+                instance.env = env;
+                if (Env.DEV == env) {
                     instance.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
-                } else {
+                } else { /* Env.LIVE == env */
                     instance.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
@@ -81,12 +100,14 @@ public class RakeAPI {
     /**
      * @param context android application context
      * @param milliseconds flush interval
-     * @deprecated use non-static
      */
     public static void setFlushInterval(Context context, long milliseconds) {
         RakeMessageDelegator.setFlushInterval(milliseconds);
     }
 
+    /**
+     * @param shuttle pass Shuttle.getJSONObject();
+     */
     public void track(JSONObject shuttle) {
         if (null == shuttle) {
             RakeLogger.e(loggingTag, "should not pass null into RakeAPI.track()");
@@ -175,7 +196,7 @@ public class RakeAPI {
             dataObj.put("properties", propertiesObj);
 
             synchronized (rakeMessageDelegator) { rakeMessageDelegator.track(dataObj); }
-            if (isDev) { flush(); }
+            if (Env.DEV == env) { flush(); }
 
         } catch (JSONException e) {
             RakeLogger.e(loggingTag, "Exception tracking event ", e);
@@ -191,11 +212,13 @@ public class RakeAPI {
      *
      * @param debug indicate whether enable logging or not
      * @deprecated As of 0.3.17, replaced by
-     *             {@link #enableLogging(Logging)}
+     *             {@link #setLogging(Logging)}
+     *             {@link #getInstance(Context, String, Env, Logging)}}
      */
+
     public static void setDebug(Boolean debug) {
-        if (debug)  enableLogging(Logging.ENABLE);
-        else enableLogging(Logging.DISABLE);
+        if (debug)  setLogging(Logging.ENABLE);
+        else setLogging(Logging.DISABLE);
     }
 
     /**
@@ -204,7 +227,7 @@ public class RakeAPI {
      * @param loggingMode Logging.ENABLE or Logging.DISABLE
      * @see Logging
      */
-    public static void enableLogging(Logging loggingMode) {
+    public static void setLogging(Logging loggingMode) {
         RakeLogger.loggingMode = loggingMode;
     }
 
@@ -288,7 +311,7 @@ public class RakeAPI {
         // application versionName, buildDate(iff dev mode)
         String appVersionName = sysInfo.getAppVersionName();
         String appBuildDate = sysInfo.getAppBuildDate();
-        if (isDev && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
+        if (Env.DEV == env && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
         ret.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
 
         String carrier = sysInfo.getCurrentNetworkOperator();

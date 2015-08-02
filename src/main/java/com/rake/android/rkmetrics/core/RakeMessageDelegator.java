@@ -39,13 +39,13 @@ final public class RakeMessageDelegator {
     private long lastFlushTime = -1;
     private final Context appContext;
 
-    private RakeMessageDelegator(Context context) {
-        this.appContext = context.getApplicationContext();
+    private RakeMessageDelegator(Context appContext) {
+        this.appContext = appContext;
         handler = createRakeMessageHandlerOnce();
     }
 
-    public static synchronized RakeMessageDelegator getInstance(Context context) {
-        if (null == instance) { instance = new RakeMessageDelegator(context); }
+    public static synchronized RakeMessageDelegator getInstance(Context appContext) {
+        if (null == instance) { instance = new RakeMessageDelegator(appContext); }
 
         return instance;
     }
