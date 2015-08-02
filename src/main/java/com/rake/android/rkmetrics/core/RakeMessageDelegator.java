@@ -23,11 +23,10 @@ import java.util.concurrent.SynchronousQueue;
  * a logical Rake thread.
  */
 final public class RakeMessageDelegator {
-
-    // Messages for our thread
-    private static int ENQUEUE_EVENTS = 1; // push given JSON message to people DB
-    private static int FLUSH_QUEUE = 2; // push given JSON message to events DB
-    private static int KILL_WORKER = 5; // Hard-kill the worker thread, discarding all events on the event queue.
+    // messages used to communicate between the delegator and the handler
+    private static int TRACK = 1;
+    private static int FLUSH = 2;
+    private static int KILL_WORKER = 3;
 
     private static volatile Handler handler;
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
@@ -53,7 +52,7 @@ final public class RakeMessageDelegator {
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
-        m.what = ENQUEUE_EVENTS;
+        m.what = TRACK;
         m.obj = trackable;
 
         runMessage(m);
@@ -61,7 +60,7 @@ final public class RakeMessageDelegator {
 
     public void flush() {
         Message m = Message.obtain();
-        m.what = FLUSH_QUEUE;
+        m.what = FLUSH;
         m.obj = baseEndpoint;
 
         runMessage(m);
@@ -176,13 +175,13 @@ final public class RakeMessageDelegator {
             try {
                 int logQueueLength = -1;
 
-                if (msg.what == ENQUEUE_EVENTS) {
+                if (msg.what == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
                     logQueueLength = rakeDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
                     RakeLogger.t(LOG_TAG_PREFIX, "save JSONObject to SQLite: \n" + message.toString());
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
-                } else if (msg.what == FLUSH_QUEUE) {
+                } else if (msg.what == FLUSH) {
                     RakeLogger.t(LOG_TAG_PREFIX, "flush SQLite");
                     updateFlushFrequency();
                     sendAllData();
@@ -205,14 +204,14 @@ final public class RakeMessageDelegator {
                     sendAllData();
 
                 } else if (logQueueLength > 0) {
-                    if (!hasMessages(FLUSH_QUEUE)) {
+                    if (!hasMessages(FLUSH)) {
                         RakeLogger.t(LOG_TAG_PREFIX, "Queue depth " + logQueueLength + " - Adding flush in " + flushInterval);
                         // The hasMessages check is a courtesy for the common case
                         // of delayed flushes already enqueued from inside of this thread.
                         // Callers outside of this thread can still send
                         // a flush right here, so we may end up with two flushes
                         // in our queue, but we're ok with that.
-                        sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval);
+                        sendEmptyMessageDelayed(FLUSH, flushInterval);
                     }
                 }
             } catch (RuntimeException e) {
@@ -243,7 +242,7 @@ final public class RakeMessageDelegator {
                 if (RakeHttpSender.RequestResult.SUCCESS == result) {
                     rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
-                    if (!hasMessages(FLUSH_QUEUE)) { sendEmptyMessageDelayed(FLUSH_QUEUE, flushInterval); }
+                    if (!hasMessages(FLUSH)) { sendEmptyMessageDelayed(FLUSH, flushInterval); }
                 } else if (RakeHttpSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else {
