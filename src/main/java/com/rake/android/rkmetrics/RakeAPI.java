@@ -7,6 +7,7 @@ import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.core.RakeMessageDelegator;
+import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
 import org.json.JSONObject;

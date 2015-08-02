@@ -23,24 +23,17 @@ import java.io.File;
 final public class RakeDbAdapter {
     public enum Table {
         EVENTS("events");
-
-        Table(String name) {
-            tableName = name;
-        }
-
+        Table(String name) { tableName = name; }
         public String getName() {
             return tableName;
         }
-
         private final String tableName;
     }
 
     private static final String DATABASE_NAME = "rake";
     private static final int DATABASE_VERSION = 4;
-
     public static final String KEY_DATA = "data";
     public static final String KEY_CREATED_AT = "created_at";
-
     private static final String CREATE_EVENTS_TABLE =
             "CREATE TABLE " + Table.EVENTS.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     KEY_DATA + " STRING NOT NULL, " +
@@ -49,7 +42,23 @@ final public class RakeDbAdapter {
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + KEY_CREATED_AT + ");";
 
+
+    private static RakeDbAdapter instance;
     private final MPDatabaseHelper dbHelper;
+
+    private RakeDbAdapter(Context context) {
+        String message = String.format("Rake Database (%s) adapter constructed in context %s", DATABASE_NAME, context);
+        RakeLogger.d(LOG_TAG_PREFIX, message);
+        dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
+    }
+
+    public static synchronized RakeDbAdapter getInstance(Context appContext) {
+        if (null == instance) {
+            instance = new RakeDbAdapter(appContext);
+        }
+
+        return instance;
+    }
 
     private static class MPDatabaseHelper extends SQLiteOpenHelper {
 
@@ -83,16 +92,6 @@ final public class RakeDbAdapter {
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
         }
-    }
-
-    public RakeDbAdapter(Context context) {
-        this(context, DATABASE_NAME);
-    }
-
-    public RakeDbAdapter(Context context, String dbName) {
-        RakeLogger.d(LOG_TAG_PREFIX, "Rake Database (" + dbName + ") adapter constructed in context " + context);
-
-        dbHelper = new MPDatabaseHelper(context, dbName);
     }
 
     /**

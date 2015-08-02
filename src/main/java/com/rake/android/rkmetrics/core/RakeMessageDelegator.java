@@ -30,7 +30,9 @@ final public class RakeMessageDelegator {
 
     private static volatile Handler handler;
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
+
     private static RakeMessageDelegator instance;
+    private static RakeDbAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
     private String baseEndpoint = RakeConfig.LIVE_BASE_ENDPOINT;
@@ -41,14 +43,18 @@ final public class RakeMessageDelegator {
 
     private RakeMessageDelegator(Context appContext) {
         this.appContext = appContext;
-        handler = createRakeMessageHandlerOnce();
+        handler = createRakeMessageHandler();
     }
 
     public static synchronized RakeMessageDelegator getInstance(Context appContext) {
-        if (null == instance) { instance = new RakeMessageDelegator(appContext); }
+        if (null == instance) {
+            instance = new RakeMessageDelegator(appContext);
+        }
 
         return instance;
     }
+
+    private RakeDbAdapter createRakeDbAdapter() { return RakeDbAdapter.getInstance(appContext); }
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
@@ -101,8 +107,7 @@ final public class RakeMessageDelegator {
         }
     }
 
-    // NOTE that the returned worker will run FOREVER, unless you send a hard kill which you really shouldn't
-    private Handler createRakeMessageHandlerOnce() {
+    private Handler createRakeMessageHandler() {
         Handler h = null;
 
         final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
@@ -140,10 +145,6 @@ final public class RakeMessageDelegator {
         return h;
     }
 
-    private static RakeDbAdapter createRakeDbAdapter(Context context) {
-        return new RakeDbAdapter(context);
-    }
-
     private void updateFlushFrequency() {
         long now = System.currentTimeMillis();
         long newFlushCount = flushCount + 1;
@@ -162,12 +163,13 @@ final public class RakeMessageDelegator {
     }
 
     private class RakeMessageHandler extends Handler {
-        private final RakeDbAdapter rakeDbAdapter;
-
         public RakeMessageHandler() {
             super();
-            rakeDbAdapter = createRakeDbAdapter(appContext);
-            rakeDbAdapter.cleanupEvents(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME, RakeDbAdapter.Table.EVENTS);
+
+            dbAdapter = createRakeDbAdapter();
+            dbAdapter.cleanupEvents(
+                    System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
+                    RakeDbAdapter.Table.EVENTS);
         }
 
         @Override
@@ -177,7 +179,7 @@ final public class RakeMessageDelegator {
 
                 if (msg.what == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    logQueueLength = rakeDbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
+                    logQueueLength = dbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
                     RakeLogger.t(LOG_TAG_PREFIX, "save JSONObject to SQLite: \n" + message.toString());
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
@@ -189,7 +191,7 @@ final public class RakeMessageDelegator {
                 } else if (msg.what == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
-                        rakeDbAdapter.deleteDB();
+                        dbAdapter.deleteDB();
                         handler = null;
                         Looper.myLooper().quit();
                     }
@@ -231,7 +233,7 @@ final public class RakeMessageDelegator {
 
         private void sendAllData() {
             RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
-            String[] event = rakeDbAdapter.generateDataString(trackLogTable);
+            String[] event = dbAdapter.generateDataString(trackLogTable);
 
             if (event != null) {
                 String lastId = event[0];
@@ -240,11 +242,11 @@ final public class RakeMessageDelegator {
                 RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(rawMessage, baseEndpoint, ENDPOINT_TRACK_PATH);
 
                 if (RakeHttpSender.RequestResult.SUCCESS == result) {
-                    rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
+                    dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                     if (!hasMessages(FLUSH)) { sendEmptyMessageDelayed(FLUSH, flushInterval); }
                 } else if (RakeHttpSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
-                    rakeDbAdapter.cleanupEvents(lastId, trackLogTable);
+                    dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);
                 }
