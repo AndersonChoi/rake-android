@@ -24,8 +24,12 @@ final public class RakeConfig {
     // version number will be replaced automatically when building.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.17";
 
-    public static final String LIVE_BASE_ENDPOINT = "https://rake.skplanet.com:8443/log";
-    public static final String DEV_BASE_ENDPOINT = "https://pg.rake.skplanet.com:8443/log";
+    // NOTE: some clients use 8553 port using `RakeAPI.setRakeServer` function
+    public static final String EMPTY_BASE_ENDPOINT = "";
+    public static final String LIVE_HOST = "https://rake.skplanet.com";
+    public static final String DEV_HOST = "https://pg.rake.skplanet.com";
+    public static final String DEV_BASE_ENDPOINT = DEV_HOST + ":8443/log";
+    public static final String LIVE_BASE_ENDPOINT = LIVE_HOST + ":8443/log";
 
     public static final boolean USE_HTTPS = true;
 

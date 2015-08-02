@@ -7,7 +7,6 @@ import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.core.RakeMessageDelegator;
-import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -80,21 +79,21 @@ public class RakeAPI {
                 sInstanceMap.put(token, instances);
             }
 
-            RakeAPI instance = instances.get(appContext);
+            RakeAPI rake = instances.get(appContext);
 
-            if (instance == null) {
-                instance = new RakeAPI(appContext, token);
-                instances.put(appContext, instance);
+            if (rake == null) {
+                rake = new RakeAPI(appContext, token);
+                instances.put(appContext, rake);
 
-                instance.env = env;
+                rake.env = env;
                 if (Env.DEV == env) {
-                    instance.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
+                    rake.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
                 } else { /* Env.LIVE == env */
-                    instance.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
+                    rake.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
 
-            return instance;
+            return rake;
         }
     }
 
@@ -205,7 +204,7 @@ public class RakeAPI {
     }
 
     public void setRakeServer(Context context, String server) {
-        rakeMessageDelegator.setEndpointHost(server);
+        rakeMessageDelegator.setBaseEndpoint(server);
     }
 
     /**

@@ -1,8 +1,5 @@
 package com.rake.android.rkmetrics.core;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-import static com.rake.android.rkmetrics.config.RakeConfig.ENDPOINT_TRACK_PATH;
-
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +11,8 @@ import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
 import java.util.concurrent.SynchronousQueue;
+
+import static com.rake.android.rkmetrics.config.RakeConfig.*;
 
 
 /**
@@ -35,11 +34,13 @@ final public class RakeMessageDelegator {
     private static RakeDbAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
-    private String baseEndpoint = RakeConfig.LIVE_BASE_ENDPOINT;
+    private final Context appContext;
+
+    // TODO: move into RakeMessageHandler
+    private String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
     private long flushCount = 0;
     private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
-    private final Context appContext;
 
     private RakeMessageDelegator(Context appContext) {
         this.appContext = appContext;
@@ -47,9 +48,7 @@ final public class RakeMessageDelegator {
     }
 
     public static synchronized RakeMessageDelegator getInstance(Context appContext) {
-        if (null == instance) {
-            instance = new RakeMessageDelegator(appContext);
-        }
+        if (null == instance) { instance = new RakeMessageDelegator(appContext); }
 
         return instance;
     }
@@ -67,7 +66,6 @@ final public class RakeMessageDelegator {
     public void flush() {
         Message m = Message.obtain();
         m.what = FLUSH;
-        m.obj = baseEndpoint;
 
         runMessage(m);
     }
@@ -77,9 +75,24 @@ final public class RakeMessageDelegator {
         RakeLogger.d(LOG_TAG_PREFIX, "Changing flush interval to " + interval);
     }
 
-    public void setEndpointHost(String baseEndpoint) {
+    public void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
+        if (null == baseEndpoint) {
+            RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint == null");
+        }
+
+        /*
+         * RakeMessageDelegator have only one host type (DEV_HOST or LIVE_HOST). not both of them
+         * See, JIRA RAKE-390
+         */
+
+        if  ((this.baseEndpoint.startsWith(DEV_HOST) && baseEndpoint.startsWith(LIVE_HOST)) ||
+             (this.baseEndpoint.startsWith(LIVE_HOST) && baseEndpoint.startsWith(DEV_HOST))) {
+            throw new IllegalArgumentException(
+                    "can't use both Env.DEV and Env.LIVE at the same time");
+        }
+
         this.baseEndpoint = baseEndpoint;
-        RakeLogger.d(LOG_TAG_PREFIX, "Setting endpoint API host to " + baseEndpoint);
+        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
     }
 
     public void hardKill() {
@@ -93,7 +106,7 @@ final public class RakeMessageDelegator {
         if (isDead()) {
             // thread died under suspicious circumstances.
             // don't try to send any more events.
-            RakeLogger.e(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
+            RakeLogger.e(LOG_TAG_PREFIX, "dead rake worker dropping a message: " + msg);
         } else {
             synchronized (handlerLock) {
                 if (handler != null) handler.sendMessage(msg);
@@ -102,9 +115,7 @@ final public class RakeMessageDelegator {
     }
 
     private boolean isDead() {
-        synchronized (handlerLock) {
-            return handler == null;
-        }
+        synchronized (handlerLock) { return handler == null; }
     }
 
     private Handler createRakeMessageHandler() {
