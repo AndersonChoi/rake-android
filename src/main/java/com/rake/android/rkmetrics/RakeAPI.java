@@ -6,7 +6,7 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.core.WorkerSupervisor;
+import com.rake.android.rkmetrics.core.RakeMessageDelegator;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -22,14 +22,13 @@ public class RakeAPI {
         @Override public String toString() { return mode; }
     }
 
-
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
     private boolean isDev = false;
     private final String loggingTag;
     private final Context context;
     private final SystemInformation sysInfo;
-    private final WorkerSupervisor workerSupervisor;
+    private final RakeMessageDelegator rakeMessageDelegator;
     private final String token;
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
@@ -44,7 +43,7 @@ public class RakeAPI {
         this.token = token;
         this.loggingTag = String.format("%s[%s]", RakeConfig.LOG_TAG_PREFIX, token);
 
-        workerSupervisor = getAnalyticsMessages();
+        rakeMessageDelegator = RakeMessageDelegator.getInstance(context);
         sysInfo = getSystemInformation();
 
         storedPreferences = context.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
@@ -74,13 +73,18 @@ public class RakeAPI {
                     instance.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
+
             return instance;
         }
     }
 
+    /**
+     * @param context android application context
+     * @param milliseconds flush interval
+     * @deprecated use non-static
+     */
     public static void setFlushInterval(Context context, long milliseconds) {
-        WorkerSupervisor msgs = WorkerSupervisor.getInstance(context);
-        msgs.setFlushInterval(milliseconds);
+        RakeMessageDelegator.setFlushInterval(milliseconds);
     }
 
     public void track(JSONObject shuttle) {
@@ -170,7 +174,7 @@ public class RakeAPI {
             // 4. put properties
             dataObj.put("properties", propertiesObj);
 
-            synchronized (workerSupervisor) { workerSupervisor.track(dataObj); }
+            synchronized (rakeMessageDelegator) { rakeMessageDelegator.track(dataObj); }
             if (isDev) { flush(); }
 
         } catch (JSONException e) {
@@ -179,8 +183,7 @@ public class RakeAPI {
     }
 
     public void setRakeServer(Context context, String server) {
-        WorkerSupervisor msgs = WorkerSupervisor.getInstance(context);
-        msgs.setEndpointHost(server);
+        rakeMessageDelegator.setEndpointHost(server);
     }
 
     /**
@@ -208,8 +211,8 @@ public class RakeAPI {
     public void flush() {
         RakeLogger.d(loggingTag, "flush");
 
-        synchronized (workerSupervisor) {
-            workerSupervisor.flush();
+        synchronized (rakeMessageDelegator) {
+            rakeMessageDelegator.flush();
         }
     }
 
@@ -321,11 +324,6 @@ public class RakeAPI {
         prefsEditor.commit();   // synchronous
     }
 
-
-    private WorkerSupervisor getAnalyticsMessages() {
-        return WorkerSupervisor.getInstance(context);
-    }
-
     private SystemInformation getSystemInformation() {
         return new SystemInformation(context);
     }
@@ -333,7 +331,7 @@ public class RakeAPI {
     void clearPreferences() {
         // Will clear distinct_ids, superProperties,
         // and waiting People Analytics properties. Will have no effect
-        // on workerSupervisor already queued to send with WorkerSupervisor.
+        // on rakeMessageDelegator already queued to send with RakeMessageDelegator.
         SharedPreferences.Editor prefsEdit = storedPreferences.edit();
         prefsEdit.clear().commit();
         readSuperProperties();
