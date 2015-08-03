@@ -225,6 +225,8 @@ public class RakeAPI {
             // 4. put properties
             dataObj.put("properties", propertiesObj);
 
+            RakeLogger.d(loggingTag, "track() called\n" + dataObj);
+
             synchronized (rakeMessageDelegator) { rakeMessageDelegator.track(dataObj); }
             if (Env.DEV == env) { flush(); }
 
@@ -265,7 +267,7 @@ public class RakeAPI {
      * Send log which persisted in SQLite to Rake server.
      */
     public void flush() {
-        RakeLogger.d(loggingTag, "flush");
+        RakeLogger.d(loggingTag, "flush() called");
 
         synchronized (rakeMessageDelegator) {
             rakeMessageDelegator.flush();

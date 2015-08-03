@@ -192,11 +192,9 @@ final public class RakeMessageDelegator {
                 if (msg.what == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
                     logQueueLength = dbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
-                    RakeLogger.t(LOG_TAG_PREFIX, "save JSONObject to SQLite: \n" + message.toString());
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
                 } else if (msg.what == FLUSH) {
-                    RakeLogger.t(LOG_TAG_PREFIX, "flush SQLite in Worker Thread");
                     sendTrackedLogFromTable();
 
                 } else if (msg.what == KILL_WORKER) {
@@ -217,9 +215,7 @@ final public class RakeMessageDelegator {
 
                 } else if (logQueueLength > 0) {
                     if (!hasMessages(FLUSH)) {
-                        RakeLogger.t(LOG_TAG_PREFIX, "log queue length: " + logQueueLength + " - adding flush in " + flushInterval);
-                        // flush after flush interval
-                        sendEmptyMessageDelayed(FLUSH, flushInterval);
+                        sendEmptyMessageDelayed(FLUSH, flushInterval); // schedule flush()
                     }
                 }
             } catch (RuntimeException e) {
