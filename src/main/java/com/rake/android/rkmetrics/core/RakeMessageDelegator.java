@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.RakeHttpSender;
 import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
@@ -36,8 +37,6 @@ final public class RakeMessageDelegator {
     private final Object handlerLock = new Object();
     private final Context appContext;
 
-    // TODO: move into RakeMessageHandler
-    private String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
     private long flushCount = 0;
     private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
@@ -73,26 +72,6 @@ final public class RakeMessageDelegator {
     public static void setFlushInterval(long interval /* milliseconds */) {
         flushInterval = interval;
         RakeLogger.d(LOG_TAG_PREFIX, "set flush interval to " + interval);
-    }
-
-    public void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
-        if (null == baseEndpoint) {
-            RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint == null");
-        }
-
-        /*
-         * RakeMessageDelegator have only one host type (DEV_HOST or LIVE_HOST). not both of them
-         * See, JIRA RAKE-390
-         */
-
-        if  ((this.baseEndpoint.startsWith(DEV_HOST) && baseEndpoint.startsWith(LIVE_HOST)) ||
-             (this.baseEndpoint.startsWith(LIVE_HOST) && baseEndpoint.startsWith(DEV_HOST))) {
-            throw new IllegalArgumentException(
-                    "can't use both Env.DEV and Env.LIVE at the same time");
-        }
-
-        this.baseEndpoint = baseEndpoint;
-        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
     }
 
     public void hardKill() {
@@ -242,7 +221,10 @@ final public class RakeMessageDelegator {
                 String lastId = event[0];
                 String rawMessage = event[1];
 
-                RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(rawMessage, baseEndpoint, ENDPOINT_TRACK_PATH);
+                RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(
+                        rawMessage,
+                        RakeAPI.getBaseEndpoint(),
+                        ENDPOINT_TRACK_PATH);
 
                 if (RakeHttpSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);

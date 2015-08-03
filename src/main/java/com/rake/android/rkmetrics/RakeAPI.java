@@ -13,7 +13,12 @@ import org.json.JSONObject;
 
 import java.util.*;
 
+import static com.rake.android.rkmetrics.config.RakeConfig.DEV_HOST;
+import static com.rake.android.rkmetrics.config.RakeConfig.LIVE_HOST;
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+
 public class RakeAPI {
+
     public enum Logging {
         DISABLE("DISABLE"), ENABLE("ENABLE");
 
@@ -31,6 +36,8 @@ public class RakeAPI {
     }
 
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
+    // TODO: move into RakeMessageHandler
+    private static String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
 
     private Env env = Env.DEV;
     private final String loggingTag;
@@ -112,9 +119,9 @@ public class RakeAPI {
 
                 rake.env = env;
                 if (Env.DEV == env) {
-                    rake.setRakeServer(context, RakeConfig.DEV_BASE_ENDPOINT);
+                    setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
                 } else { /* Env.LIVE == env */
-                    rake.setRakeServer(context, RakeConfig.LIVE_BASE_ENDPOINT);
+                    setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
 
@@ -235,8 +242,41 @@ public class RakeAPI {
         }
     }
 
+    /**
+     * @deprecated As of 0.3.17, replaced by static method {@link #setBaseEndpoint(String)}
+     * @param context   not used
+     * @param server    base url
+     */
     public void setRakeServer(Context context, String server) {
-        rakeMessageDelegator.setBaseEndpoint(server);
+        setBaseEndpoint(server);
+    }
+
+    /**
+     * @param baseEndpoint
+     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code baseEndpoint}.
+     */
+    public static synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
+        if (null == baseEndpoint) {
+            RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint can't be null");
+        }
+
+        /*
+         * RakeMessageDelegator have only one host type (DEV_HOST or LIVE_HOST). not both of them
+         * See, JIRA RAKE-390
+         */
+
+        if  ((RakeAPI.baseEndpoint.startsWith(DEV_HOST) && baseEndpoint.startsWith(LIVE_HOST)) ||
+                (RakeAPI.baseEndpoint.startsWith(LIVE_HOST) && baseEndpoint.startsWith(DEV_HOST))) {
+            throw new IllegalArgumentException(
+                    "can't use both RakeAPI.Env.DEV and RakeAPI.Env.LIVE at the same time");
+        }
+
+        RakeAPI.baseEndpoint = baseEndpoint;
+        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
+    }
+
+    public static synchronized String getBaseEndpoint() {
+        return RakeAPI.baseEndpoint;
     }
 
     /**
