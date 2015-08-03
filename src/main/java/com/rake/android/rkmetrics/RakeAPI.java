@@ -6,7 +6,6 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.core.RakeMessageDelegator;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -119,9 +118,9 @@ public class RakeAPI {
 
                 rake.env = env;
                 if (Env.DEV == env) {
-                    setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
+                    rake.setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
                 } else { /* Env.LIVE == env */
-                    setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
+                    rake.setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
                 }
             }
 
@@ -242,11 +241,6 @@ public class RakeAPI {
         }
     }
 
-    /**
-     * @deprecated As of 0.3.17, replaced by static method {@link #setBaseEndpoint(String)}
-     * @param context   not used
-     * @param server    base url
-     */
     public void setRakeServer(Context context, String server) {
         setBaseEndpoint(server);
     }
@@ -255,7 +249,7 @@ public class RakeAPI {
      * @param baseEndpoint
      * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code baseEndpoint}.
      */
-    public static synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
+    private synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
         if (null == baseEndpoint) {
             RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint can't be null");
         }
@@ -275,7 +269,7 @@ public class RakeAPI {
         RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
     }
 
-    public static synchronized String getBaseEndpoint() {
+    /* package */ static synchronized String getBaseEndpoint() {
         return RakeAPI.baseEndpoint;
     }
 

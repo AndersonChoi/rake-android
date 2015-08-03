@@ -1,10 +1,9 @@
-package com.rake.android.rkmetrics.core;
+package com.rake.android.rkmetrics;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.RakeHttpSender;
 import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
@@ -223,9 +222,10 @@ final public class RakeMessageDelegator {
 
                 RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(
                         rawMessage,
-                        RakeAPI.getBaseEndpoint(),
+                        RakeAPI.getBaseEndpoint(), // TODO: convert instance method, support multiple urls
                         ENDPOINT_TRACK_PATH);
 
+                // TODO: remove from RakeMessageDelegator. -> RakeHttpSender
                 if (RakeHttpSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
