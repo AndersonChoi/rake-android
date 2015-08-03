@@ -26,8 +26,8 @@ configurations.all {
 cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 
 buildDir = 'build'
-version = '0.3.17-SNAPSHOT'
-group = 'com.skp.di.rake'
+version = '0.3.17'
+group = 'com.skp.rake'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 tasks.withType(JavaCompile) {
