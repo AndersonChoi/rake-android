@@ -1,5 +1,8 @@
 # 0.3.18 
 
+
+5. 앱이 백그라운드로 들어가는 `OnStop()` 에서도 `flush` 를 호출하길 권장합니다. 만약 퍼포먼스가 문제라면, 최소한 앱이 소멸되는 `OnDestory()` 에서는 **반드시** `flush` 를 호출해야합니다. 이는 그래야만 로그가 제때 전송되어, 분석 시점에서 오차를 줄일 수 있기 때문입니다.
+
 - update frequency -> convert TimerTask
 - remove handler lock
 - convert Handler to HandlerThread
@@ -23,6 +26,8 @@ rakeDev.track(shuttle.toJSONObject());
 ```
 
 장기적으로는 SQLite 구분자에 token, url 이 들어가야 할듯
+
+8553, 8443, setRakeServer 의 경우에도 둘 중 나중에 초기화 된 것으로 사용되는 문제가 있을듯
 
 # 0.3.17
 

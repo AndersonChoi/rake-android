@@ -22,7 +22,7 @@ final public class RakeConfig {
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically when building.
-    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.17";
+    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.18";
 
     // NOTE: some clients use 8553 port using `RakeAPI.setRakeServer` function
     public static final String EMPTY_BASE_ENDPOINT = "";

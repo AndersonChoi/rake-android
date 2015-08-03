@@ -26,7 +26,7 @@ configurations.all {
 cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 
 buildDir = 'build'
-version = '0.3.17'
+version = '0.3.18-SNAPSHOT'
 group = 'com.skp.rake'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -81,6 +81,27 @@ uploadArchives {
     }
 }
 
+javadoc {
+    source = sourceSets.main.java.srcDirs
+    failOnError false
+}
+// custom tasks for creating source/javadoc jars
+task sourcesJar(type: Jar, dependsOn:classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn:javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+// add javadoc/source jar tasks as artifacts
+artifacts {
+    archives sourcesJar
+    archives javadocJar
+}
+
 // replace version in RakeAPI.java
 task updateVersion(type: Copy) {
 
@@ -107,17 +128,41 @@ task updateVersion(type: Copy) {
 compileJava.dependsOn updateVersion
 
 build.doLast {
+    String buildDir ="${rootProject.projectDir}/build/libs"
+    String releaseDir = "${rootProject.projectDir}/release"
+    String javadocDir = "${releaseDir}/javadoc"
+    String sourcesDir = "${releaseDir}/sources"
+    String jarDir = "${releaseDir}/jar"
+    String testAppLibDir = "../testApp/android-client/app/libs" // TODO absolute path
 
-    // copy snapshot jar to ../testApp/app/libs
-    copy {
-        String buildDir ="${rootProject.projectDir}/build/libs"
-        // TODO absolute path
-        String testAppLibDir = "../testApp/android-client/app/libs"
-        String snapshotJar = "rake-android-${version}.jar"
+    String baseName = "${archivesBaseName}-${version}"
+    String jarName = "${baseName}.jar"
+    String sourcesJarName = "${baseName}-sources.jar"
+    String javadocJarName = "${baseName}-javadoc.jar"
 
+    copy { // copy jar to testApp's libDir
         from buildDir
-        include snapshotJar
+        include jarName
         into testAppLibDir
     }
+
+    copy { // copy jar to releaseDir
+        from buildDir
+        include jarName
+        into jarDir
+    }
+
+    copy { // copy sources.jar
+        from buildDir
+        include sourcesJarName
+        into sourcesDir
+    }
+
+    copy { // copy javadoc.jar
+        from buildDir
+        include javadocJarName
+        into javadocDir
+    }
 }
+
 
