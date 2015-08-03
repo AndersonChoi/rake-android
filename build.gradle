@@ -128,12 +128,16 @@ task updateVersion(type: Copy) {
 compileJava.dependsOn updateVersion
 
 build.doLast {
+    // jar
     String buildDir ="${rootProject.projectDir}/build/libs"
     String releaseDir = "${rootProject.projectDir}/release"
     String javadocDir = "${releaseDir}/javadoc"
     String sourcesDir = "${releaseDir}/sources"
     String jarDir = "${releaseDir}/jar"
     String testAppLibDir = "../testApp/android-client/app/libs" // TODO absolute path
+
+    // docs
+    String srcDocsDir= "${rootProject.projectDir}/build/docs/javadoc"
 
     String baseName = "${archivesBaseName}-${version}"
     String jarName = "${baseName}.jar"
@@ -162,6 +166,19 @@ build.doLast {
         from buildDir
         include javadocJarName
         into javadocDir
+    }
+
+    copy { // copy docs
+        // TODO style sheet
+        String docsDirPrefix ="${rootProject.projectDir}/docs/"
+        String docsDirPath = (version.contains("SNAPSHOT") == true) ? "SNAPSHOT" : version;
+        String docsDir = docsDirPrefix + docsDirPath
+        println(srcDocsDir)
+        println(docsDir)
+
+        from srcDocsDir
+        include "**/*.*"
+        into docsDir
     }
 }
 
