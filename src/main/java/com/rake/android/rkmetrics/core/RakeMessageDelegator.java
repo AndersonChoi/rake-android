@@ -72,7 +72,7 @@ final public class RakeMessageDelegator {
 
     public static void setFlushInterval(long interval /* milliseconds */) {
         flushInterval = interval;
-        RakeLogger.d(LOG_TAG_PREFIX, "Changing flush interval to " + interval);
+        RakeLogger.d(LOG_TAG_PREFIX, "set flush interval to " + interval);
     }
 
     public void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
@@ -126,20 +126,20 @@ final public class RakeMessageDelegator {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                RakeLogger.i(LOG_TAG_PREFIX, "Starting worker thread " + this.getId());
+                RakeLogger.i(LOG_TAG_PREFIX, "starting worker thread " + this.getId());
 
                 Looper.prepare();
 
                 try {
                     handlerQueue.put(new RakeMessageHandler());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
+                    throw new RuntimeException("couldn't build worker thread for Analytics Messages", e);
                 }
 
                 try {
                     Looper.loop();
                 } catch (RuntimeException e) {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Rake Thread dying from RuntimeException", e);
+                    RakeLogger.e(LOG_TAG_PREFIX, "rake Thread dying from RuntimeException", e);
                 }
             }
         };
@@ -150,7 +150,7 @@ final public class RakeMessageDelegator {
         try {
             h = handlerQueue.take();
         } catch (InterruptedException e) {
-            throw new RuntimeException("Couldn't retrieve handler from worker thread");
+            throw new RuntimeException("couldn't retrieve handler from worker thread");
         }
 
         return h;
@@ -166,7 +166,7 @@ final public class RakeMessageDelegator {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.t(LOG_TAG_PREFIX, "Average send frequency approximately " + seconds + " seconds.");
+            RakeLogger.t(LOG_TAG_PREFIX, "avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -178,6 +178,7 @@ final public class RakeMessageDelegator {
             super();
 
             dbAdapter = createRakeDbAdapter();
+            RakeLogger.t(LOG_TAG_PREFIX, "remove expired logs (48 hours before)");
             dbAdapter.cleanupEvents(
                     System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
                     RakeDbAdapter.Table.EVENTS);
@@ -195,12 +196,11 @@ final public class RakeMessageDelegator {
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
                 } else if (msg.what == FLUSH) {
-                    RakeLogger.t(LOG_TAG_PREFIX, "flush SQLite");
-                    updateFlushFrequency();
-                    sendAllData();
+                    RakeLogger.t(LOG_TAG_PREFIX, "flush SQLite in Worker Thread");
+                    sendTrackedLogFromTable();
 
                 } else if (msg.what == KILL_WORKER) {
-                    RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                    RakeLogger.w(LOG_TAG_PREFIX, "worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
                         dbAdapter.deleteDB();
                         handler = null;
@@ -208,33 +208,28 @@ final public class RakeMessageDelegator {
                     }
 
                 } else {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
+                    RakeLogger.e(LOG_TAG_PREFIX, "unexpected message received by Rake worker: " + msg);
                 }
 
                 if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) {
-                    RakeLogger.t(LOG_TAG_PREFIX, "Flushing queue due to bulk upload limit");
-                    updateFlushFrequency();
-                    sendAllData();
+                    RakeLogger.t(LOG_TAG_PREFIX, "log queue is full");
+                    sendTrackedLogFromTable();
 
                 } else if (logQueueLength > 0) {
                     if (!hasMessages(FLUSH)) {
-                        RakeLogger.t(LOG_TAG_PREFIX, "Queue depth " + logQueueLength + " - Adding flush in " + flushInterval);
-                        // The hasMessages check is a courtesy for the common case
-                        // of delayed flushes already enqueued from inside of this thread.
-                        // Callers outside of this thread can still send
-                        // a flush right here, so we may end up with two flushes
-                        // in our queue, but we're ok with that.
+                        RakeLogger.t(LOG_TAG_PREFIX, "log queue length: " + logQueueLength + " - adding flush in " + flushInterval);
+                        // flush after flush interval
                         sendEmptyMessageDelayed(FLUSH, flushInterval);
                     }
                 }
             } catch (RuntimeException e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Worker threw an unhandled exception- will not send any more Rake messages", e);
+                RakeLogger.e(LOG_TAG_PREFIX, "worker throw unhandled exception. will not send any more Rake messages", e);
 
                 synchronized (handlerLock) {
                     handler = null;
                     try { Looper.myLooper().quit(); }
                     catch (Exception tooLate) {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Could not halt looper", tooLate);
+                        RakeLogger.e(LOG_TAG_PREFIX, "can't halt looper", tooLate);
                     }
                 }
 
@@ -242,7 +237,8 @@ final public class RakeMessageDelegator {
             }
         } // handleMessage
 
-        private void sendAllData() {
+        private void sendTrackedLogFromTable() {
+            updateFlushFrequency();
             RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
             String[] event = dbAdapter.generateDataString(trackLogTable);
 

@@ -47,7 +47,7 @@ final public class RakeDbAdapter {
     private final MPDatabaseHelper dbHelper;
 
     private RakeDbAdapter(Context context) {
-        String message = String.format("Rake Database (%s) adapter constructed in context %s", DATABASE_NAME, context);
+        String message = String.format("Database (%s) created (context: %s)", DATABASE_NAME, context);
         RakeLogger.d(LOG_TAG_PREFIX, message);
         dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
     }
@@ -104,8 +104,6 @@ final public class RakeDbAdapter {
      */
     public int addJSON(JSONObject j, Table table) {
         String tableName = table.getName();
-        RakeLogger.d(LOG_TAG_PREFIX, "addJSON " + tableName);
-
         Cursor c = null;
         int count = -1;
 
@@ -145,7 +143,7 @@ final public class RakeDbAdapter {
      */
     public void cleanupEvents(String last_id, Table table) {
         String tableName = table.getName();
-        RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents _id " + last_id + " from table " + tableName);
+        // RakeLogger.t(LOG_TAG_PREFIX, "cleanupEvents _id " + last_id + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
@@ -171,7 +169,7 @@ final public class RakeDbAdapter {
      */
     public void cleanupEvents(long time, Table table) {
         String tableName = table.getName();
-        RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents time " + time + " from table " + tableName);
+        // RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents time " + time + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();

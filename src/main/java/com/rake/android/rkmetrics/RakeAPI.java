@@ -59,14 +59,39 @@ public class RakeAPI {
     }
 
     /**
-     * @deprecated As of 0.3.17, replaced by
-     *             {@link #getInstance(Context, String, Env, Logging)}}
+     * Create RakeAPI instance. (singleton per {@code token})
+     *
+     * @param context       Android Application Context
+     * @param token         Rake Token
+     * @param isDevServer   indicate whether RakeAPI send log to development server or live server
+     *                      If {@code false} used,
+     *                      RakeAPI will send log to <strong>development server</strong> ({@code pg.rake.skplanet.com})
+     *                      If {@code true} is used,
+     *                      RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com}).
+     *
+     *
+     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code isDevServer} value.
+     * @deprecated          As of 0.3.17, replaced by {@link #getInstance(Context, String, Env, Logging)}}
      */
     public static RakeAPI getInstance(Context context, String token, Boolean isDevServer) {
         Env env = (isDevServer == true) ? Env.DEV : Env.LIVE;
         return getInstance(context, token, env, RakeLogger.loggingMode /* use current logging mode */);
     }
 
+    /**
+     * Create RakeAPI instance. (singleton per {@code token})
+     *
+     * @param context Android Application Context
+     * @param token   Rake Token
+     * @param env     indicate whether RakeAPI send log to development server or live server
+     *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#DEV} used,
+     *                RakeAPI will send log to <strong>development server</strong> ({@code pg.rake.skplanet.com})
+     *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#LIVE} used,
+     *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
+     *
+     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code RakeAPI.Env}.
+     * @param         loggingMode Logging.ENABLE or Logging.DISABLE
+     */
     public static RakeAPI getInstance(Context context, String token, Env env, Logging loggingMode) {
         setLogging(loggingMode);
 
@@ -98,14 +123,19 @@ public class RakeAPI {
     }
 
     /**
+     * Set flush interval
+     *
      * @param context android application context
-     * @param milliseconds flush interval
+     * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(Context context, long milliseconds) {
         RakeMessageDelegator.setFlushInterval(milliseconds);
     }
 
     /**
+     * Save JSONObject (shuttle) into SQLite.
+     * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
+     *
      * @param shuttle pass Shuttle.getJSONObject();
      */
     public void track(JSONObject shuttle) {
@@ -208,12 +238,12 @@ public class RakeAPI {
     }
 
     /**
-     * enable, disable logging
+     * Enable or disable logging.
      *
      * @param debug indicate whether enable logging or not
      * @deprecated As of 0.3.17, replaced by
      *             {@link #setLogging(Logging)}
-     *             {@link #getInstance(Context, String, Env, Logging)}}
+     *             {@link #getInstance(Context, String, Env, Logging)}
      */
 
     public static void setDebug(Boolean debug) {
@@ -222,15 +252,18 @@ public class RakeAPI {
     }
 
     /**
-     * enable, disable logging
+     * Enable or disable logging.
      *
      * @param loggingMode Logging.ENABLE or Logging.DISABLE
-     * @see Logging
+     * @see {@link com.rake.android.rkmetrics.RakeAPI.Logging}
      */
     public static void setLogging(Logging loggingMode) {
         RakeLogger.loggingMode = loggingMode;
     }
 
+    /**
+     * Send log which persisted in SQLite to Rake server.
+     */
     public void flush() {
         RakeLogger.d(loggingTag, "flush");
 
