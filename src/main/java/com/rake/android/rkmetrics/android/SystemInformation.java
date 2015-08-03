@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.android;
 
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -12,9 +14,9 @@ import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+import com.rake.android.rkmetrics.util.RakeLogger;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -29,9 +31,7 @@ import java.util.zip.ZipFile;
  * Abstracts away possibly non-present system information classes,
  * and handles permission-dependent queries for default system information.
  */
-public class SystemInformation {
-    public static final String TAG = "RakeAPI";
-
+final public class SystemInformation {
     private Context context;
     private Boolean hasNFC;
     private Boolean hasTelephony;
@@ -55,7 +55,7 @@ public class SystemInformation {
             appVersionName = info.versionName;
             appVersionCode = info.versionCode;
         } catch (NameNotFoundException e) {
-            Log.e(TAG, "Can't get versionName, versionCode from PackageInfo");
+            RakeLogger.e(LOG_TAG_PREFIX, "Can't get versionName, versionCode from PackageInfo");
         }
 
         // We can't count on these features being available, since we need to
@@ -76,9 +76,9 @@ public class SystemInformation {
                 foundNFC = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.nfc");
                 foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.telephony");
             } catch (InvocationTargetException e) {
-                Log.w(TAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             } catch (IllegalAccessException e) {
-                Log.w(TAG, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             }
         }
 
@@ -168,9 +168,9 @@ public class SystemInformation {
 
             zf.close();
         } catch(NameNotFoundException e) {
-            Log.e(TAG, "System information constructed with a context that apparently doesn't exist.");
+            RakeLogger.e(LOG_TAG_PREFIX, "System information constructed with a context that apparently doesn't exist.");
         } catch(IOException e) {
-            Log.e(TAG, "Can't create ZipFile Instance using given ApplicationInfo");
+            RakeLogger.e(LOG_TAG_PREFIX, "Can't create ZipFile Instance using given ApplicationInfo");
         }
 
         return buildDate;

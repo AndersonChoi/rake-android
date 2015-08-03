@@ -26,8 +26,8 @@ configurations.all {
 cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 
 buildDir = 'build'
-version = '0.3.16'
-group = 'com.skp.di.rake'
+version = '0.3.17'
+group = 'com.skp.rake'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
 tasks.withType(JavaCompile) {
@@ -37,12 +37,8 @@ tasks.withType(JavaCompile) {
     archivesBaseName = 'rake-android'
 }
 
-
 repositories {
     mavenCentral()
-    maven {
-        url "http://mvn.skplanet.com/content/groups/public/"
-    }
     flatDir {
         dirs 'libs'
     }
@@ -93,7 +89,7 @@ task updateVersion(type: Copy) {
     def pattern = ~/"r0.5.0_c(.)*"/
     def newVersion = "\"r0.5.0_c${v}\""
 
-    def configFile = new File('src/main/java/com/rake/android/rkmetrics/RakeAPI.java')
+    def configFile = new File('src/main/java/com/rake/android/rkmetrics/config/RakeConfig.java')
 
     String content = configFile.getText('UTF-8')
     String oldVersion = content.find(pattern)
@@ -109,3 +105,19 @@ task updateVersion(type: Copy) {
 }
 
 compileJava.dependsOn updateVersion
+
+build.doLast {
+
+    // copy snapshot jar to ../testApp/app/libs
+    copy {
+        String buildDir ="${rootProject.projectDir}/build/libs"
+        // TODO absolute path
+        String testAppLibDir = "../testApp/android-client/app/libs"
+        String snapshotJar = "rake-android-${version}.jar"
+
+        from buildDir
+        include snapshotJar
+        into testAppLibDir
+    }
+}
+

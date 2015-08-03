@@ -1,8 +1,10 @@
 package com.rake.android.rkmetrics.network;
 
-import android.util.Log;
-import com.rake.android.rkmetrics.RakeConfig;
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+
+import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
+import com.rake.android.rkmetrics.util.RakeLogger;
 import com.rake.android.rkmetrics.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -32,26 +34,26 @@ import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class HttpPoster {
+final public class RakeHttpSender {
+    public enum RequestResult {
+        SUCCESS("SUCCESS"),
+        FAILURE_RECOVERABLE("FAILURE_RECOVERABLE"),
+        FAILURE_UNRECOVERABLE("FAILURE_UNRECOVERABLE");
 
-    private static final String LOGTAG = "RakeAPI";
-    private final String mDefaultHost;
+        private String result;
+        RequestResult(String result) { this.result = result; }
+        @Override public String toString() { return result; }
+    }
 
     public static final int CONNECTION_TIMEOUT = 3000;
     public static final int SOCKET_TIMEOUT = 120000;
 
-    public static enum PostResult {
-        SUCCEEDED,
-        FAILED_RECOVERABLE,
-        FAILED_UNRECOVERABLE
-    }
+    private RakeHttpSender() {}
 
-    public HttpPoster(String defaultHost) {
-        mDefaultHost = defaultHost;
-    }
+    public static RequestResult sendPostRequest(String rawMessage,
+                                          String baseEndpoint,
+                                          String endpointPath) {
 
-    // Will return true only if the request was successful
-    public PostResult postData(String rawMessage, String endpointPath) {
         List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
         String encodedData = null;
         String compress = "plain";
@@ -60,63 +62,80 @@ public class HttpPoster {
         nameValuePairs.add(new BasicNameValuePair("compress", compress));
         nameValuePairs.add(new BasicNameValuePair("data", encodedData));
 
-        String defaultUrl = mDefaultHost + endpointPath;
-        PostResult ret = postHttpRequest(defaultUrl, nameValuePairs);
+        String url = baseEndpoint + endpointPath;
+        RequestResult result = postHttpRequest(url, nameValuePairs);
 
-        return ret;
+        return result;
     }
 
-    public HttpParams setParamsTimeout() {
+    private static HttpParams getDefaultHttpParams() {
         HttpParams httpParameters = new BasicHttpParams();
         HttpConnectionParams.setConnectionTimeout(httpParameters, CONNECTION_TIMEOUT);
         HttpConnectionParams.setSoTimeout(httpParameters, SOCKET_TIMEOUT);
         return httpParameters;
     }
 
-    private PostResult postHttpRequest(String endpointUrl, List<NameValuePair> nameValuePairs) {
-        PostResult ret = PostResult.FAILED_UNRECOVERABLE;
+    private static RequestResult postHttpRequest(String url, List<NameValuePair> nameValuePairs) {
+        RequestResult result = RequestResult.FAILURE_UNRECOVERABLE;
 
-        HttpParams params = setParamsTimeout();
+        HttpParams params = getDefaultHttpParams();
         HttpClient httpclient = new DefaultHttpClient(params);
-
-        HttpPost httppost = new HttpPost(endpointUrl);
-        // TODO: remove
-        httppost.setHeader("Accept-Encoding", "gzip");
-        httppost.setHeader("Content-Encoding", "gzip");
-
+        HttpPost httppost = new HttpPost(url);
 
         try {
-            if (endpointUrl.indexOf("https") >= 0 && RakeConfig.TRUSTED_SERVER) {
-                httpclient = sslClientDebug(httpclient);
+            if (url.indexOf("https") >= 0 && RakeConfig.USE_HTTPS) {
+                httpclient = createSSLClient(httpclient);
             }
 
             httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
-
             HttpResponse response = httpclient.execute(httppost);
+
+            if (null == response) {
+                RakeLogger.d(LOG_TAG_PREFIX, "HttpResponse is null. Retry later");
+                return RequestResult.FAILURE_RECOVERABLE;
+            }
+
             HttpEntity entity = response.getEntity();
 
+            if (null == entity) {
+                RakeLogger.d(LOG_TAG_PREFIX, "HttpEntity is null. retry later");
+                return RequestResult.FAILURE_RECOVERABLE;
+            }
+
+            String responseBody = StringUtils.inputStreamToString(entity.getContent());
+            int statusCode = response.getStatusLine().getStatusCode();
+
+            String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
+            RakeLogger.d(LOG_TAG_PREFIX, message);
+
+            if ("1\n".equals(responseBody)) {
+                result = RequestResult.SUCCESS;
+            } else {
+                RakeLogger.e(LOG_TAG_PREFIX, "server returned -1. make sure that your token is valid");
+            }
 
             // TODO: recover from other states (e.g 204, 404, 400, 50x...)
-            if (entity != null) {
-                String result = StringUtils.inputStreamToString(entity.getContent());
-                if (result.equals("1\n")) {
-                    ret = PostResult.SUCCEEDED;
-                }
-            }
+//                if (200 == statusCode) { ret = RequestResult.SUCCESS; }
+//                else if (500 == statusCode) { ret = RequestResult.FAILURE_RECOVERABLE; /* retry */ }
+//                else { ret = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */ }
+
+
         } catch (IOException e) {
-            Log.i(LOGTAG, "Cannot post message to Rake Servers (May Retry)", e);
-            ret = PostResult.FAILED_RECOVERABLE;
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
+            result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            Log.e(LOGTAG, "Cannot post message to Rake Servers, will not retry.", e);
-            ret = PostResult.FAILED_UNRECOVERABLE;
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
+            result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (GeneralSecurityException e) {
-            Log.e(LOGTAG, "Cannot build SSL Client", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
+        } catch (Exception e) {
+            RakeLogger.e(LOG_TAG_PREFIX, "caused by", e);
         }
 
-        return ret;
+        return result;
     }
 
-    private HttpClient sslClientDebug(HttpClient client) throws GeneralSecurityException {
+    private static HttpClient createSSLClient(HttpClient client) throws GeneralSecurityException {
         X509TrustManager tm = new X509TrustManager() {
             public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
             }
@@ -131,7 +150,7 @@ public class HttpPoster {
 
         SSLContext ctx = SSLContext.getInstance("TLS");
         ctx.init(null, new TrustManager[]{tm}, null);
-        SSLSocketFactory ssf = new MySSLSocketFactory(ctx);
+        SSLSocketFactory ssf = new RakeSSLSocketFactory(ctx);
         ssf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
         ClientConnectionManager ccm = client.getConnectionManager();
         SchemeRegistry sr = ccm.getSchemeRegistry();
@@ -139,11 +158,11 @@ public class HttpPoster {
         return new DefaultHttpClient(ccm, client.getParams());
     }
 
-    public class MySSLSocketFactory extends SSLSocketFactory {
+    private static class RakeSSLSocketFactory extends SSLSocketFactory {
         SSLContext sslContext = SSLContext.getInstance("TLS");
 
-        public MySSLSocketFactory(KeyStore truststore) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException {
-            super(truststore);
+        public RakeSSLSocketFactory(KeyStore store) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException {
+            super(store);
 
             TrustManager tm = new X509TrustManager() {
                 public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
@@ -160,7 +179,7 @@ public class HttpPoster {
             sslContext.init(null, new TrustManager[]{tm}, null);
         }
 
-        public MySSLSocketFactory(SSLContext context) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
+        public RakeSSLSocketFactory(SSLContext context) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
             super(null);
             sslContext = context;
         }
