@@ -31,8 +31,6 @@ final public class RakeConfig {
     public static final String DEV_BASE_ENDPOINT = DEV_HOST + ":8443/log";
     public static final String LIVE_BASE_ENDPOINT = LIVE_HOST + ":8443/log";
 
-    public static final boolean USE_HTTPS = true;
-
     public static final String LOG_TAG_PREFIX = "RakeAPI";
     public static final String ENDPOINT_TRACK_PATH = "/track";
 }

@@ -1,34 +1,30 @@
 package com.rake.android.rkmetrics.network;
 
-import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import com.rake.android.rkmetrics.util.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ClientConnectionManager;
+import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
+import org.apache.http.params.HttpProtocolParams;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.IOException;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -68,31 +64,17 @@ final public class RakeHttpSender {
         return result;
     }
 
-    private static HttpParams getDefaultHttpParams() {
-        HttpParams httpParameters = new BasicHttpParams();
-        HttpConnectionParams.setConnectionTimeout(httpParameters, CONNECTION_TIMEOUT);
-        HttpConnectionParams.setSoTimeout(httpParameters, SOCKET_TIMEOUT);
-        return httpParameters;
-    }
-
     private static RequestResult postHttpRequest(String url, List<NameValuePair> nameValuePairs) {
         RequestResult result = RequestResult.FAILURE_UNRECOVERABLE;
 
-        HttpParams params = getDefaultHttpParams();
-        HttpClient httpclient = new DefaultHttpClient(params);
-        HttpPost httppost = new HttpPost(url);
-
         try {
-            if (url.indexOf("https") >= 0 && RakeConfig.USE_HTTPS) {
-                httpclient = createSSLClient(httpclient);
-            }
+            HttpClient client = createHttpsClient();
+            HttpPost httppost = new HttpPost(url);
 
             UrlEncodedFormEntity requestEntity = new UrlEncodedFormEntity(nameValuePairs);
-//            RakeLogger.d(LOG_TAG_PREFIX,
-//                    "entity: " + StringUtils.inputStreamToString(requestEntity.getContent()));
             httppost.setEntity(requestEntity);
 
-            HttpResponse response = httpclient.execute(httppost);
+            HttpResponse response = client.execute(httppost);
 
             if (null == response) {
                 RakeLogger.d(LOG_TAG_PREFIX, "HttpResponse is null. Retry later");
@@ -142,63 +124,24 @@ final public class RakeHttpSender {
         return result;
     }
 
-    private static HttpClient createSSLClient(HttpClient client) throws GeneralSecurityException {
-        X509TrustManager tm = new X509TrustManager() {
-            public void checkClientTrusted(X509Certificate[] xcs, String string) throws CertificateException {
-            }
+    private static HttpClient createHttpsClient() throws GeneralSecurityException {
+        SchemeRegistry schemeRegistry = new SchemeRegistry();
+        schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
+        schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
 
-            public void checkServerTrusted(X509Certificate[] xcs, String string) throws CertificateException {
-            }
-
-            public X509Certificate[] getAcceptedIssuers() {
-                return null;
-            }
-        };
-
-        SSLContext ctx = SSLContext.getInstance("TLS");
-        ctx.init(null, new TrustManager[]{tm}, null);
-        SSLSocketFactory ssf = new RakeSSLSocketFactory(ctx);
-        ssf.setHostnameVerifier(SSLSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        ClientConnectionManager ccm = client.getConnectionManager();
-        SchemeRegistry sr = ccm.getSchemeRegistry();
-        sr.register(new Scheme("https", ssf, 443));
-        return new DefaultHttpClient(ccm, client.getParams());
+        HttpParams params = getDefaultHttpParams();
+        ClientConnectionManager connectionManager = new ThreadSafeClientConnManager(params, schemeRegistry);
+        return new DefaultHttpClient(connectionManager, params);
     }
 
-    private static class RakeSSLSocketFactory extends SSLSocketFactory {
-        SSLContext sslContext = SSLContext.getInstance("TLS");
+    private static HttpParams getDefaultHttpParams() {
+        HttpParams params = new BasicHttpParams();
 
-        public RakeSSLSocketFactory(KeyStore store) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, UnrecoverableKeyException {
-            super(store);
-
-            TrustManager tm = new X509TrustManager() {
-                public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                }
-
-                public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-                }
-
-                public X509Certificate[] getAcceptedIssuers() {
-                    return null;
-                }
-            };
-
-            sslContext.init(null, new TrustManager[]{tm}, null);
-        }
-
-        public RakeSSLSocketFactory(SSLContext context) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, UnrecoverableKeyException {
-            super(null);
-            sslContext = context;
-        }
-
-        @Override
-        public Socket createSocket(Socket socket, String host, int port, boolean autoClose) throws IOException, UnknownHostException {
-            return sslContext.getSocketFactory().createSocket(socket, host, port, autoClose);
-        }
-
-        @Override
-        public Socket createSocket() throws IOException {
-            return sslContext.getSocketFactory().createSocket();
-        }
+        HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
+        HttpProtocolParams.setContentCharset(params, "UTF-8");
+        HttpConnectionParams.setConnectionTimeout(params, CONNECTION_TIMEOUT);
+        HttpConnectionParams.setSoTimeout(params, SOCKET_TIMEOUT);
+        return params;
     }
+
 }
