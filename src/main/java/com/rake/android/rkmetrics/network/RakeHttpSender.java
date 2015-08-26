@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.network;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.RakeLogger;
@@ -33,6 +31,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 final public class RakeHttpSender {
     public enum RequestResult {
@@ -87,7 +87,11 @@ final public class RakeHttpSender {
                 httpclient = createSSLClient(httpclient);
             }
 
-            httppost.setEntity(new UrlEncodedFormEntity(nameValuePairs));
+            UrlEncodedFormEntity requestEntity = new UrlEncodedFormEntity(nameValuePairs);
+//            RakeLogger.d(LOG_TAG_PREFIX,
+//                    "entity: " + StringUtils.inputStreamToString(requestEntity.getContent()));
+            httppost.setEntity(requestEntity);
+
             HttpResponse response = httpclient.execute(httppost);
 
             if (null == response) {
@@ -106,19 +110,22 @@ final public class RakeHttpSender {
             int statusCode = response.getStatusLine().getStatusCode();
 
             String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
-            RakeLogger.d(LOG_TAG_PREFIX, message);
 
             if ("1\n".equals(responseBody)) {
+                RakeLogger.d(LOG_TAG_PREFIX, message);
                 result = RequestResult.SUCCESS;
             } else {
                 RakeLogger.e(LOG_TAG_PREFIX, "server returned -1. make sure that your token is valid");
             }
 
-            // TODO: recover from other states (e.g 204, 404, 400, 50x...)
-//                if (200 == statusCode) { ret = RequestResult.SUCCESS; }
-//                else if (500 == statusCode) { ret = RequestResult.FAILURE_RECOVERABLE; /* retry */ }
-//                else { ret = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */ }
-
+//            // TODO: recover from other states (e.g 204, 404, 400, 50x...)
+//            if (200 == statusCode) { result = RequestResult.SUCCESS; }
+//            else if (500 == statusCode) {
+//                RakeLogger.e(LOG_TAG_PREFIX, "response code 502. retry later");
+//                result = RequestResult.FAILURE_RECOVERABLE; /* retry */
+//            } else { /* 20x (not 200), 3xx, 4xx */
+//                result = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */
+//            }
 
         } catch (IOException e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
