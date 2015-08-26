@@ -6,15 +6,14 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
-import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import java.io.File;
+
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 /**
  * Not thread-safe.
@@ -211,6 +210,8 @@ final public class RakeDbAdapter {
             c = db.rawQuery("SELECT * FROM " + tableName +
                     " ORDER BY " + KEY_CREATED_AT + " ASC LIMIT 50", null);
             JSONArray arr = new JSONArray();
+
+            RakeLogger.t(LOG_TAG_PREFIX, "sending log count: " + c.getCount());
 
             while (c.moveToNext()) {
                 if (c.isLast()) {
