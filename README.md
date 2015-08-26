@@ -4,8 +4,9 @@
 
 **Rake** 는 단말에서 서버로 로그를 *쉽고*, *안전하게* 전송할 수 있도록 도와주는 *가벼운* 라이브러리입니다. 자세한 내용은 위키를 참조해주세요.
 
-- [Rake Android Manual](https://github.com/skpdi/rake-document/wiki/1.-Rake-Android)
-- [Rake Android Example](https://github.com/sentinel-rake/rake-android-example)
+- [Rake Android: Getting Started](https://github.com/skpdi/rake-document/wiki/1.-Rake-Android)
+- [Rake Android: App Example](https://github.com/sentinel-rake/rake-android-example)
+- [Rake Android: API](http://skpdi.github.io/rake-android/docs/SNAPSHOT/com/rake/android/rkmetrics/RakeAPI.html)
 
 ## Development
 
