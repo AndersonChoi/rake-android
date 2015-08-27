@@ -1,12 +1,12 @@
-# 0.3.18 
+# 0.3.19
+
+- HttpUrlConnection support
 
 - MultiInstance
     * running test
     * static function -> remove
-    * databsae update
+    * database update
     
-- Https Security Problem
-- HttpUrlConnection
 
 - RakeHttp
 TOKEN 에 PRREFIX 붙고, 내부적으로 URL 을 결정
@@ -46,6 +46,11 @@ rakeDev.track(shuttle.toJSONObject());
 
 8553, 8443, setRakeServer 의 경우에도 둘 중 나중에 초기화 된 것으로 사용되는 문제가 있을듯
 
+
+# 0.3.18 
+
+- ~~Https Security Problem~~
+    
 # 0.3.17
 
 - ~~singleton handler ~~
