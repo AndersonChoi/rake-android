@@ -97,7 +97,7 @@ final public class RakeMessageDelegator {
     }
 
     private Handler createRakeMessageHandler() {
-        Handler h = null;
+        Handler handler = null;
 
         final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
 
@@ -126,12 +126,12 @@ final public class RakeMessageDelegator {
         thread.start();
 
         try {
-            h = handlerQueue.take();
+            handler = handlerQueue.take();
         } catch (InterruptedException e) {
             throw new RuntimeException("couldn't retrieve handler from worker thread");
         }
 
-        return h;
+        return handler;
     }
 
     private void updateFlushFrequency() {
@@ -215,6 +215,7 @@ final public class RakeMessageDelegator {
             updateFlushFrequency();
             RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
             String[] event = dbAdapter.generateDataString(trackLogTable);
+
 
             if (event != null) {
                 String lastId = event[0];

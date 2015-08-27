@@ -113,15 +113,12 @@ public class RakeAPI {
             RakeAPI rake = instances.get(appContext);
 
             if (rake == null) {
+                if (Env.DEV == env) setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
+                else setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
+
                 rake = new RakeAPI(appContext, token);
                 instances.put(appContext, rake);
-
                 rake.env = env;
-                if (Env.DEV == env) {
-                    rake.setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
-                } else { /* Env.LIVE == env */
-                    rake.setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
-                }
             }
 
             return rake;
@@ -242,18 +239,25 @@ public class RakeAPI {
     }
 
     public void setRakeServer(Context context, String server) {
-        setBaseEndpoint(server);
+        RakeAPI.setBaseEndpoint(server);
     }
 
     /**
      * @param baseEndpoint
      * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code baseEndpoint}.
      */
-    private synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
+    private static synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
         if (null == baseEndpoint) {
             RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint can't be null");
         }
 
+        RakeAPI.checkInvalidEndpoint(baseEndpoint);
+
+        RakeAPI.baseEndpoint = baseEndpoint;
+        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
+    }
+
+    private static void checkInvalidEndpoint(String baseEndpoint) {
         /*
          * RakeMessageDelegator have only one host type (DEV_HOST or LIVE_HOST). not both of them
          * See, JIRA RAKE-390
@@ -264,9 +268,6 @@ public class RakeAPI {
             throw new IllegalArgumentException(
                     "can't use both RakeAPI.Env.DEV and RakeAPI.Env.LIVE at the same time");
         }
-
-        RakeAPI.baseEndpoint = baseEndpoint;
-        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
     }
 
     /* package */ static synchronized String getBaseEndpoint() {
@@ -428,5 +429,4 @@ public class RakeAPI {
         prefsEdit.clear().commit();
         readSuperProperties();
     }
-
 }

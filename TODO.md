@@ -1,12 +1,32 @@
-# 0.3.18 
+# 0.3.19
 
+- HttpUrlConnection support
+
+- MultiInstance
+    * running test
+    * static function -> remove
+    * database update
+    
+
+- RakeHttp
+TOKEN 에 PRREFIX 붙고, 내부적으로 URL 을 결정
+
+GetInstance(TOKEN, LoggingMode)
+
+- ~~즉시 플러시 시에 오류~~
+- env static set 에 넣고 다른거 들어오면 illegal
+
+- 테스트 케이스 만들기 1. 다른 url 2. 즉시 플러시시 오류
+
+- android studio project 로 변경
+
+- Localize problem
 - update frequency -> convert TimerTask
 - remove handler lock
 - convert Handler to HandlerThread
 - remove RakeMessageDelegator
 - remove cleanEvent message
 - move flushCount, url into HandlerThread
-- Localize problem
 - remove context from RakeAPI instancesMap
 - FLUSH, FLUSH_FULL, FLUSH_SCHEDULED 구분
 - apply RakeProtocolV2
@@ -24,6 +44,13 @@ rakeDev.track(shuttle.toJSONObject());
 
 장기적으로는 SQLite 구분자에 token, url 이 들어가야 할듯
 
+8553, 8443, setRakeServer 의 경우에도 둘 중 나중에 초기화 된 것으로 사용되는 문제가 있을듯
+
+
+# 0.3.18 
+
+- ~~Https Security Problem~~
+    
 # 0.3.17
 
 - ~~singleton handler ~~
