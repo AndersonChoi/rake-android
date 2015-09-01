@@ -85,6 +85,10 @@ test {
     testLogging {
         events "started", "passed", "skipped", "failed", "standardOut", "standardError"
     }
+
+    reports {
+        junitXml.enabled = true
+    }
 }
 
 javadoc {
