@@ -19,7 +19,7 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-final public class RakeDbAdapter {
+final public class DbAdapter {
     public enum Table {
         EVENTS("events");
         Table(String name) { tableName = name; }
@@ -42,18 +42,18 @@ final public class RakeDbAdapter {
                     " (" + KEY_CREATED_AT + ");";
 
 
-    private static RakeDbAdapter instance;
+    private static DbAdapter instance;
     private final MPDatabaseHelper dbHelper;
 
-    private RakeDbAdapter(Context context) {
+    private DbAdapter(Context context) {
         String message = String.format("Database (%s) created (context: %s)", DATABASE_NAME, context);
         RakeLogger.d(LOG_TAG_PREFIX, message);
         dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
     }
 
-    public static synchronized RakeDbAdapter getInstance(Context appContext) {
+    public static synchronized DbAdapter getInstance(Context appContext) {
         if (null == instance) {
-            instance = new RakeDbAdapter(appContext);
+            instance = new DbAdapter(appContext);
         }
 
         return instance;

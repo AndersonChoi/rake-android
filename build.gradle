@@ -26,7 +26,7 @@ configurations.all {
 cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 
 buildDir = 'build'
-version = '0.3.18'
+version = '0.3.19-SNAPSHOT'
 group = 'com.skp.rake'
 
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
@@ -78,6 +78,16 @@ uploadArchives {
             repository(url: 'http://mvn.skplanet.com/content/repositories/releases')
             snapshotRepository(url: 'http://mvn.skplanet.com/content/repositories/snapshots')
         }
+    }
+}
+
+test {
+    testLogging {
+        events "started", "passed", "skipped", "failed", "standardOut", "standardError"
+    }
+
+    reports {
+        junitXml.enabled = true
     }
 }
 
