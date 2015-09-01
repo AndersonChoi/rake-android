@@ -37,7 +37,7 @@ public final class Compatibility {
         }
     }
 
-    public static int getIntAPILevel() {
+    public static int getCurrentAPILevelAsInt() {
         int apiLevel = 1;
         try {
             // This field has been added in Android 1.6
