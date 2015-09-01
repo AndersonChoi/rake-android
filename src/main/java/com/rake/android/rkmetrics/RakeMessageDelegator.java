@@ -5,7 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.network.RakeHttpSender;
+import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
@@ -223,15 +223,15 @@ final public class RakeMessageDelegator {
                 String rawMessage = event[1];
 
                 // TODO: convert instance method, support multiple urls
-                RakeHttpSender.RequestResult result =
-                    RakeHttpSender.sendRequest( rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
+                HttpRequestSender.RequestResult result =
+                    HttpRequestSender.sendRequest(rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
-                // TODO: remove from RakeMessageDelegator. -> RakeHttpSender
-                if (RakeHttpSender.RequestResult.SUCCESS == result) {
+                // TODO: remove from RakeMessageDelegator. -> HttpRequestSender
+                if (HttpRequestSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
-                } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
+                } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                     if (!hasMessages(FLUSH)) { sendEmptyMessageDelayed(FLUSH, flushInterval); }
-                } else if (RakeHttpSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
+                } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);

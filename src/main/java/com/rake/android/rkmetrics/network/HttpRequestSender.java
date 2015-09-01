@@ -31,7 +31,7 @@ import java.util.List;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
-final public class RakeHttpSender {
+final public class HttpRequestSender {
     public enum RequestResult {
         SUCCESS("SUCCESS"),
         FAILURE_RECOVERABLE("FAILURE_RECOVERABLE"),
@@ -45,7 +45,7 @@ final public class RakeHttpSender {
     public static final int CONNECTION_TIMEOUT = 3000;
     public static final int SOCKET_TIMEOUT = 120000;
 
-    private RakeHttpSender() {}
+    private HttpRequestSender() {}
 
     public static RequestResult sendRequest(String message, String url) {
         return sendHttpClientRequest(url, message);
