@@ -83,13 +83,7 @@ uploadArchives {
 
 test {
     testLogging {
-        afterSuite { desc, result ->
-            if (!desc.parent) { // will match the outermost suite
-                // Tests run: 38, Failures: 8, Errors: 0, Skipped: 0
-                println "Tests run: ${result.testCount}, Failures: ${result.failedTestCount}, Skipped: ${result.skippedTestCount}"
-                println "Tests Result: ${result.resultType}"
-            }
-        }
+        events "started", "passed", "skipped", "failed", "standardOut", "standardError"
     }
 }
 
