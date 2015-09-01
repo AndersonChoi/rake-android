@@ -11,7 +11,7 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public final class Compatibility {
 
-    public enum ApiLevel {
+    public enum APILevel {
         DEFAULT(9),
         GINGERBREAD(9),
         ICE_CREAM_SANDWICH(14),
@@ -20,24 +20,24 @@ public final class Compatibility {
         LOLLIPOP(21),
         M(22);
 
-        private static final Map<Integer, ApiLevel> lookup = new HashMap<Integer, ApiLevel>();
+        private static final Map<Integer, APILevel> lookup = new HashMap<Integer, APILevel>();
 
         static {
-            for(ApiLevel apiLevel : ApiLevel.values()) {
+            for(APILevel apiLevel : APILevel.values()) {
                 lookup.put(apiLevel.getLevel(), apiLevel);
             }
         }
 
         private final int level;
-        ApiLevel(int level) { this.level = level; }
+        APILevel(int level) { this.level = level; }
         public int getLevel() { return this.level; }
-        public static ApiLevel fromInt(Integer level) {
-            ApiLevel apiLevel = lookup.get(level);
-            return (null == apiLevel) ? ApiLevel.DEFAULT : apiLevel;
+        public static APILevel fromInt(Integer level) {
+            APILevel apiLevel = lookup.get(level);
+            return (null == apiLevel) ? APILevel.DEFAULT : apiLevel;
         }
     }
 
-    public static int getAPILevel() {
+    public static int getIntAPILevel() {
         int apiLevel = 1;
         try {
             // This field has been added in Android 1.6
@@ -45,7 +45,7 @@ public final class Compatibility {
             apiLevel = SDK_INT.getInt(null);
         } catch (Exception e) {
             RakeLogger.e(LOG_TAG_PREFIX, "can not retrieve API level", e);
-            apiLevel = Build.VERSION.SDK_INT;
+            apiLevel = (Build.VERSION.SDK_INT);
         }
 
         return apiLevel;

@@ -12,28 +12,28 @@ public class CompatibilitySpec {
     @Test
     public void test_ApiLevel_fromInt() {
         assertEquals(
-            Compatibility.ApiLevel.ICE_CREAM_SANDWICH,
-            Compatibility.ApiLevel.fromInt(14));
+            Compatibility.APILevel.ICE_CREAM_SANDWICH,
+            Compatibility.APILevel.fromInt(14));
     }
 
     @Test
     public void test_ApiLevel_fromInt_default() {
         assertEquals(
-            Compatibility.ApiLevel.DEFAULT,
-            Compatibility.ApiLevel.fromInt(-1)
+            Compatibility.APILevel.DEFAULT,
+            Compatibility.APILevel.fromInt(-1)
         );
 
         assertEquals(
-            Compatibility.ApiLevel.DEFAULT,
-            Compatibility.ApiLevel.fromInt(0)
+            Compatibility.APILevel.DEFAULT,
+            Compatibility.APILevel.fromInt(0)
         );
         assertEquals(
-            Compatibility.ApiLevel.DEFAULT,
-            Compatibility.ApiLevel.fromInt(499)
+            Compatibility.APILevel.DEFAULT,
+            Compatibility.APILevel.fromInt(499)
         );
         assertEquals(
-            Compatibility.ApiLevel.DEFAULT,
-            Compatibility.ApiLevel.fromInt(1014010)
+            Compatibility.APILevel.DEFAULT,
+            Compatibility.APILevel.fromInt(1014010)
         );
     }
 }

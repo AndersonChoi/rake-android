@@ -218,6 +218,7 @@ final public class RakeMessageDelegator {
 
 
             if (event != null) {
+                // TODO mapper class
                 String lastId = event[0];
                 String rawMessage = event[1];
 
