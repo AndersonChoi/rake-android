@@ -6,7 +6,7 @@ import android.os.Looper;
 import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
-import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
+import com.rake.android.rkmetrics.persistent.DbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
@@ -31,7 +31,7 @@ final public class RakeMessageDelegator {
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
     private static RakeMessageDelegator instance;
-    private static RakeDbAdapter dbAdapter;
+    private static DbAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
     private final Context appContext;
@@ -51,7 +51,7 @@ final public class RakeMessageDelegator {
         return instance;
     }
 
-    private RakeDbAdapter createRakeDbAdapter() { return RakeDbAdapter.getInstance(appContext); }
+    private DbAdapter createRakeDbAdapter() { return DbAdapter.getInstance(appContext); }
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
@@ -159,7 +159,7 @@ final public class RakeMessageDelegator {
             RakeLogger.t(LOG_TAG_PREFIX, "remove expired logs (48 hours before)");
             dbAdapter.cleanupEvents(
                     System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
-                    RakeDbAdapter.Table.EVENTS);
+                    DbAdapter.Table.EVENTS);
         }
 
         @Override
@@ -169,7 +169,7 @@ final public class RakeMessageDelegator {
 
                 if (msg.what == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    logQueueLength = dbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
+                    logQueueLength = dbAdapter.addJSON(message, DbAdapter.Table.EVENTS);
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
                 } else if (msg.what == FLUSH) {
@@ -213,7 +213,7 @@ final public class RakeMessageDelegator {
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
-            RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
+            DbAdapter.Table trackLogTable = DbAdapter.Table.EVENTS;
             String[] event = dbAdapter.generateDataString(trackLogTable);
 
 
