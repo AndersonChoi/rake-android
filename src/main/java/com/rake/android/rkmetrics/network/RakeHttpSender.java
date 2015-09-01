@@ -24,6 +24,7 @@ import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,34 +47,29 @@ final public class RakeHttpSender {
 
     private RakeHttpSender() {}
 
-    public static RequestResult sendPostRequest(String rawMessage,
-                                          String baseEndpoint,
-                                          String endpointPath) {
+    public static RequestResult sendRequest(String message, String url) {
+        return sendHttpClientRequest(url, message);
+    }
 
+    private static HttpEntity buildHttpClientRequestBody(String message) throws UnsupportedEncodingException {
         List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-        String encodedData = null;
+        String encodedData = Base64Coder.encodeString(message);
         String compress = "plain";
-        encodedData = Base64Coder.encodeString(rawMessage);
 
         nameValuePairs.add(new BasicNameValuePair("compress", compress));
         nameValuePairs.add(new BasicNameValuePair("data", encodedData));
 
-        String url = baseEndpoint + endpointPath;
-        RequestResult result = postHttpRequest(url, nameValuePairs);
-
-        return result;
+        return new UrlEncodedFormEntity(nameValuePairs);
     }
 
-    private static RequestResult postHttpRequest(String url, List<NameValuePair> nameValuePairs) {
+    private static RequestResult sendHttpClientRequest(String url, String requestMessage) {
         RequestResult result = RequestResult.FAILURE_UNRECOVERABLE;
 
         try {
-            HttpClient client = createHttpsClient();
+            HttpEntity requestEntity = buildHttpClientRequestBody(requestMessage);
             HttpPost httppost = new HttpPost(url);
-
-            UrlEncodedFormEntity requestEntity = new UrlEncodedFormEntity(nameValuePairs);
             httppost.setEntity(requestEntity);
-
+            HttpClient client = createHttpsClient();
             HttpResponse response = client.execute(httppost);
 
             if (null == response) {
@@ -81,14 +77,14 @@ final public class RakeHttpSender {
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
-            HttpEntity entity = response.getEntity();
+            HttpEntity responseEntity = response.getEntity();
 
-            if (null == entity) {
+            if (null == responseEntity) {
                 RakeLogger.d(LOG_TAG_PREFIX, "HttpEntity is null. retry later");
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
-            String responseBody = StringUtils.inputStreamToString(entity.getContent());
+            String responseBody = StringUtils.inputStreamToString(responseEntity.getContent());
             int statusCode = response.getStatusLine().getStatusCode();
 
             String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
@@ -109,6 +105,9 @@ final public class RakeHttpSender {
 //                result = RequestResult.FAILURE_UNRECOVERABLE; /* not retry */
 //            }
 
+        } catch(UnsupportedEncodingException e) {
+            RakeLogger.e(LOG_TAG_PREFIX, "Remove rows due to invalid encoding", e);
+            result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (IOException e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
             result = RequestResult.FAILURE_RECOVERABLE;

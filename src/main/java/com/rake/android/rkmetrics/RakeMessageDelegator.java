@@ -221,10 +221,9 @@ final public class RakeMessageDelegator {
                 String lastId = event[0];
                 String rawMessage = event[1];
 
-                RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(
-                        rawMessage,
-                        RakeAPI.getBaseEndpoint(), // TODO: convert instance method, support multiple urls
-                        ENDPOINT_TRACK_PATH);
+                // TODO: convert instance method, support multiple urls
+                RakeHttpSender.RequestResult result =
+                    RakeHttpSender.sendRequest( rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
                 // TODO: remove from RakeMessageDelegator. -> RakeHttpSender
                 if (RakeHttpSender.RequestResult.SUCCESS == result) {
