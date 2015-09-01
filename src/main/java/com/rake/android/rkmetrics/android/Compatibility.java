@@ -20,7 +20,7 @@ public final class Compatibility {
         LOLLIPOP(21),
         M(22);
 
-        private static final Map<Integer, ApiLevel> lookup = new HashMap<>();
+        private static final Map<Integer, ApiLevel> lookup = new HashMap<Integer, ApiLevel>();
 
         static {
             for(ApiLevel apiLevel : ApiLevel.values()) {
