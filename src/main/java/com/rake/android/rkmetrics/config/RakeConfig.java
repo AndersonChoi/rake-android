@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics.config;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Locale;
 import java.util.TimeZone;
 
 /**
@@ -16,8 +17,8 @@ final public class RakeConfig {
     public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
     public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
 
-    public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
-    public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS");
+    public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
+    public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
     static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
