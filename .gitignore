@@ -13,8 +13,7 @@ bin/
 .classpath
 .settings/
 
-gradle/
-gradlew
-gradlew.bat
+gradlew/
+
 .idea
 *.iml

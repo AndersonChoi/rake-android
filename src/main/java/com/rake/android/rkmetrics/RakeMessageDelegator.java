@@ -5,8 +5,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.network.RakeHttpSender;
-import com.rake.android.rkmetrics.persistent.RakeDbAdapter;
+import com.rake.android.rkmetrics.network.HttpRequestSender;
+import com.rake.android.rkmetrics.persistent.DbAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
@@ -31,7 +31,7 @@ final public class RakeMessageDelegator {
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
     private static RakeMessageDelegator instance;
-    private static RakeDbAdapter dbAdapter;
+    private static DbAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
     private final Context appContext;
@@ -51,7 +51,7 @@ final public class RakeMessageDelegator {
         return instance;
     }
 
-    private RakeDbAdapter createRakeDbAdapter() { return RakeDbAdapter.getInstance(appContext); }
+    private DbAdapter createRakeDbAdapter() { return DbAdapter.getInstance(appContext); }
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
@@ -159,7 +159,7 @@ final public class RakeMessageDelegator {
             RakeLogger.t(LOG_TAG_PREFIX, "remove expired logs (48 hours before)");
             dbAdapter.cleanupEvents(
                     System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
-                    RakeDbAdapter.Table.EVENTS);
+                    DbAdapter.Table.EVENTS);
         }
 
         @Override
@@ -169,7 +169,7 @@ final public class RakeMessageDelegator {
 
                 if (msg.what == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    logQueueLength = dbAdapter.addJSON(message, RakeDbAdapter.Table.EVENTS);
+                    logQueueLength = dbAdapter.addJSON(message, DbAdapter.Table.EVENTS);
                     RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
 
                 } else if (msg.what == FLUSH) {
@@ -213,25 +213,25 @@ final public class RakeMessageDelegator {
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
-            RakeDbAdapter.Table trackLogTable = RakeDbAdapter.Table.EVENTS;
+            DbAdapter.Table trackLogTable = DbAdapter.Table.EVENTS;
             String[] event = dbAdapter.generateDataString(trackLogTable);
 
 
             if (event != null) {
+                // TODO mapper class
                 String lastId = event[0];
                 String rawMessage = event[1];
 
-                RakeHttpSender.RequestResult result = RakeHttpSender.sendPostRequest(
-                        rawMessage,
-                        RakeAPI.getBaseEndpoint(), // TODO: convert instance method, support multiple urls
-                        ENDPOINT_TRACK_PATH);
+                // TODO: convert instance method, support multiple urls
+                HttpRequestSender.RequestResult result =
+                    HttpRequestSender.sendRequest(rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
-                // TODO: remove from RakeMessageDelegator. -> RakeHttpSender
-                if (RakeHttpSender.RequestResult.SUCCESS == result) {
+                // TODO: remove from RakeMessageDelegator. -> HttpRequestSender
+                if (HttpRequestSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
-                } else if (RakeHttpSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
+                } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                     if (!hasMessages(FLUSH)) { sendEmptyMessageDelayed(FLUSH, flushInterval); }
-                } else if (RakeHttpSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
+                } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);

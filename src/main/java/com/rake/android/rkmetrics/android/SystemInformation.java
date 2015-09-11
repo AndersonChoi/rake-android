@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.android;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -23,9 +21,12 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
 import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 /**
  * Abstracts away possibly non-present system information classes,
@@ -160,7 +161,7 @@ final public class SystemInformation {
             ZipEntry ze = zf.getEntry("classes.dex");
             long time = ze.getTime();
 
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US);
             TimeZone tz = TimeZone.getDefault(); /* current TimeZone */
             formatter.setTimeZone(tz);
 

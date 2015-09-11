@@ -1,6 +1,7 @@
-# 0.3.19
+# 0.3.20
 
 - HttpUrlConnection support
+- Locale.US
 
 - MultiInstance
     * running test
@@ -20,7 +21,6 @@ GetInstance(TOKEN, LoggingMode)
 
 - android studio project 로 변경
 
-- Localize problem
 - update frequency -> convert TimerTask
 - remove handler lock
 - convert Handler to HandlerThread
@@ -46,6 +46,8 @@ rakeDev.track(shuttle.toJSONObject());
 
 8553, 8443, setRakeServer 의 경우에도 둘 중 나중에 초기화 된 것으로 사용되는 문제가 있을듯
 
+
+# 0.3.19
 
 # 0.3.18 
 
