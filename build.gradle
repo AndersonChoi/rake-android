@@ -2,28 +2,10 @@ buildscript {
     repositories {
         mavenCentral()
     }
-
-    dependencies {
-        classpath 'net.saliman:gradle-cobertura-plugin:2.2.8'
-        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.3.1'
-    }
 }
 
 apply plugin: 'java'
 apply plugin: 'maven'
-apply plugin: 'project-report'
-apply plugin: net.saliman.gradle.plugin.cobertura.CoberturaPlugin
-apply plugin: 'com.github.kt3k.coveralls'
-
-configurations.all {
-    resolutionStrategy {
-        // Cobertura includes an ASM version that can't handle Java 8, ASM 5.0.3 handles Java8
-        force 'org.ow2.asm:asm:5.0.3'
-        forcedModules = [ 'org.ow2.asm:asm:5.0.3' ]
-    }
-}
-
-cobertura.coverageFormats = ['html', 'xml'] // coveralls plugin depends on xml format report
 
 buildDir = 'build'
 version = '0.3.19'
@@ -84,10 +66,6 @@ uploadArchives {
 test {
     testLogging {
         events "started", "passed", "skipped", "failed", "standardOut", "standardError"
-    }
-
-    reports {
-        junitXml.enabled = true
     }
 }
 
