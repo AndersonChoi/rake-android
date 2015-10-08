@@ -94,8 +94,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String getToken(RakeAPI.Env env) {
-        if (RakeAPI.Env.DEV == env) return "";
-        else return "";
+        if (RakeAPI.Env.DEV == env) return Token.DEV_TOKEN;
+        else return Token.LIVE_TOKEN;
     }
 
     @Override
