@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">TestApp</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="btnInstallDevRake">Install (Dev)</string>
+    <string name="btnTrackDevRake">Track (Dev)</string>
+    <string name="btnFlushDevRake">Flush (Dev)</string>
+    <string name="btnInstallLiveRake">Install (Live)</string>
+    <string name="btnTrackLiveRake">Track (Live)</string>
+    <string name="btnFlushLiveRake">Flush (Live)</string>
+
+</resources>
