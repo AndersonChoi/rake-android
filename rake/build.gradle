@@ -1,0 +1,124 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+apply plugin: 'idea'
+
+version = '0.3.20-SNAPSHOT'
+group = 'com.skplanet.rake'
+archivesBaseName = 'rake-android'
+
+android {
+    compileSdkVersion 19
+    buildToolsVersion '19.1.0'
+
+    defaultConfig {
+        minSdkVersion 9
+        targetSdkVersion 19
+        versionCode 1
+        versionName "1.0"
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_6
+        targetCompatibility JavaVersion.VERSION_1_6
+    }
+}
+
+dependencies {
+    // compile 'com.android.support:appcompat-v7:23.0.0'
+    testCompile 'junit:junit:4.12'
+    testCompile 'org.apache.httpcomponents:httpclient:4.4.1'
+    testCompile 'com.github.tomakehurst:wiremock:1.55'
+    testCompile 'ch.qos.logback:logback-core:1.1.3'
+    testCompile 'ch.qos.logback:logback-classic:1.1.3'
+}
+
+uploadArchives {
+    repositories {
+        mavenDeployer {
+            repository(url: 'http://mvn.skplanet.com/content/repositories/releases')
+            snapshotRepository(url: 'http://mvn.skplanet.com/content/repositories/snapshots')
+        }
+    }
+}
+
+/* contants */
+
+def currentProjectDir = "${rootProject.projectDir}/rake"
+def jarName = "${archivesBaseName}-${version}.jar"
+def docsDir = "${rootProject.projectDir}/docs/"
+def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
+def releaseDir = "${rootProject.projectDir}/release"
+def releaseJarDir = "$releaseDir/jar"
+def aarDir = "$currentProjectDir/build/outputs/aar"
+def defaultDebugAARName = "rake-debug.aar"
+def defaultDebugAARPath = "$aarDir/$defaultDebugAARName"
+def testAppLibDir = "${rootProject.projectDir}/testApp/libs"
+
+task updateVersion(type: Copy) {
+
+    String v = version.tokenize('-')[0]
+
+    def pattern = ~/"r0.5.0_c(.)*"/
+    def newVersion = "\"r0.5.0_c${v}\""
+
+    def configFile = new File("${currentProjectDir}/src/main/java/com/rake/android/rkmetrics/config/RakeConfig.java")
+
+    String content = configFile.getText('UTF-8')
+    String oldVersion = content.find(pattern)
+    content = content.replaceAll(pattern, newVersion) // replace version number
+
+    String replacedVersion = content.find(pattern)
+
+    assert(newVersion == replacedVersion)
+
+    configFile.write(content, 'UTF-8')
+
+    println "[INFO] version $oldVersion in RakeAPI.java was replaced with $newVersion"
+}
+
+gradle.projectsEvaluated { /* update version before compiling */
+    preBuild.dependsOn(updateVersion)
+}
+
+
+task createJavadoc(type: Javadoc) {
+    source = android.sourceSets.main.java.srcDirs
+    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+    destinationDir = file("${docsDir}/$currentVersionDocsDir")
+    failOnError false
+}
+
+tasks.build.doLast {
+//    generateJavadoc()
+//    generateDocsJar()
+
+    copy { /* extract jar from AAR */
+        from zipTree(file(defaultDebugAARPath))
+        into aarDir
+        rename "classes.jar", jarName
+        exclude "R.txt", "assets", "aidl", "aapt/**/*", "res/**/*", "AndroidManifest.xml",
+                "libs/**/*"
+        includeEmptyDirs = false
+    }
+
+    copy { /* copy jar to testApp/libs */
+        from aarDir
+        include jarName
+        into testAppLibDir
+    }
+
+    copy { /* copy jar to release/jar */
+        from aarDir
+        include jarName
+        into releaseJarDir
+    }
+
+    createJavadoc.execute()
+}
+
+
