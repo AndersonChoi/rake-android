@@ -8,8 +8,17 @@ import android.support.v7.widget.Toolbar;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
+
+import com.rake.android.rkmetrics.RakeAPI;
+import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
+
+import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static RakeAPI devRake;
+    private static RakeAPI liveRake;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -26,6 +35,67 @@ public class MainActivity extends AppCompatActivity {
                         .setAction("Action", null).show();
             }
         });
+
+        initialize();
+    }
+
+    private void initialize() {
+        Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
+        btnInstallDevRake.setOnClickListener((View v) -> {
+            install(RakeAPI.Env.DEV);
+        });
+
+        Button btnTrackDevRake = (Button) findViewById(R.id.btnTrackDevRake);
+        btnTrackDevRake.setOnClickListener((View v) -> {
+           track(RakeAPI.Env.DEV);
+        });
+
+        Button btnFlushDevRake = (Button) findViewById(R.id.btnFlushDevRake);
+        btnFlushDevRake.setOnClickListener((View v) -> {
+            flush(RakeAPI.Env.DEV);
+        });
+
+        Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
+        btnInstallLiveRake.setOnClickListener((View v) -> {
+            install(RakeAPI.Env.LIVE);
+        });
+
+        Button btnTrackLiveRake = (Button) findViewById(R.id.btnTrackLiveRake);
+        btnTrackLiveRake.setOnClickListener((View v) -> {
+            track(RakeAPI.Env.LIVE);
+        });
+
+        Button btnFlushLiveRake = (Button) findViewById(R.id.btnFlushLiveRake);
+        btnFlushLiveRake.setOnClickListener((View v) -> {
+            flush(RakeAPI.Env.LIVE);
+        });
+    }
+
+    private void install(RakeAPI.Env env) {
+        String token = getToken(env);
+        if (RakeAPI.Env.DEV == env)
+            devRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+        else
+            liveRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+    }
+
+    private void flush(RakeAPI.Env env) {
+        getRakeInstance(env).flush();
+    }
+
+    private void track(RakeAPI.Env env) {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        getRakeInstance(env).track(shuttle.toJSONObject());
+    }
+
+    private RakeAPI getRakeInstance(RakeAPI.Env env) {
+        if (RakeAPI.Env.DEV == env) return devRake;
+        else return liveRake;
+    }
+
+    private String getToken(RakeAPI.Env env) {
+        if (RakeAPI.Env.DEV == env) return "";
+        else return "";
     }
 
     @Override

@@ -1,13 +1,9 @@
 # 0.3.20
 
-- HttpUrlConnection support
-- Locale.US
-
 - MultiInstance
     * running test
     * static function -> remove
     * database update
-    
 
 - RakeHttp
 TOKEN 에 PRREFIX 붙고, 내부적으로 URL 을 결정
@@ -19,7 +15,7 @@ GetInstance(TOKEN, LoggingMode)
 
 - 테스트 케이스 만들기 1. 다른 url 2. 즉시 플러시시 오류
 
-- android studio project 로 변경
+- ~~android studio project 로 변경~~
 
 - update frequency -> convert TimerTask
 - remove handler lock
@@ -48,6 +44,9 @@ rakeDev.track(shuttle.toJSONObject());
 
 
 # 0.3.19
+
+- HttpUrlConnection support
+- Locale.US
 
 # 0.3.18 
 
