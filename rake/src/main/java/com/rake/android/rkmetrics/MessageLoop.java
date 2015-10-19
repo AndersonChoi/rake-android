@@ -2,7 +2,6 @@ package com.rake.android.rkmetrics;
 
 import android.content.Context;
 import android.os.Handler;
-import android.os.Looper;
 import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
@@ -21,7 +20,7 @@ import static com.rake.android.rkmetrics.config.RakeConfig.*;
  * <p>This class straddles the thread boundary between user threads and
  * a logical Rake thread.
  */
-final public class RakeMessageDelegator {
+final public class MessageLoop {
     // messages used to communicate between the delegator and the handler
     private static int TRACK = 1;
     private static int FLUSH = 2;
@@ -30,7 +29,7 @@ final public class RakeMessageDelegator {
     private static volatile Handler handler;
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
-    private static RakeMessageDelegator instance;
+    private static MessageLoop instance;
     private static DatabaseAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
@@ -40,13 +39,13 @@ final public class RakeMessageDelegator {
     private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
 
-    private RakeMessageDelegator(Context appContext) {
+    private MessageLoop(Context appContext) {
         this.appContext = appContext;
         handler = createRakeMessageHandler();
     }
 
-    public static synchronized RakeMessageDelegator getInstance(Context appContext) {
-        if (null == instance) { instance = new RakeMessageDelegator(appContext); }
+    public static synchronized MessageLoop getInstance(Context appContext) {
+        if (null == instance) { instance = new MessageLoop(appContext); }
 
         return instance;
     }
@@ -106,7 +105,7 @@ final public class RakeMessageDelegator {
             public void run() {
                 RakeLogger.i(LOG_TAG_PREFIX, "starting worker thread " + this.getId());
 
-                Looper.prepare();
+                android.os.Looper.prepare();
 
                 try {
                     handlerQueue.put(new RakeMessageHandler());
@@ -115,7 +114,7 @@ final public class RakeMessageDelegator {
                 }
 
                 try {
-                    Looper.loop();
+                    android.os.Looper.loop();
                 } catch (RuntimeException e) {
                     RakeLogger.e(LOG_TAG_PREFIX, "rake Thread dying from RuntimeException", e);
                 }
@@ -180,7 +179,7 @@ final public class RakeMessageDelegator {
                     synchronized (handlerLock) {
                         dbAdapter.deleteDB();
                         handler = null;
-                        Looper.myLooper().quit();
+                        android.os.Looper.myLooper().quit();
                     }
 
                 } else {
@@ -201,7 +200,7 @@ final public class RakeMessageDelegator {
 
                 synchronized (handlerLock) {
                     handler = null;
-                    try { Looper.myLooper().quit(); }
+                    try { android.os.Looper.myLooper().quit(); }
                     catch (Exception tooLate) {
                         RakeLogger.e(LOG_TAG_PREFIX, "can't halt looper", tooLate);
                     }
@@ -216,7 +215,6 @@ final public class RakeMessageDelegator {
             DatabaseAdapter.Table trackLogTable = DatabaseAdapter.Table.EVENTS;
             String[] event = dbAdapter.generateDataString(trackLogTable);
 
-
             if (event != null) {
                 // TODO mapper class
                 String lastId = event[0];
@@ -226,7 +224,7 @@ final public class RakeMessageDelegator {
                 HttpRequestSender.RequestResult result =
                     HttpRequestSender.sendRequest(rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
-                // TODO: remove from RakeMessageDelegator. -> HttpRequestSender
+                // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (HttpRequestSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later

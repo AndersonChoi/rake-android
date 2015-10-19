@@ -42,7 +42,7 @@ public class RakeAPI {
     private final String loggingTag;
     private final Context context;
     private final SystemInformation sysInfo;
-    private final RakeMessageDelegator rakeMessageDelegator;
+    private final MessageLoop rakeMessageDelegator;
     private final String token;
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
@@ -57,7 +57,7 @@ public class RakeAPI {
         this.token = token;
         this.loggingTag = String.format("%s[%s]", RakeConfig.LOG_TAG_PREFIX, token);
 
-        rakeMessageDelegator = RakeMessageDelegator.getInstance(appContext);
+        rakeMessageDelegator = MessageLoop.getInstance(appContext);
         sysInfo = getSystemInformation();
 
         storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
@@ -133,7 +133,7 @@ public class RakeAPI {
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(Context context, long milliseconds) {
-        RakeMessageDelegator.setFlushInterval(milliseconds);
+        MessageLoop.setFlushInterval(milliseconds);
     }
 
     /**
@@ -249,7 +249,7 @@ public class RakeAPI {
      */
     private static synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
         if (null == baseEndpoint) {
-            RakeLogger.e(LOG_TAG_PREFIX, "RakeMessageDelegator.baseEndpoint can't be null");
+            RakeLogger.e(LOG_TAG_PREFIX, "MessageLoop.baseEndpoint can't be null");
         }
 
         RakeAPI.checkInvalidEndpoint(baseEndpoint);
@@ -260,7 +260,7 @@ public class RakeAPI {
 
     private static void checkInvalidEndpoint(String baseEndpoint) {
         /*
-         * RakeMessageDelegator have only one host type (DEV_HOST or LIVE_HOST). not both of them
+         * MessageLoop have only one host type (DEV_HOST or LIVE_HOST). not both of them
          * See, JIRA RAKE-390
          */
 
@@ -425,7 +425,7 @@ public class RakeAPI {
     void clearPreferences() {
         // Will clear distinct_ids, superProperties,
         // and waiting People Analytics properties. Will have no effect
-        // on rakeMessageDelegator already queued to send with RakeMessageDelegator.
+        // on MessageLoop which was already queued to send
         SharedPreferences.Editor prefsEdit = storedPreferences.edit();
         prefsEdit.clear().commit();
         readSuperProperties();
