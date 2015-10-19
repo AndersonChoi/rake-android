@@ -19,7 +19,7 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-final public class DbAdapter {
+final public class DatabaseAdapter {
     public enum Table {
         EVENTS("events");
         Table(String name) { tableName = name; }
@@ -51,16 +51,16 @@ final public class DbAdapter {
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + COLUMN_CREATED_AT + ");";
 
-    private static DbAdapter instance;
+    private static DatabaseAdapter instance;
     private final MPDatabaseHelper dbHelper;
 
-    private DbAdapter(Context context) {
+    private DatabaseAdapter(Context context) {
         dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
     }
 
-    public static synchronized DbAdapter getInstance(Context appContext) {
+    public static synchronized DatabaseAdapter getInstance(Context appContext) {
         if (null == instance) {
-            instance = new DbAdapter(appContext);
+            instance = new DatabaseAdapter(appContext);
         }
 
         return instance;
