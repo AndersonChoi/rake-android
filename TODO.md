@@ -1,5 +1,13 @@
 # 0.3.20
 
+TODO
+
+- git rev-parse current branch and replace TOKENs in Token.java
+- Shuttle Metric
+- Token URL
+- mUlti INstance
+
+
 - MultiInstance
     * running test
     * static function -> remove

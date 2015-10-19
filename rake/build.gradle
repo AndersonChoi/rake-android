@@ -59,32 +59,33 @@ def defaultDebugAARName = "rake-debug.aar"
 def defaultDebugAARPath = "$aarDir/$defaultDebugAARName"
 def testAppLibDir = "${rootProject.projectDir}/testApp/libs"
 
-task updateVersion(type: Copy) {
+def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+def updateFile = { String path, String pattern, String replace ->
+    def encoding = "UTF-8"
+    def regex = ~/$pattern/
+    def f = new File(path)
 
-    String v = version.tokenize('-')[0]
+    String content = f.getText(encoding)
+    def old = content.find(regex)
+    content = content.replaceAll(regex, replace)
 
-    def pattern = ~/"r0.5.0_c(.)*"/
-    def newVersion = "\"r0.5.0_c${v}\""
+    assert(content.find(regex) == replace)
+    f.write(content, encoding)
 
-    def configFile = new File("${currentProjectDir}/src/main/java/com/rake/android/rkmetrics/config/RakeConfig.java")
-
-    String content = configFile.getText('UTF-8')
-    String oldVersion = content.find(pattern)
-    content = content.replaceAll(pattern, newVersion) // replace version number
-
-    String replacedVersion = content.find(pattern)
-
-    assert(newVersion == replacedVersion)
-
-    configFile.write(content, 'UTF-8')
-
-    println "[INFO] version $oldVersion in RakeAPI.java was replaced with $newVersion"
+    println "[INFO] version $old in RakeAPI.java was replaced with $replace"
 }
 
 gradle.projectsEvaluated { /* update version before compiling */
-    preBuild.dependsOn(updateVersion)
-}
+    if (branchName.startsWith("release")) {
 
+        String v = version.tokenize('-')[0]
+        def pattern = "\"r0.5.0_c(.)*\""
+        def replace = "\"r0.5.0_c${v}\""
+        def path = ("${currentProjectDir}/src/main/java/com/rake/android/rkmetrics/config/RakeConfig.java")
+
+        updateFile(path, pattern, replace)
+    }
+}
 
 task createJavadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
@@ -94,8 +95,6 @@ task createJavadoc(type: Javadoc) {
 }
 
 tasks.build.doLast {
-//    generateJavadoc()
-//    generateDocsJar()
 
     copy { /* extract jar from AAR */
         from zipTree(file(defaultDebugAARPath))
