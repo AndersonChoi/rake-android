@@ -30,24 +30,31 @@ final public class DbAdapter {
     }
 
     private static final String DATABASE_NAME = "rake";
-    private static final int DATABASE_VERSION = 4;
-    public static final String KEY_DATA = "data";
-    public static final String KEY_CREATED_AT = "created_at";
+    /**
+     * version 5: `token`, `url` columns added
+     */
+    private static final int DATABASE_VERSION = 5;
+
+    private static final String QUERY_SEP = ", ";
+    private static final String QUERY_END = ");";
+    public static final String COLUMN_ID = "_id";
+    public static final String COLUMN_URL = "url";                 /* STRING not null */
+    public static final String COLUMN_TOKEN = "token";             /* STRING not null */
+    public static final String COLUMN_DATA = "data";               /* STRING not null */
+    public static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
     private static final String CREATE_EVENTS_TABLE =
-            "CREATE TABLE " + Table.EVENTS.getName() + " (_id INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    KEY_DATA + " STRING NOT NULL, " +
-                    KEY_CREATED_AT + " INTEGER NOT NULL);";
+            "CREATE TABLE " + Table.EVENTS.getName() + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    COLUMN_DATA + " STRING NOT NULL" + QUERY_SEP +
+                    COLUMN_CREATED_AT + " INTEGER NOT NULL" + QUERY_END;
+
     private static final String EVENTS_TIME_INDEX =
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
-                    " (" + KEY_CREATED_AT + ");";
-
+                    " (" + COLUMN_CREATED_AT + ");";
 
     private static DbAdapter instance;
     private final MPDatabaseHelper dbHelper;
 
     private DbAdapter(Context context) {
-        String message = String.format("Database (%s) created (context: %s)", DATABASE_NAME, context);
-        RakeLogger.d(LOG_TAG_PREFIX, message);
         dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
     }
 
@@ -67,17 +74,14 @@ final public class DbAdapter {
             databaseFile = context.getDatabasePath(dbName);
         }
 
-        /**
-         * Completely deletes the DB file from the file system.
-         */
         public void deleteDatabase() {
             close();
-            databaseFile.delete();
+            databaseFile.delete(); // Completely deletes the DB file from the file system.
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            RakeLogger.d(LOG_TAG_PREFIX, "Creating a new Rake events DB");
+            RakeLogger.d(LOG_TAG_PREFIX, "Creating Database: " + DATABASE_NAME);
 
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
@@ -85,11 +89,22 @@ final public class DbAdapter {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            RakeLogger.d(LOG_TAG_PREFIX, "Upgrading app, replacing Rake events DB");
+            String message = String.format("Upgrading Database [%s] from version %d to %d",
+                    DATABASE_NAME, oldVersion, newVersion);
+
+            RakeLogger.d(LOG_TAG_PREFIX, message);
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
             db.execSQL(CREATE_EVENTS_TABLE);
             db.execSQL(EVENTS_TIME_INDEX);
+
+            if (oldVersion < 4) { /* DO NOT SUPPORT */
+            }
+
+            if (oldVersion < 5) { /* 4 -> 5 */
+
+            }
+
         }
     }
 
@@ -110,8 +125,8 @@ final public class DbAdapter {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
 
             ContentValues cv = new ContentValues();
-            cv.put(KEY_DATA, j.toString());
-            cv.put(KEY_CREATED_AT, System.currentTimeMillis());
+            cv.put(COLUMN_DATA, j.toString());
+            cv.put(COLUMN_CREATED_AT, System.currentTimeMillis());
             db.insert(tableName, null, cv);
 
             c = db.rawQuery("SELECT COUNT(*) FROM " + tableName, null);
@@ -172,7 +187,7 @@ final public class DbAdapter {
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.delete(tableName, KEY_CREATED_AT + " <= " + time, null);
+            db.delete(tableName, COLUMN_CREATED_AT + " <= " + time, null);
         } catch (SQLiteException e) {
             RakeLogger.e(LOG_TAG_PREFIX, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
 
@@ -208,7 +223,7 @@ final public class DbAdapter {
         try {
             SQLiteDatabase db = dbHelper.getReadableDatabase();
             c = db.rawQuery("SELECT * FROM " + tableName +
-                    " ORDER BY " + KEY_CREATED_AT + " ASC LIMIT 50", null);
+                    " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50", null);
             JSONArray arr = new JSONArray();
 
             RakeLogger.t(LOG_TAG_PREFIX, "sending log count: " + c.getCount());
@@ -218,7 +233,7 @@ final public class DbAdapter {
                     last_id = c.getString(c.getColumnIndex("_id"));
                 }
                 try {
-                    JSONObject j = new JSONObject(c.getString(c.getColumnIndex(KEY_DATA)));
+                    JSONObject j = new JSONObject(c.getString(c.getColumnIndex(COLUMN_DATA)));
                     arr.put(j);
                 } catch (JSONException e) {
                     // Ignore this object

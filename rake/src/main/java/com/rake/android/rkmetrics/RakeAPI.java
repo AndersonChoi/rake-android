@@ -113,6 +113,7 @@ public class RakeAPI {
             RakeAPI rake = instances.get(appContext);
 
             if (rake == null) {
+                // url should be set before initializing rake instance
                 if (Env.DEV == env) setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
                 else setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
 
