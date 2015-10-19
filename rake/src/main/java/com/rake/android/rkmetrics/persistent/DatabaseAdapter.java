@@ -52,10 +52,10 @@ final public class DatabaseAdapter {
                     " (" + COLUMN_CREATED_AT + ");";
 
     private static DatabaseAdapter instance;
-    private final MPDatabaseHelper dbHelper;
+    private final DatabaseHelper dbHelper;
 
     private DatabaseAdapter(Context context) {
-        dbHelper = new MPDatabaseHelper(context, DATABASE_NAME);
+        dbHelper = new DatabaseHelper(context, DATABASE_NAME);
     }
 
     public static synchronized DatabaseAdapter getInstance(Context appContext) {
@@ -66,10 +66,10 @@ final public class DatabaseAdapter {
         return instance;
     }
 
-    private static class MPDatabaseHelper extends SQLiteOpenHelper {
+    private static class DatabaseHelper extends SQLiteOpenHelper {
 
         private final File databaseFile;
-        MPDatabaseHelper(Context context, String dbName) {
+        DatabaseHelper(Context context, String dbName) {
             super(context, dbName, null, DATABASE_VERSION);
             databaseFile = context.getDatabasePath(dbName);
         }
