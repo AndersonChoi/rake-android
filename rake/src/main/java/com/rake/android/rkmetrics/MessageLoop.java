@@ -248,7 +248,7 @@ final public class MessageLoop {
                 } else if (command == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
-                        dbAdapter.deleteDB();
+                        dbAdapter.deleteDatabase();
                         handler = null;
                         android.os.Looper.myLooper().quit();
                     }

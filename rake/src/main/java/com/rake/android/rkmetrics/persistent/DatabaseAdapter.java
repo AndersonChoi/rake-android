@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
@@ -56,8 +57,6 @@ public class DatabaseAdapter {
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + COLUMN_CREATED_AT + ");";
 
-
-
     private static DatabaseAdapter instance;
     private final DatabaseHelper dbHelper;
 
@@ -75,15 +74,15 @@ public class DatabaseAdapter {
 
     private static class DatabaseHelper extends SQLiteOpenHelper {
 
-        private final File databaseFile;
+        private final File database;
         DatabaseHelper(Context context, String dbName) {
             super(context, dbName, null, DATABASE_VERSION);
-            databaseFile = context.getDatabasePath(dbName);
+            database = context.getDatabasePath(dbName);
         }
 
         public void deleteDatabase() {
             close();
-            databaseFile.delete(); // Completely deletes the DB file from the file system.
+            database.delete(); // Completely deletes the DB file from the file system.
         }
 
         @Override
@@ -101,10 +100,11 @@ public class DatabaseAdapter {
 
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
+            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+            db.execSQL(QUERY_CREATE_EVENTS_TABLE);
+            db.execSQL(QUERY_EVENTS_TIME_INDEX);
+
             if (oldVersion < 4) { /* DO NOT SUPPORT */
-                db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-                db.execSQL(QUERY_CREATE_EVENTS_TABLE);
-                db.execSQL(QUERY_EVENTS_TIME_INDEX);
             }
 
             if (oldVersion < 5) { /* 4 -> 5 */
@@ -118,65 +118,56 @@ public class DatabaseAdapter {
      * Adds a JSON string representing an event with properties or a person record
      * to the SQLiteDatabase.
      *
-     * @param j     the JSON to record
+     * @param json     the JSON to record
      * @return the number of rows in the table, or -1 on failure
      */
-    public int addEvent(JSONObject j) {
-        String tableName = Table.EVENTS.getName();
-        Cursor c = null;
-        int count = -1;
+    public int addEvent(final JSONObject json) {
+        final String table = Table.EVENTS.getName();
 
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
+        Integer result = executeAndReturnT(new DatabaseCallback<Integer>() {
+            @Override
+            public Integer execute(SQLiteDatabase db) {
 
-            ContentValues cv = new ContentValues();
-            cv.put(COLUMN_DATA, j.toString());
-            cv.put(COLUMN_CREATED_AT, System.currentTimeMillis());
-            db.insert(tableName, null, cv);
+                Cursor c = null;
+                ContentValues cv = new ContentValues();
+                cv.put(COLUMN_DATA, json.toString());
+                cv.put(COLUMN_CREATED_AT, System.currentTimeMillis());
+                db.insert(table, null, cv);
 
-            c = db.rawQuery("SELECT COUNT(*) FROM " + tableName, null);
-            c.moveToFirst();
-            count = c.getInt(0);
-        } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "addEvent " + tableName + " FAILED. Deleting DB.", e);
-
-            // We assume that in general, the results of a SQL exception are
-            // unrecoverable, and could be associated with an oversized or
-            // otherwise unusable DB. Better to bomb it and get back on track
-            // than to leave it junked up (and maybe filling up the disk.)
-            dbHelper.deleteDatabase();
-        } finally {
-            dbHelper.close();
-            if (c != null) {
-                c.close();
+                c = db.rawQuery(getQuery(), null);
+                c.moveToFirst();
+                return c.getInt(0);
             }
-        }
-        return count;
+
+            @Override
+            public String getQuery() {
+                return "SELECT COUNT(*) FROM " + table;
+            }
+        });
+
+        return ((result == null) ? -1 : result);
     }
 
     /**
-     * Removes events with an _id <= last_id from table
+     * Removes events with an _id <= lastId from table
      *
-     * @param last_id the last id to delete
+     * @param lastId the last id to delete
      */
-    public void removeEvent(String last_id) {
-        String tableName = Table.EVENTS.getName();
-        // RakeLogger.t(LOG_TAG_PREFIX, "removeEvent _id " + last_id + " from table " + tableName);
+    public void removeEvent(final String lastId) {
+        final String table = Table.EVENTS.getName();
 
-        try {
-            SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.delete(tableName, "_id <= " + last_id, null);
-        } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "removeEvent " + tableName + " by id FAILED. Deleting DB.", e);
+        execute(new DatabaseCallback<Void>() {
+            @Override
+            public Void execute(SQLiteDatabase db) {
+                db.delete(table, getQuery(), null);
+                return null;
+            }
 
-            // We assume that in general, the results of a SQL exception are
-            // unrecoverable, and could be associated with an oversized or
-            // otherwise unusable DB. Better to bomb it and get back on track
-            // than to leave it junked up (and maybe filling up the disk.)
-            dbHelper.deleteDatabase();
-        } finally {
-            dbHelper.close();
-        }
+            @Override
+            public String getQuery() {
+                return COLUMN_ID + " <= " + lastId;
+            }
+        });
     }
 
     /**
@@ -184,16 +175,34 @@ public class DatabaseAdapter {
      *
      * @param time  the unix epoch in milliseconds to remove events before
      */
-    public void removeEvent(long time) {
-        String tableName = Table.EVENTS.getName();
-        // RakeLogger.d(LOG_TAG_PREFIX, "removeEvent time " + time + " from table " + tableName);
+    public void removeEvent(final long time) {
+        final String table = Table.EVENTS.getName();
 
+        execute(new DatabaseCallback<Void>() {
+            @Override
+            public Void execute(SQLiteDatabase db) {
+                db.delete(table, getQuery(), null);
+                return null;
+            }
+
+            @Override
+            public String getQuery() {
+                return COLUMN_CREATED_AT + " <= " + time;
+            }
+        });
+    }
+
+    public void deleteDatabase() {
+        dbHelper.deleteDatabase();
+    }
+
+    public void execute(DatabaseCallback callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
-            db.delete(tableName, COLUMN_CREATED_AT + " <= " + time, null);
+            callback.execute(db);
         } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "removeEvent " + tableName + " by time FAILED. Deleting DB.", e);
-
+            String message = String.format("execute failed %s", callback.getQuery());
+            RakeLogger.e(LOG_TAG_PREFIX, message, e);
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
@@ -204,10 +213,23 @@ public class DatabaseAdapter {
         }
     }
 
-    public void deleteDB() {
-        dbHelper.deleteDatabase();
+    public <T> T executeAndReturnT(DatabaseCallback<T> callback) {
+        try {
+            SQLiteDatabase db = dbHelper.getWritableDatabase();
+            return callback.execute(db);
+        } catch (SQLiteException e) {
+            String message = String.format("executeAndReturnT failed %s", callback.getQuery());
+            RakeLogger.e(LOG_TAG_PREFIX, message, e);
+            // We assume that in general, the results of a SQL exception are
+            // unrecoverable, and could be associated with an oversized or
+            // otherwise unusable DB. Better to bomb it and get back on track
+            // than to leave it junked up (and maybe filling up the disk.)
+            dbHelper.deleteDatabase();
+            return null;
+        } finally {
+            dbHelper.close();
+        }
     }
-
 
     /**
      * Returns the data string to send to Rake and the maximum ID of the row that
@@ -219,104 +241,49 @@ public class DatabaseAdapter {
     public String[] getEventList() {
         Cursor c = null;
         String data = null;
-        String last_id = null;
-        String tableName = Table.EVENTS.getName();
+        final String table = Table.EVENTS.getName();
 
-        try {
-            SQLiteDatabase db = dbHelper.getReadableDatabase();
-            c = db.rawQuery("SELECT * FROM " + tableName +
-                    " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50", null);
-            JSONArray arr = new JSONArray();
+        Flushable<JSONObject> flushable = executeAndReturnT(new DatabaseCallback<Flushable<JSONObject>>() {
+            @Override
+            public Flushable<JSONObject> execute(SQLiteDatabase db) {
+                Cursor c = null;
+                String lastId = null;
+                List<JSONObject> logList = new ArrayList<JSONObject>();
 
-            RakeLogger.t(LOG_TAG_PREFIX, "sending log count: " + c.getCount());
-
-            while (c.moveToNext()) {
-                if (c.isLast()) {
-                    last_id = c.getString(c.getColumnIndex("_id"));
-                }
                 try {
-                    JSONObject j = new JSONObject(c.getString(c.getColumnIndex(COLUMN_DATA)));
-                    arr.put(j);
-                } catch (JSONException e) {
-                    // Ignore this object
+                    c = db.rawQuery(getQuery(), null);
+
+                    while (c.moveToNext()) {
+                        if (c.isLast()) lastId = c.getString(c.getColumnIndex(COLUMN_ID));
+
+                        String log = c.getString(c.getColumnIndex(COLUMN_DATA));
+
+                        try { logList.add(new JSONObject(log)); }
+                        catch (JSONException e) { /* logging and ignore */
+                            RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
+                    }
+
+                /* if exception occurred, just throw out */
+                } finally {
+                    if (null != c) c.close();
                 }
+
+                return new Flushable<JSONObject>(lastId, logList);
             }
 
-            if (arr.length() > 0) {
-                data = arr.toString();
+            @Override
+            public String getQuery() {
+                return "SELECT * FROM " + table + " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50";
             }
-        } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "getEventList " + tableName, e);
+        });
 
-            // We'll dump the DB on write failures, but with reads we can
-            // let things ride in hopes the issue clears up.
-            // (A bit more likely, since we're opening the DB for read and not write.)
-            // A corrupted or disk-full DB will be cleaned up on the next write or clear call.
-            last_id = null;
-            data = null;
-        } finally {
-            dbHelper.close();
-            if (c != null) {
-                c.close();
-            }
+        if (null == flushable || flushable.getLogList().size() == 0) return null;
+        else { /* Flushable<JSONObject>.getLogList() to String */
+            List<JSONObject> logList = flushable.getLogList();
+            JSONArray jsonArray = new JSONArray(logList);
+
+            String[] result = { flushable.getLastId(), new JSONArray(logList).toString() };
+            return result;
         }
-
-        if (last_id != null && data != null) {
-            String[] ret = {last_id, data};
-            return ret;
-        }
-        return null;
     }
-
-//    public List<Flushable> getFlushables() {
-//        Cursor c = null;
-//        String data = null;
-//        String last_id = null;
-//        String tableName = Table.EVENTS.getName();
-//        JSONArray arr = new JSONArray();
-//
-//        try {
-//            SQLiteDatabase db = dbHelper.getReadableDatabase();
-//            c = db.rawQuery("SELECT * FROM " + tableName +
-//                    " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50", null);
-//
-//            RakeLogger.t(LOG_TAG_PREFIX, "sending log count: " + c.getCount());
-//
-//            while (c.moveToNext()) {
-//                if (c.isLast()) {
-//                    last_id = c.getString(c.getColumnIndex("_id"));
-//                }
-//                try {
-//                    JSONObject j = new JSONObject(c.getString(c.getColumnIndex(COLUMN_DATA)));
-//                    arr.put(j);
-//                } catch (JSONException e) {
-//                    // Ignore this object
-//                }
-//            }
-//
-//            if (arr.length() > 0) {
-//                data = arr.toString();
-//            }
-//        } catch (SQLiteException e) {
-//            RakeLogger.e(LOG_TAG_PREFIX, "getFlushables" + tableName, e);
-//
-//            // We'll dump the DB on write failures, but with reads we can
-//            // let things ride in hopes the issue clears up.
-//            // (A bit more likely, since we're opening the DB for read and not write.)
-//            // A corrupted or disk-full DB will be cleaned up on the next write or clear call.
-//            last_id = null;
-//            data = null;
-//        } finally {
-//            dbHelper.close();
-//            if (c != null) {
-//                c.close();
-//            }
-//        }
-//
-//        if (last_id != null && arr.length() > 0) {
-//            return new Flushable()
-//            return ret;
-//        }
-//        return null;
-//    }
 }
