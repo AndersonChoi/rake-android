@@ -189,9 +189,7 @@ final public class MessageLoop {
 
             dbAdapter = createRakeDbAdapter();
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
-            dbAdapter.cleanupEvents(
-                    System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
-                    DatabaseAdapter.Table.EVENTS);
+            dbAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
 
             /* send initial auto-flush message */
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
@@ -199,8 +197,7 @@ final public class MessageLoop {
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
-            DatabaseAdapter.Table trackLogTable = DatabaseAdapter.Table.EVENTS;
-            String[] event = dbAdapter.getEventList(trackLogTable);
+            String[] event = dbAdapter.getEventList();
 
             if (event != null) {
                 // TODO mapper class
@@ -214,13 +211,13 @@ final public class MessageLoop {
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (HttpRequestSender.RequestResult.SUCCESS == result) {
-                    dbAdapter.cleanupEvents(lastId, trackLogTable);
+                    dbAdapter.removeEvent(lastId);
                 } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                     if (!hasMessages(MANUAL_FLUSH.code)) {
                         sendEmptyMessageDelayed(MANUAL_FLUSH.code, flushInterval);
                     }
                 } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
-                    dbAdapter.cleanupEvents(lastId, trackLogTable);
+                    dbAdapter.removeEvent(lastId);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);
                 }
@@ -234,7 +231,7 @@ final public class MessageLoop {
 
                 if (command == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    int logQueueLength = dbAdapter.addEvent(message, DatabaseAdapter.Table.EVENTS);
+                    int logQueueLength = dbAdapter.addEvent(message);
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendTrackedLogFromTable();

@@ -113,11 +113,10 @@ final public class DatabaseAdapter {
      * to the SQLiteDatabase.
      *
      * @param j     the JSON to record
-     * @param table the table to insert into, either "events"
      * @return the number of rows in the table, or -1 on failure
      */
-    public int addEvent(JSONObject j, Table table) {
-        String tableName = table.getName();
+    public int addEvent(JSONObject j) {
+        String tableName = Table.EVENTS.getName();
         Cursor c = null;
         int count = -1;
 
@@ -153,17 +152,16 @@ final public class DatabaseAdapter {
      * Removes events with an _id <= last_id from table
      *
      * @param last_id the last id to delete
-     * @param table   the table to remove events from, either "events"
      */
-    public void cleanupEvents(String last_id, Table table) {
-        String tableName = table.getName();
-        // RakeLogger.t(LOG_TAG_PREFIX, "cleanupEvents _id " + last_id + " from table " + tableName);
+    public void removeEvent(String last_id) {
+        String tableName = Table.EVENTS.getName();
+        // RakeLogger.t(LOG_TAG_PREFIX, "removeEvent _id " + last_id + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, "_id <= " + last_id, null);
         } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "cleanupEvents " + tableName + " by id FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "removeEvent " + tableName + " by id FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -179,17 +177,16 @@ final public class DatabaseAdapter {
      * Removes events before time.
      *
      * @param time  the unix epoch in milliseconds to remove events before
-     * @param table the table to remove events from, either "events"
      */
-    public void cleanupEvents(long time, Table table) {
-        String tableName = table.getName();
-        // RakeLogger.d(LOG_TAG_PREFIX, "cleanupEvents time " + time + " from table " + tableName);
+    public void removeEvent(long time) {
+        String tableName = Table.EVENTS.getName();
+        // RakeLogger.d(LOG_TAG_PREFIX, "removeEvent time " + time + " from table " + tableName);
 
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             db.delete(tableName, COLUMN_CREATED_AT + " <= " + time, null);
         } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "cleanupEvents " + tableName + " by time FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "removeEvent " + tableName + " by time FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -210,15 +207,14 @@ final public class DatabaseAdapter {
      * Returns the data string to send to Rake and the maximum ID of the row that
      * we're sending, so we know what rows to delete when a track request was successful.
      *
-     * @param table the table to read the JSON from, either "events"
      * @return String array containing the maximum ID and the data string
      * representing the events, or null if none could be successfully retrieved.
      */
-    public String[] getEventList(Table table) {
+    public String[] getEventList() {
         Cursor c = null;
         String data = null;
         String last_id = null;
-        String tableName = table.getName();
+        String tableName = Table.EVENTS.getName();
 
         try {
             SQLiteDatabase db = dbHelper.getReadableDatabase();
