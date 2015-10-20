@@ -200,7 +200,7 @@ final public class MessageLoop {
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
             DatabaseAdapter.Table trackLogTable = DatabaseAdapter.Table.EVENTS;
-            String[] event = dbAdapter.generateDataString(trackLogTable);
+            String[] event = dbAdapter.getEventList(trackLogTable);
 
             if (event != null) {
                 // TODO mapper class
@@ -234,7 +234,7 @@ final public class MessageLoop {
 
                 if (command == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    int logQueueLength = dbAdapter.addJSON(message, DatabaseAdapter.Table.EVENTS);
+                    int logQueueLength = dbAdapter.addEvent(message, DatabaseAdapter.Table.EVENTS);
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendTrackedLogFromTable();

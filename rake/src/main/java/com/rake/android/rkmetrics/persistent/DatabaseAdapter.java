@@ -116,7 +116,7 @@ final public class DatabaseAdapter {
      * @param table the table to insert into, either "events"
      * @return the number of rows in the table, or -1 on failure
      */
-    public int addJSON(JSONObject j, Table table) {
+    public int addEvent(JSONObject j, Table table) {
         String tableName = table.getName();
         Cursor c = null;
         int count = -1;
@@ -133,7 +133,7 @@ final public class DatabaseAdapter {
             c.moveToFirst();
             count = c.getInt(0);
         } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "addJSON " + tableName + " FAILED. Deleting DB.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "addEvent " + tableName + " FAILED. Deleting DB.", e);
 
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -214,7 +214,7 @@ final public class DatabaseAdapter {
      * @return String array containing the maximum ID and the data string
      * representing the events, or null if none could be successfully retrieved.
      */
-    public String[] generateDataString(Table table) {
+    public String[] getEventList(Table table) {
         Cursor c = null;
         String data = null;
         String last_id = null;
@@ -244,7 +244,7 @@ final public class DatabaseAdapter {
                 data = arr.toString();
             }
         } catch (SQLiteException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "generateDataString " + tableName, e);
+            RakeLogger.e(LOG_TAG_PREFIX, "getEventList " + tableName, e);
 
             // We'll dump the DB on write failures, but with reads we can
             // let things ride in hopes the issue clears up.
