@@ -102,7 +102,7 @@ final public class MessageLoop {
 
     public static void setFlushInterval(long interval /* milliseconds */) {
         flushInterval = interval;
-        RakeLogger.d(LOG_TAG_PREFIX, "set flush interval to " + interval);
+        RakeLogger.d(LOG_TAG_PREFIX, "Set flush interval to " + interval);
     }
 
     public void hardKill() {
@@ -116,7 +116,7 @@ final public class MessageLoop {
         if (isDead()) {
             // thread died under suspicious circumstances.
             // don't try to send any more events.
-            RakeLogger.e(LOG_TAG_PREFIX, "dead rake worker dropping a message: " + msg);
+            RakeLogger.e(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
         } else {
             synchronized (handlerLock) {
                 if (handler != null) handler.sendMessage(msg);

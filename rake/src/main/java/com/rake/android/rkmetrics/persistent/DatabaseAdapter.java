@@ -12,6 +12,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.util.List;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
@@ -19,9 +20,11 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-final public class DatabaseAdapter {
+public class DatabaseAdapter {
     public enum Table {
-        EVENTS("events");
+        EVENTS("events"),
+        LOG("log");
+
         Table(String name) { tableName = name; }
         public String getName() {
             return tableName;
@@ -29,27 +32,31 @@ final public class DatabaseAdapter {
         private final String tableName;
     }
 
+    private static final String TEXT_TYPE = "TEXT";
+
     private static final String DATABASE_NAME = "rake";
     /**
      * version 5: `token`, `url` columns added
      */
-    private static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 4;
 
-    private static final String QUERY_SEP = ", ";
-    private static final String QUERY_END = ");";
-    public static final String COLUMN_ID = "_id";
-    public static final String COLUMN_URL = "url";                 /* STRING not null */
-    public static final String COLUMN_TOKEN = "token";             /* STRING not null */
-    public static final String COLUMN_DATA = "data";               /* STRING not null */
-    public static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
-    private static final String CREATE_EVENTS_TABLE =
+    public static final String QUERY_SEP = ", ";
+    public static final String QUERY_END = ");";
+
+    private static final String COLUMN_ID = "_id";
+    private static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+
+    /* EVENT TABLE specific constants */
+    private static final String COLUMN_DATA = "data";               /* STRING not null */
+    private static final String QUERY_CREATE_EVENTS_TABLE =
             "CREATE TABLE " + Table.EVENTS.getName() + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
                     COLUMN_DATA + " STRING NOT NULL" + QUERY_SEP +
                     COLUMN_CREATED_AT + " INTEGER NOT NULL" + QUERY_END;
-
-    private static final String EVENTS_TIME_INDEX =
+    private static final String QUERY_EVENTS_TIME_INDEX =
             "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
                     " (" + COLUMN_CREATED_AT + ");";
+
+
 
     private static DatabaseAdapter instance;
     private final DatabaseHelper dbHelper;
@@ -83,8 +90,8 @@ final public class DatabaseAdapter {
         public void onCreate(SQLiteDatabase db) {
             RakeLogger.d(LOG_TAG_PREFIX, "Creating Database: " + DATABASE_NAME);
 
-            db.execSQL(CREATE_EVENTS_TABLE);
-            db.execSQL(EVENTS_TIME_INDEX);
+            db.execSQL(QUERY_CREATE_EVENTS_TABLE);
+            db.execSQL(QUERY_EVENTS_TIME_INDEX);
         }
 
         @Override
@@ -94,11 +101,10 @@ final public class DatabaseAdapter {
 
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
-            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-            db.execSQL(CREATE_EVENTS_TABLE);
-            db.execSQL(EVENTS_TIME_INDEX);
-
             if (oldVersion < 4) { /* DO NOT SUPPORT */
+                db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+                db.execSQL(QUERY_CREATE_EVENTS_TABLE);
+                db.execSQL(QUERY_EVENTS_TIME_INDEX);
             }
 
             if (oldVersion < 5) { /* 4 -> 5 */
@@ -261,4 +267,56 @@ final public class DatabaseAdapter {
         }
         return null;
     }
+
+//    public List<Flushable> getFlushables() {
+//        Cursor c = null;
+//        String data = null;
+//        String last_id = null;
+//        String tableName = Table.EVENTS.getName();
+//        JSONArray arr = new JSONArray();
+//
+//        try {
+//            SQLiteDatabase db = dbHelper.getReadableDatabase();
+//            c = db.rawQuery("SELECT * FROM " + tableName +
+//                    " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50", null);
+//
+//            RakeLogger.t(LOG_TAG_PREFIX, "sending log count: " + c.getCount());
+//
+//            while (c.moveToNext()) {
+//                if (c.isLast()) {
+//                    last_id = c.getString(c.getColumnIndex("_id"));
+//                }
+//                try {
+//                    JSONObject j = new JSONObject(c.getString(c.getColumnIndex(COLUMN_DATA)));
+//                    arr.put(j);
+//                } catch (JSONException e) {
+//                    // Ignore this object
+//                }
+//            }
+//
+//            if (arr.length() > 0) {
+//                data = arr.toString();
+//            }
+//        } catch (SQLiteException e) {
+//            RakeLogger.e(LOG_TAG_PREFIX, "getFlushables" + tableName, e);
+//
+//            // We'll dump the DB on write failures, but with reads we can
+//            // let things ride in hopes the issue clears up.
+//            // (A bit more likely, since we're opening the DB for read and not write.)
+//            // A corrupted or disk-full DB will be cleaned up on the next write or clear call.
+//            last_id = null;
+//            data = null;
+//        } finally {
+//            dbHelper.close();
+//            if (c != null) {
+//                c.close();
+//            }
+//        }
+//
+//        if (last_id != null && arr.length() > 0) {
+//            return new Flushable()
+//            return ret;
+//        }
+//        return null;
+//    }
 }
