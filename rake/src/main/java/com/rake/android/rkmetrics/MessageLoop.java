@@ -3,15 +3,19 @@ package com.rake.android.rkmetrics;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.*;
+import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 
 
 /**
@@ -21,10 +25,39 @@ import static com.rake.android.rkmetrics.config.RakeConfig.*;
  * a logical Rake thread.
  */
 final public class MessageLoop {
+
+    public enum Command {
+        TRACK(1),
+        MANUAL_FLUSH(2),
+        AUTO_FLUSH_FULL(3),
+        AUTO_FLUSH_INTERVAL(4),
+        KILL_WORKER (5),
+        UNKNOWN(-1);
+
+        private int code;
+        Command(int code) { this.code = code; }
+
+        private static final Map<Integer, Command> messagesByCode = new HashMap<Integer, Command>();
+
+        static {
+            for (Command m : Command.values()) {
+                messagesByCode.put(m.code, m);
+            }
+        }
+
+        public static Command fromCode(int code) {
+            Command m = messagesByCode.get(code);
+
+            if (m == null) return UNKNOWN; else return m;
+        }
+    }
+
     // messages used to communicate between the delegator and the handler
-    private static int TRACK = 1;
-    private static int FLUSH = 2;
-    private static int KILL_WORKER = 3;
+//    private static int TRACK = 1;
+//    private static int MANUAL_FLUSH = 2;
+//    private static int KILL_WORKER = 3;
+//    private static int AUTO_FLUSH_FULL = 4;
+//    private static int AUTO_FLUSH_INTERVAL = 5;
 
     private static volatile Handler handler;
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
@@ -54,7 +87,7 @@ final public class MessageLoop {
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
-        m.what = TRACK;
+        m.what = Command.TRACK.code;
         m.obj = trackable;
 
         runMessage(m);
@@ -62,7 +95,7 @@ final public class MessageLoop {
 
     public void flush() {
         Message m = Message.obtain();
-        m.what = FLUSH;
+        m.what = Command.MANUAL_FLUSH.code;
 
         runMessage(m);
     }
@@ -74,7 +107,7 @@ final public class MessageLoop {
 
     public void hardKill() {
         Message m = Message.obtain();
-        m.what = KILL_WORKER;
+        m.what = Command.KILL_WORKER.code;
 
         runMessage(m);
     }
@@ -96,27 +129,25 @@ final public class MessageLoop {
     }
 
     private Handler createRakeMessageHandler() {
-        Handler handler = null;
-
         final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
 
         Thread thread = new Thread() {
             @Override
             public void run() {
-                RakeLogger.i(LOG_TAG_PREFIX, "starting worker thread " + this.getId());
+                RakeLogger.i(LOG_TAG_PREFIX, "Starting worker thread " + this.getId());
 
                 android.os.Looper.prepare();
 
                 try {
                     handlerQueue.put(new RakeMessageHandler());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException("couldn't build worker thread for Analytics Messages", e);
+                    throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
                 }
 
                 try {
                     android.os.Looper.loop();
                 } catch (RuntimeException e) {
-                    RakeLogger.e(LOG_TAG_PREFIX, "rake Thread dying from RuntimeException", e);
+                    RakeLogger.e(LOG_TAG_PREFIX, "Rake Thread dying from RuntimeException", e);
                 }
             }
         };
@@ -124,10 +155,12 @@ final public class MessageLoop {
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.start();
 
+        Handler handler = null;
+
         try {
             handler = handlerQueue.take();
         } catch (InterruptedException e) {
-            throw new RuntimeException("couldn't retrieve handler from worker thread");
+            throw new RuntimeException("Couldn't retrieve handler from worker thread");
         }
 
         return handler;
@@ -143,7 +176,7 @@ final public class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.t(LOG_TAG_PREFIX, "avg flush frequency approximately " + seconds + " seconds.");
+            RakeLogger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -155,60 +188,14 @@ final public class MessageLoop {
             super();
 
             dbAdapter = createRakeDbAdapter();
-            RakeLogger.t(LOG_TAG_PREFIX, "remove expired logs (48 hours before)");
+            RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
             dbAdapter.cleanupEvents(
                     System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME,
                     DatabaseAdapter.Table.EVENTS);
+
+            /* send initial auto-flush message */
+            sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
         }
-
-        @Override
-        public void handleMessage(Message msg) {
-            try {
-                int logQueueLength = -1;
-
-                if (msg.what == TRACK) {
-                    JSONObject message = (JSONObject) msg.obj;
-                    logQueueLength = dbAdapter.addJSON(message, DatabaseAdapter.Table.EVENTS);
-                    RakeLogger.t(LOG_TAG_PREFIX, "total log count in SQLite: " + logQueueLength);
-
-                } else if (msg.what == FLUSH) {
-                    sendTrackedLogFromTable();
-
-                } else if (msg.what == KILL_WORKER) {
-                    RakeLogger.w(LOG_TAG_PREFIX, "worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
-                    synchronized (handlerLock) {
-                        dbAdapter.deleteDB();
-                        handler = null;
-                        android.os.Looper.myLooper().quit();
-                    }
-
-                } else {
-                    RakeLogger.e(LOG_TAG_PREFIX, "unexpected message received by Rake worker: " + msg);
-                }
-
-                if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) {
-                    RakeLogger.t(LOG_TAG_PREFIX, "log queue is full");
-                    sendTrackedLogFromTable();
-
-                } else if (logQueueLength > 0) {
-                    if (!hasMessages(FLUSH)) {
-                        sendEmptyMessageDelayed(FLUSH, flushInterval); // schedule flush()
-                    }
-                }
-            } catch (RuntimeException e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "worker throw unhandled exception. will not send any more Rake messages", e);
-
-                synchronized (handlerLock) {
-                    handler = null;
-                    try { android.os.Looper.myLooper().quit(); }
-                    catch (Exception tooLate) {
-                        RakeLogger.e(LOG_TAG_PREFIX, "can't halt looper", tooLate);
-                    }
-                }
-
-                throw e;
-            }
-        } // handleMessage
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
@@ -221,14 +208,17 @@ final public class MessageLoop {
                 String rawMessage = event[1];
 
                 // TODO: convert instance method, support multiple urls
-                HttpRequestSender.RequestResult result =
-                    HttpRequestSender.sendRequest(rawMessage, RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
+                HttpRequestSender.RequestResult result = HttpRequestSender.sendRequest(
+                        rawMessage,
+                        RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (HttpRequestSender.RequestResult.SUCCESS == result) {
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
-                    if (!hasMessages(FLUSH)) { sendEmptyMessageDelayed(FLUSH, flushInterval); }
+                    if (!hasMessages(MANUAL_FLUSH.code)) {
+                        sendEmptyMessageDelayed(MANUAL_FLUSH.code, flushInterval);
+                    }
                 } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     dbAdapter.cleanupEvents(lastId, trackLogTable);
                 } else {
@@ -237,6 +227,49 @@ final public class MessageLoop {
             }
         }
 
-    }
+        @Override
+        public void handleMessage(Message msg) {
+            try {
+                Command command = Command.fromCode(msg.what);
 
+                if (command == TRACK) {
+                    JSONObject message = (JSONObject) msg.obj;
+                    int logQueueLength = dbAdapter.addJSON(message, DatabaseAdapter.Table.EVENTS);
+                    RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
+
+                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendTrackedLogFromTable();
+
+                } else if (command == MANUAL_FLUSH) {
+                    sendTrackedLogFromTable();
+                } else if (command == AUTO_FLUSH_FULL) {
+                    sendTrackedLogFromTable();
+                } else if (command == AUTO_FLUSH_INTERVAL) {
+                    sendTrackedLogFromTable();
+                    sendEmptyMessageDelayed(AUTO_FLUSH_FULL.code, flushInterval);
+                } else if (command == KILL_WORKER) {
+                    RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                    synchronized (handlerLock) {
+                        dbAdapter.deleteDB();
+                        handler = null;
+                        android.os.Looper.myLooper().quit();
+                    }
+                } else { /* UNKNOWN COMMAND */
+                    RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
+                }
+
+            } catch (RuntimeException e) {
+                RakeLogger.e(LOG_TAG_PREFIX, "Worker throw unhandled exception. will not send any more Rake messages", e);
+
+                synchronized (handlerLock) {
+                    handler = null;
+                    try { android.os.Looper.myLooper().quit(); }
+                    catch (Exception tooLate) {
+                        RakeLogger.e(LOG_TAG_PREFIX, "Can't halt looper", tooLate);
+                    }
+                }
+
+                throw e;
+            }
+        } // handleMessage
+    }
 }
