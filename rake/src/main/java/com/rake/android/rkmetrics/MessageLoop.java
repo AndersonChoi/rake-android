@@ -242,7 +242,9 @@ final public class MessageLoop {
                     sendTrackedLogFromTable();
                 } else if (command == AUTO_FLUSH_INTERVAL) {
                     sendTrackedLogFromTable();
-                    sendEmptyMessageDelayed(AUTO_FLUSH_FULL.code, flushInterval);
+
+                    if (!hasMessages(AUTO_FLUSH_INTERVAL.code))
+                        sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
                 } else if (command == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
