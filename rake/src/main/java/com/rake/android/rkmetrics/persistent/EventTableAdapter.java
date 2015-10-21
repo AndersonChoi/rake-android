@@ -16,7 +16,7 @@ import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EventTableAdapter extends DatabaseAdapter {
+public final class EventTableAdapter extends DatabaseAdapter {
 
     private EventTableAdapter(Context appContext) {
         super(appContext);
