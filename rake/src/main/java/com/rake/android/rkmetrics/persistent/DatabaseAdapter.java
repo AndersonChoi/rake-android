@@ -208,6 +208,8 @@ public class DatabaseAdapter {
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
             dbHelper.deleteDatabase();
+        } catch (Exception e) {
+            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         } finally {
             dbHelper.close();
         }
@@ -226,6 +228,8 @@ public class DatabaseAdapter {
             // than to leave it junked up (and maybe filling up the disk.)
             dbHelper.deleteDatabase();
             return null;
+        } catch (Exception e) {
+            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         } finally {
             dbHelper.close();
         }
