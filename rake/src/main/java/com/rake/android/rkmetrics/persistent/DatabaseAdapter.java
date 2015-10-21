@@ -230,6 +230,7 @@ public class DatabaseAdapter {
             return null;
         } catch (Exception e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            return null;
         } finally {
             dbHelper.close();
         }
