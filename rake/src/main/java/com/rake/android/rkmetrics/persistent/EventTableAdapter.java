@@ -17,6 +17,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class EventTableAdapter extends DatabaseAdapter {
+    protected static final String COLUMN_ID = "_id";
+    protected static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+
+    /* EVENT TABLE specific constants */
+    protected static final String COLUMN_DATA = "data";               /* STRING not null */
+    protected static final String QUERY_CREATE_EVENTS_TABLE =
+            "CREATE TABLE " + Table.EVENTS.getName() + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
+                    COLUMN_DATA + " STRING NOT NULL" + QUERY_SEP +
+                    COLUMN_CREATED_AT + " INTEGER NOT NULL" + QUERY_END;
+    protected static final String QUERY_EVENTS_TIME_INDEX =
+            "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
+                    " (" + COLUMN_CREATED_AT + ");";
 
     private EventTableAdapter(Context appContext) {
         super(appContext);

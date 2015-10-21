@@ -28,26 +28,11 @@ abstract class DatabaseAdapter {
 
     protected static final String TEXT_TYPE = "TEXT";
     protected static final String DATABASE_NAME = "rake";
-    /**
-     * version 5: `token`, `url` columns added
-     */
+
     private static final int DATABASE_VERSION = 4;
 
     protected static final String QUERY_SEP = ", ";
     protected static final String QUERY_END = ");";
-
-    protected static final String COLUMN_ID = "_id";
-    protected static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
-
-    /* EVENT TABLE specific constants */
-    protected static final String COLUMN_DATA = "data";               /* STRING not null */
-    protected static final String QUERY_CREATE_EVENTS_TABLE =
-            "CREATE TABLE " + Table.EVENTS.getName() + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    COLUMN_DATA + " STRING NOT NULL" + QUERY_SEP +
-                    COLUMN_CREATED_AT + " INTEGER NOT NULL" + QUERY_END;
-    protected static final String QUERY_EVENTS_TIME_INDEX =
-            "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
-                    " (" + COLUMN_CREATED_AT + ");";
 
     private static DatabaseHelper dbHelper;
     private static final Object lock = new Object();
@@ -75,8 +60,8 @@ abstract class DatabaseAdapter {
         public void onCreate(SQLiteDatabase db) {
             RakeLogger.d(LOG_TAG_PREFIX, "Creating Database: " + DATABASE_NAME);
 
-            db.execSQL(QUERY_CREATE_EVENTS_TABLE);
-            db.execSQL(QUERY_EVENTS_TIME_INDEX);
+            db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
+            db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
         }
 
         @Override
@@ -87,8 +72,8 @@ abstract class DatabaseAdapter {
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-            db.execSQL(QUERY_CREATE_EVENTS_TABLE);
-            db.execSQL(QUERY_EVENTS_TIME_INDEX);
+            db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
+            db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
 
             if (oldVersion < 4) { /* DO NOT SUPPORT */
             }
