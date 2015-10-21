@@ -60,7 +60,6 @@ final public class MessageLoop {
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
     private static MessageLoop instance;
-    private static EventTableAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
     private final Context appContext;
@@ -71,7 +70,7 @@ final public class MessageLoop {
 
     private MessageLoop(Context appContext) {
         this.appContext = appContext;
-        handler = createRakeMessageHandler();
+        handler = createMessageHandler();
     }
 
     public static synchronized MessageLoop getInstance(Context appContext) {
@@ -79,8 +78,6 @@ final public class MessageLoop {
 
         return instance;
     }
-
-    private EventTableAdapter createEventTableAdapter() { return EventTableAdapter.getInstance(appContext); }
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
@@ -125,7 +122,7 @@ final public class MessageLoop {
         synchronized (handlerLock) { return handler == null; }
     }
 
-    private Handler createRakeMessageHandler() {
+    private Handler createMessageHandler() {
         final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
 
         Thread thread = new Thread() {
@@ -136,7 +133,7 @@ final public class MessageLoop {
                 android.os.Looper.prepare();
 
                 try {
-                    handlerQueue.put(new RakeMessageHandler());
+                    handlerQueue.put(new MessageHandler());
                 } catch (InterruptedException e) {
                     throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
                 }
@@ -180,21 +177,24 @@ final public class MessageLoop {
         flushCount = newFlushCount;
     }
 
-    private class RakeMessageHandler extends Handler {
-        public RakeMessageHandler() {
+    private class MessageHandler extends Handler {
+
+        public MessageHandler() {
             super();
 
-            dbAdapter = createEventTableAdapter();
+            eventTableAdapter = EventTableAdapter.getInstance(appContext);
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
-            dbAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
+            eventTableAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
 
             /* send initial auto-flush message */
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
         }
 
+        private EventTableAdapter eventTableAdapter;
+
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
-            String[] event = dbAdapter.getEventList();
+            String[] event = eventTableAdapter.getEventList();
 
             if (event != null) {
                 // TODO mapper class
@@ -208,13 +208,13 @@ final public class MessageLoop {
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (HttpRequestSender.RequestResult.SUCCESS == result) {
-                    dbAdapter.removeEvent(lastId);
+                    eventTableAdapter.removeEvent(lastId);
                 } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
                     if (!hasMessages(MANUAL_FLUSH.code)) {
                         sendEmptyMessageDelayed(MANUAL_FLUSH.code, flushInterval);
                     }
                 } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
-                    dbAdapter.removeEvent(lastId);
+                    eventTableAdapter.removeEvent(lastId);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);
                 }
@@ -228,7 +228,7 @@ final public class MessageLoop {
 
                 if (command == TRACK) {
                     JSONObject message = (JSONObject) msg.obj;
-                    int logQueueLength = dbAdapter.addEvent(message);
+                    int logQueueLength = eventTableAdapter.addEvent(message);
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendTrackedLogFromTable();
@@ -245,7 +245,7 @@ final public class MessageLoop {
                 } else if (command == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
-                        dbAdapter.deleteDatabase();
+                        eventTableAdapter.deleteDatabase();
                         handler = null;
                         android.os.Looper.myLooper().quit();
                     }

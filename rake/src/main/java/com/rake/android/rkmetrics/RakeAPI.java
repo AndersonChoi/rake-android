@@ -35,7 +35,7 @@ public class RakeAPI {
     }
 
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
-    // TODO: move into RakeMessageHandler
+    // TODO: move into MessageHandler
     private static String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
 
     private Env env = Env.DEV;
