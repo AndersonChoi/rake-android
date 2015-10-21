@@ -66,7 +66,7 @@ abstract class DatabaseAdapter {
             database = context.getDatabasePath(dbName);
         }
 
-        public void deleteDatabase() {
+        public void dropDatabase() {
             close();
             database.delete(); // Completely deletes the DB file from the file system.
         }
@@ -101,7 +101,7 @@ abstract class DatabaseAdapter {
     }
 
     public void deleteDatabase() {
-        dbHelper.deleteDatabase();
+        dbHelper.dropDatabase();
     }
 
     protected void execute(SQLiteCallback callback) {
@@ -115,7 +115,7 @@ abstract class DatabaseAdapter {
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            dbHelper.deleteDatabase();
+            dbHelper.dropDatabase();
         } catch (Exception e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         } finally {
@@ -134,7 +134,7 @@ abstract class DatabaseAdapter {
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
-            dbHelper.deleteDatabase();
+            dbHelper.dropDatabase();
             return null;
         } catch (Exception e) {
             RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);

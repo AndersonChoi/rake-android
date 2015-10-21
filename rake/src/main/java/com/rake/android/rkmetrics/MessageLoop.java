@@ -49,13 +49,6 @@ final public class MessageLoop {
         }
     }
 
-    // messages used to communicate between the delegator and the handler
-//    private static int TRACK = 1;
-//    private static int MANUAL_FLUSH = 2;
-//    private static int KILL_WORKER = 3;
-//    private static int AUTO_FLUSH_FULL = 4;
-//    private static int AUTO_FLUSH_INTERVAL = 5;
-
     private static volatile Handler handler;
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
