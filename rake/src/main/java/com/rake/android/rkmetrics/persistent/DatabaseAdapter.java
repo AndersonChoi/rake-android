@@ -61,26 +61,28 @@ abstract class DatabaseAdapter {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            RakeLogger.d(LOG_TAG_PREFIX, "Creating Database: " + DATABASE_NAME);
+            RakeLogger.d(LOG_TAG_PREFIX, "Create database: " + DATABASE_NAME);
 
-            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
-            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
+            String createTableQuery = EventTableAdapter.EventContract.QUERY_CREATE_TABLE;
+            String createIndexQuery = EventTableAdapter.EventContract.QUERY_CREATE_INDEX;
+            RakeLogger.d(LOG_TAG_PREFIX, "Create table with query: \n" + createTableQuery);
+            RakeLogger.d(LOG_TAG_PREFIX, "Create index with query: \n" + createIndexQuery);
 
-            // TODO logging
+            db.execSQL(createTableQuery);
+            db.execSQL(createIndexQuery);
+
 //            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
 //            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
         }
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            String message = String.format("Upgrading Database [%s] from version %d to %d",
+            String message = String.format("Upgrade Database [%s] from version %d to %d",
                     DATABASE_NAME, oldVersion, newVersion);
 
             RakeLogger.d(LOG_TAG_PREFIX, message);
-            
 
-            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+            db.execSQL(EventTableAdapter.EventContract.QUERY_DROP_TABLE);
             db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
             db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
 

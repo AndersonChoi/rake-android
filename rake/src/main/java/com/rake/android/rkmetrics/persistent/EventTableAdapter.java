@@ -20,17 +20,21 @@ import java.util.List;
 public final class EventTableAdapter extends DatabaseAdapter {
 
     public static class EventContract implements BaseColumns {
-        protected static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+        public static final String TABLE_NAME = Table.EVENTS.getName();
 
-        protected static final String COLUMN_DATA = "data";               /* STRING not null */
-        protected static final String QUERY_CREATE_TABLE =
-                "CREATE TABLE " + Table.EVENTS.getName() + " (" + _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
+        public static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+        public static final String COLUMN_DATA = "data";               /* STRING not null */
+
+        public static final String QUERY_CREATE_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" + _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
                         COLUMN_DATA + STRING_TYPE_NOT_NULL + COMMA_SEP +
                         COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
-        protected static final String QUERY_CREATE_INDEX =
-                "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
+
+        public static final String QUERY_CREATE_INDEX =
+                "CREATE INDEX IF NOT EXISTS time_idx ON " + TABLE_NAME +
                         " (" + COLUMN_CREATED_AT + ");";
 
+        public static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
 
     private EventTableAdapter(Context appContext) {
