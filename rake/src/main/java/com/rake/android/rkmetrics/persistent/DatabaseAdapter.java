@@ -14,7 +14,7 @@ import java.io.File;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-public abstract class DatabaseAdapter {
+abstract class DatabaseAdapter {
     public enum Table {
         EVENTS("events"),
         LOG("log");
@@ -104,7 +104,7 @@ public abstract class DatabaseAdapter {
         dbHelper.deleteDatabase();
     }
 
-    public void execute(SQLiteCallback callback) {
+    protected void execute(SQLiteCallback callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             callback.execute(db);
@@ -123,7 +123,7 @@ public abstract class DatabaseAdapter {
         }
     }
 
-    public <T> T executeAndReturnT(SQLiteCallback<T> callback) {
+    protected <T> T executeAndReturnT(SQLiteCallback<T> callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             return callback.execute(db);
