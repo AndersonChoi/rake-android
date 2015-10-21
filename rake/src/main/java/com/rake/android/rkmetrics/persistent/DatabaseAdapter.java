@@ -26,12 +26,15 @@ abstract class DatabaseAdapter {
         private final String tableName;
     }
 
-    protected static final String TEXT_TYPE = "TEXT";
     protected static final String DATABASE_NAME = "rake";
+    protected static final String TEXT_TYPE_NOT_NULL = " TEXT NOT NULL";
+    protected static final String STRING_TYPE_NOT_NULL = " STRING NOT NULL";
+    protected static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
+    protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
 
     private static final int DATABASE_VERSION = 4;
 
-    protected static final String QUERY_SEP = ", ";
+    protected static final String COMMA_SEP = ", ";
     protected static final String QUERY_END = ");";
 
     private static DatabaseHelper dbHelper;
@@ -53,15 +56,20 @@ abstract class DatabaseAdapter {
 
         public void dropDatabase() {
             close();
-            database.delete(); // Completely deletes the DB file from the file system.
+            database.delete(); // delete the DB file from the file system completely.
         }
 
         @Override
         public void onCreate(SQLiteDatabase db) {
             RakeLogger.d(LOG_TAG_PREFIX, "Creating Database: " + DATABASE_NAME);
 
-            db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
-            db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
+            db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
+            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
+
+            // TODO logging
+//            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
+//            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
         }
 
         @Override
@@ -70,17 +78,26 @@ abstract class DatabaseAdapter {
                     DATABASE_NAME, oldVersion, newVersion);
 
             RakeLogger.d(LOG_TAG_PREFIX, message);
+            
 
             db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-            db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
-            db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
+            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
+            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
 
-            if (oldVersion < 4) { /* DO NOT SUPPORT */
-            }
-
-            if (oldVersion < 5) { /* 4 -> 5 */
-
-            }
+//            if (oldVersion < 4) { /* DO NOT SUPPORT */
+//                db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
+//                db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
+//                db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
+//
+//            }
+//
+//            /**
+//             * Version 4 -> 5: `Log` 테이블이 추가되었음
+//             */
+//            if (oldVersion < 5) {
+//                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
+//                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
+//            }
 
         }
     }

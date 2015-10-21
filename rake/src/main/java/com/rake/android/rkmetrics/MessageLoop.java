@@ -7,6 +7,7 @@ import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
+//import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
@@ -174,18 +175,22 @@ final public class MessageLoop {
 
     private class MessageHandler extends Handler {
 
+        private final EventTableAdapter eventTableAdapter;
+//        private final LogTableAdapter logTableAdapter;
+
+
         public MessageHandler() {
             super();
 
             eventTableAdapter = EventTableAdapter.getInstance(appContext);
+//            logTableAdapter = LogTableAdapter.getInstance(appContext);
+
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
             eventTableAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
 
             /* send initial auto-flush message */
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
         }
-
-        private EventTableAdapter eventTableAdapter;
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();

@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.provider.BaseColumns;
 
 import com.rake.android.rkmetrics.util.RakeLogger;
 
@@ -17,18 +18,20 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class EventTableAdapter extends DatabaseAdapter {
-    protected static final String COLUMN_ID = "_id";
-    protected static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
 
-    /* EVENT TABLE specific constants */
-    protected static final String COLUMN_DATA = "data";               /* STRING not null */
-    protected static final String QUERY_CREATE_EVENTS_TABLE =
-            "CREATE TABLE " + Table.EVENTS.getName() + " (" + COLUMN_ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
-                    COLUMN_DATA + " STRING NOT NULL" + QUERY_SEP +
-                    COLUMN_CREATED_AT + " INTEGER NOT NULL" + QUERY_END;
-    protected static final String QUERY_EVENTS_TIME_INDEX =
-            "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
-                    " (" + COLUMN_CREATED_AT + ");";
+    public static class EventContract implements BaseColumns {
+        protected static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+
+        protected static final String COLUMN_DATA = "data";               /* STRING not null */
+        protected static final String QUERY_CREATE_TABLE =
+                "CREATE TABLE " + Table.EVENTS.getName() + " (" + _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
+                        COLUMN_DATA + STRING_TYPE_NOT_NULL + COMMA_SEP +
+                        COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
+        protected static final String QUERY_CREATE_INDEX =
+                "CREATE INDEX IF NOT EXISTS time_idx ON " + Table.EVENTS.getName() +
+                        " (" + COLUMN_CREATED_AT + ");";
+
+    }
 
     private EventTableAdapter(Context appContext) {
         super(appContext);
@@ -58,8 +61,8 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
                 Cursor c = null;
                 ContentValues cv = new ContentValues();
-                cv.put(COLUMN_DATA, json.toString());
-                cv.put(COLUMN_CREATED_AT, System.currentTimeMillis());
+                cv.put(EventContract.COLUMN_DATA, json.toString());
+                cv.put(EventContract.COLUMN_CREATED_AT, System.currentTimeMillis());
                 db.insert(table, null, cv);
 
                 c = db.rawQuery(getQuery(), null);
@@ -93,7 +96,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return COLUMN_ID + " <= " + lastId;
+                return EventContract._ID + " <= " + lastId;
             }
         });
     }
@@ -115,7 +118,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return COLUMN_CREATED_AT + " <= " + time;
+                return EventContract.COLUMN_CREATED_AT + " <= " + time;
             }
         });
     }
@@ -143,9 +146,9 @@ public final class EventTableAdapter extends DatabaseAdapter {
                     c = db.rawQuery(getQuery(), null);
 
                     while (c.moveToNext()) {
-                        if (c.isLast()) lastId = c.getString(c.getColumnIndex(COLUMN_ID));
+                        if (c.isLast()) lastId = c.getString(c.getColumnIndex(EventContract._ID));
 
-                        String log = c.getString(c.getColumnIndex(COLUMN_DATA));
+                        String log = c.getString(c.getColumnIndex(EventContract.COLUMN_DATA));
 
                         try { logList.add(new JSONObject(log)); }
                         catch (JSONException e) { /* logging and ignore */
@@ -162,7 +165,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return "SELECT * FROM " + table + " ORDER BY " + COLUMN_CREATED_AT + " ASC LIMIT 50";
+                return "SELECT * FROM " + table + " ORDER BY " + EventContract.COLUMN_CREATED_AT + " ASC LIMIT 50";
             }
         });
 
