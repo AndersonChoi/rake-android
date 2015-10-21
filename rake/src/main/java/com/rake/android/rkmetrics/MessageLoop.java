@@ -6,7 +6,7 @@ import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
-import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
+import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
@@ -19,10 +19,7 @@ import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 
 
 /**
- * Manage communication of events with the internal database and the Rake servers.
- * <p/>
- * <p>This class straddles the thread boundary between user threads and
- * a logical Rake thread.
+ * Manage communication of events with the internal database and the Rake servers (Singleton)
  */
 final public class MessageLoop {
 
@@ -63,7 +60,7 @@ final public class MessageLoop {
     private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
     private static MessageLoop instance;
-    private static DatabaseAdapter dbAdapter;
+    private static EventTableAdapter dbAdapter;
 
     private final Object handlerLock = new Object();
     private final Context appContext;
@@ -83,7 +80,7 @@ final public class MessageLoop {
         return instance;
     }
 
-    private DatabaseAdapter createRakeDbAdapter() { return DatabaseAdapter.getInstance(appContext); }
+    private EventTableAdapter createEventTableAdapter() { return EventTableAdapter.getInstance(appContext); }
 
     public void track(JSONObject trackable) {
         Message m = Message.obtain();
@@ -187,7 +184,7 @@ final public class MessageLoop {
         public RakeMessageHandler() {
             super();
 
-            dbAdapter = createRakeDbAdapter();
+            dbAdapter = createEventTableAdapter();
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
             dbAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
 
