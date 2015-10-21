@@ -63,6 +63,8 @@ final public class MessageLoop {
 
     private MessageLoop(Context appContext) {
         this.appContext = appContext;
+
+        // TODO try-catch: retry
         handler = createMessageHandler();
     }
 
@@ -209,7 +211,7 @@ final public class MessageLoop {
                 } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     eventTableAdapter.removeEvent(lastId);
                 } else {
-                    RakeLogger.e(LOG_TAG_PREFIX, "invalid RequestResult: " + result);
+                    RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
                 }
             }
         }

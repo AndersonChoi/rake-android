@@ -255,7 +255,7 @@ public class RakeAPI {
         RakeAPI.checkInvalidEndpoint(baseEndpoint);
 
         RakeAPI.baseEndpoint = baseEndpoint;
-        RakeLogger.d(LOG_TAG_PREFIX, "setting endpoint API host to " + baseEndpoint);
+        RakeLogger.d(LOG_TAG_PREFIX, "Set endpoint to " + baseEndpoint);
     }
 
     private static void checkInvalidEndpoint(String baseEndpoint) {
@@ -267,7 +267,7 @@ public class RakeAPI {
         if  ((RakeAPI.baseEndpoint.startsWith(DEV_HOST) && baseEndpoint.startsWith(LIVE_HOST)) ||
                 (RakeAPI.baseEndpoint.startsWith(LIVE_HOST) && baseEndpoint.startsWith(DEV_HOST))) {
             throw new IllegalArgumentException(
-                    "can't use both RakeAPI.Env.DEV and RakeAPI.Env.LIVE at the same time");
+                    "Can't use both RakeAPI.Env.DEV and RakeAPI.Env.LIVE at the same time");
         }
     }
 

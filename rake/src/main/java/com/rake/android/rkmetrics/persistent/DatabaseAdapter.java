@@ -109,7 +109,7 @@ abstract class DatabaseAdapter {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             callback.execute(db);
         } catch (SQLiteException e) {
-            String message = String.format("execute failed %s", callback.getQuery());
+            String message = String.format("execute failed with query: %s", callback.getQuery());
             RakeLogger.e(LOG_TAG_PREFIX, message, e);
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
@@ -128,7 +128,7 @@ abstract class DatabaseAdapter {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             return callback.execute(db);
         } catch (SQLiteException e) {
-            String message = String.format("executeAndReturnT failed %s", callback.getQuery());
+            String message = String.format("executeAndReturnT failed with query: %s", callback.getQuery());
             RakeLogger.e(LOG_TAG_PREFIX, message, e);
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
