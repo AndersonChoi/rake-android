@@ -2,19 +2,22 @@ package com.rake.android.rkmetrics.persistent;
 
 import org.json.JSONArray;
 
+import java.util.Collections;
 import java.util.List;
 
-public class Flushable<L> {
+public class Flushable {
 
     public Flushable() { throw new RuntimeException("Can't create Flushable without args"); }
 
-    public Flushable(String lastId, List<L> logList) {
+    public Flushable(String lastId, String log) {
+
+        // TODO logging, if null
         this.lastId = lastId;
-        this.logList = logList;
+        this.log = log;
     }
 
-    private String lastId; /* Database _id */
-    private List<L> logList;
+    private String lastId; /* `rake` Database PK */
+    private String log;
     public String getLastId() { return lastId; }
-    public List<L> getLogList() { return logList; }
+    public String getLog() { return log; }
 }

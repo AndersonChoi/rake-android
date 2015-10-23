@@ -134,19 +134,20 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * @return String array containing the maximum ID and the data string
      * representing the events, or null if none could be successfully retrieved.
      */
-    public String[] getEventList() {
+    public ExtractedEvent getExtractEvent() {
         Cursor c = null;
         String data = null;
         final String table = Table.EVENTS.getName();
 
-        Flushable<JSONObject> flushable = executeAndReturnT(new SQLiteCallback<Flushable<JSONObject>>() {
+        ExtractedEvent event = executeAndReturnT(new SQLiteCallback<ExtractedEvent>() {
             @Override
-            public Flushable<JSONObject> execute(SQLiteDatabase db) {
+            public ExtractedEvent execute(SQLiteDatabase db) {
                 Cursor c = null;
                 String lastId = null;
-                List<JSONObject> logList = new ArrayList<JSONObject>();
+                String mergedLog = null;
 
                 try {
+                    List<JSONObject> logList = new ArrayList<JSONObject>();
                     c = db.rawQuery(getQuery(), null);
 
                     while (c.moveToNext()) {
@@ -154,17 +155,19 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
                         String log = c.getString(c.getColumnIndex(EventContract.COLUMN_DATA));
 
-                        try { logList.add(new JSONObject(log)); }
-                        catch (JSONException e) { /* logging and ignore */
-                            RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
+                        try { logList.add(new JSONObject(log)); } /* if an exception occurred, ignore it */
+                        catch (JSONException e) { RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
                     }
 
-                /* if exception occurred, just throw out */
-                } finally {
-                    if (null != c) c.close();
-                }
+                    mergedLog = logList.toString();
 
-                return new Flushable<JSONObject>(lastId, logList);
+                 /* if JSONException or SQLiteException occurred, just throw out eventually returning null. */
+                } finally { if (null != c) c.close(); }
+
+                // TODO logging
+                if (null == lastId || null == mergedLog) return null;
+
+                return new ExtractedEvent(lastId, mergedLog);
             }
 
             @Override
@@ -173,14 +176,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
             }
         });
 
-        if (null == flushable || flushable.getLogList().size() == 0) return null;
-        else { /* Flushable<JSONObject>.getLogList() to String */
-            List<JSONObject> logList = flushable.getLogList();
-            JSONArray jsonArray = new JSONArray(logList);
-
-            String[] result = { flushable.getLastId(), new JSONArray(logList).toString() };
-            return result;
-        }
+        return event;
     }
 
 }

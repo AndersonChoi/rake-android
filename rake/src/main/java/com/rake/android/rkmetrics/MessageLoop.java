@@ -8,6 +8,7 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 //import com.rake.android.rkmetrics.persistent.LogTableAdapter;
+import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import org.json.JSONObject;
 
@@ -194,16 +195,15 @@ final public class MessageLoop {
 
         private void sendTrackedLogFromTable() {
             updateFlushFrequency();
-            String[] event = eventTableAdapter.getEventList();
+            ExtractedEvent event = eventTableAdapter.getExtractEvent();
 
             if (event != null) {
-                // TODO mapper class
-                String lastId = event[0];
-                String rawMessage = event[1];
+                String lastId = event.getLastId();
+                String log = event.getLog();
 
                 // TODO: convert instance method, support multiple urls
                 HttpRequestSender.RequestResult result = HttpRequestSender.sendRequest(
-                        rawMessage,
+                        log,
                         RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
