@@ -1,5 +1,9 @@
 package com.rake.android.rkmetrics;
 
+import static com.rake.android.rkmetrics.config.RakeConfig.*;
+import static com.rake.android.rkmetrics.MessageLoop.Command.*;
+import static com.rake.android.rkmetrics.network.HttpRequestSender.RequestResult;
+
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
@@ -7,18 +11,18 @@ import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
-//import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.persistent.ExtractedEvent;
+import com.rake.android.rkmetrics.persistent.Log;
+import com.rake.android.rkmetrics.persistent.LogTableAdapter;
+import com.rake.android.rkmetrics.persistent.Transferable;
 import com.rake.android.rkmetrics.util.RakeLogger;
-import org.json.JSONObject;
+
+import org.json.JSONArray;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
-
-import static com.rake.android.rkmetrics.config.RakeConfig.*;
-import static com.rake.android.rkmetrics.MessageLoop.Command.*;
-
 
 /**
  * Manage communication of events with the internal database and the Rake servers (Singleton)
@@ -28,9 +32,10 @@ final public class MessageLoop {
     public enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
-        AUTO_FLUSH_FULL(3),
+        AUTO_FLUSH_CAPACITY(3),
         AUTO_FLUSH_INTERVAL(4),
         KILL_WORKER (5),
+        FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
         UNKNOWN(-1);
 
         private int code;
@@ -76,10 +81,10 @@ final public class MessageLoop {
         return instance;
     }
 
-    public void track(JSONObject trackable) {
+    public void track(Log log) {
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
-        m.obj = trackable;
+        m.obj = log;
 
         runMessage(m);
     }
@@ -167,7 +172,7 @@ final public class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
+            RakeLogger.d(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -177,23 +182,70 @@ final public class MessageLoop {
     private class MessageHandler extends Handler {
 
         private final EventTableAdapter eventTableAdapter;
-//        private final LogTableAdapter logTableAdapter;
-
+        private final LogTableAdapter logTableAdapter;
 
         public MessageHandler() {
             super();
 
             eventTableAdapter = EventTableAdapter.getInstance(appContext);
-//            logTableAdapter = LogTableAdapter.getInstance(appContext);
+            logTableAdapter = LogTableAdapter.getInstance(appContext);
 
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
-            eventTableAdapter.removeEvent(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
+            logTableAdapter.removeLogByTime(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
+
+            /* flush legacy table `events` */
+            sendEmptyMessage(FLUSH_EVENT_TABLE.code);
 
             /* send initial auto-flush message */
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
         }
 
-        private void sendTrackedLogFromTable() {
+        private void sendLogFromLogTable() {
+           updateFlushFrequency();
+
+            Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
+
+            if (null == t) return; /* flushing empty table */
+
+            String lastId = t.getLastId();
+            Set<String> urls = t.getUrls();
+            Map<String, Map<String, JSONArray>> logMap = t.getLogMap();
+
+            if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
+                RakeLogger.e(LOG_TAG_PREFIX, "Invalid empty Transferable"); /* should not be here! */
+                return;
+            }
+
+            for(String url : logMap.keySet()) {
+                for (String token: logMap.get(url).keySet()) {
+
+                    String stringified = logMap.get(url).get(token).toString();
+                    String endpoint = url + ENDPOINT_TRACK_PATH; /* TODO + "/" + token */
+                    RequestResult result = HttpRequestSender.sendRequest(stringified, endpoint);
+
+                    if (RequestResult.SUCCESS == result)
+                        logTableAdapter.removeLogById(lastId);
+                    else if (RequestResult.FAILURE_RECOVERABLE == result) {
+                        // TODO metric logging
+                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
+                    } else if (RequestResult.FAILURE_UNRECOVERABLE == result) {
+                        // TODO metric logging
+                        logTableAdapter.removeLogById(lastId);
+                    } else {
+                        RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
+                    }
+                }
+            }
+        }
+
+        private boolean hasFlushMessage() {
+            return hasMessages(MANUAL_FLUSH.code)
+                    || hasMessages(AUTO_FLUSH_INTERVAL.code)
+                    || hasMessages(AUTO_FLUSH_CAPACITY.code);
+        }
+
+        /* to support legacy table `Event` */
+        private void sendLogFromEventTable() {
             updateFlushFrequency();
             ExtractedEvent event = eventTableAdapter.getExtractEvent();
 
@@ -202,19 +254,17 @@ final public class MessageLoop {
                 String log = event.getLog();
 
                 // TODO: convert instance method, support multiple urls
-                HttpRequestSender.RequestResult result = HttpRequestSender.sendRequest(
+                RequestResult result = HttpRequestSender.sendRequest(
                         log,
                         RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
-                if (HttpRequestSender.RequestResult.SUCCESS == result) {
-                    eventTableAdapter.removeEvent(lastId);
-                } else if (HttpRequestSender.RequestResult.FAILURE_RECOVERABLE == result) { // try again later
-                    if (!hasMessages(MANUAL_FLUSH.code)) {
-                        sendEmptyMessageDelayed(MANUAL_FLUSH.code, flushInterval);
-                    }
-                } else if (HttpRequestSender.RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
-                    eventTableAdapter.removeEvent(lastId);
+                if (RequestResult.SUCCESS == result) {
+                    eventTableAdapter.removeEventById(lastId);
+                } else if (RequestResult.FAILURE_RECOVERABLE == result) { // try again later
+                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, flushInterval);
+                } else if (RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
+                    eventTableAdapter.removeEventById(lastId);
                 } else {
                     RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
                 }
@@ -227,18 +277,19 @@ final public class MessageLoop {
                 Command command = Command.fromCode(msg.what);
 
                 if (command == TRACK) {
-                    JSONObject message = (JSONObject) msg.obj;
-                    int logQueueLength = eventTableAdapter.addEvent(message);
+                    Log log = (Log) msg.obj;
+                    int logQueueLength = logTableAdapter.addLog(log);
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
-                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendTrackedLogFromTable();
-
+                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendLogFromLogTable();
+                } else if (command == FLUSH_EVENT_TABLE) {
+                    sendLogFromEventTable();
                 } else if (command == MANUAL_FLUSH) {
-                    sendTrackedLogFromTable();
-                } else if (command == AUTO_FLUSH_FULL) {
-                    sendTrackedLogFromTable();
+                    sendLogFromLogTable();
+                } else if (command == AUTO_FLUSH_CAPACITY) {
+                    sendLogFromLogTable();
                 } else if (command == AUTO_FLUSH_INTERVAL) {
-                    sendTrackedLogFromTable();
+                    sendLogFromLogTable();
 
                     if (!hasMessages(AUTO_FLUSH_INTERVAL.code))
                         sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
@@ -253,8 +304,9 @@ final public class MessageLoop {
                     RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
                 }
 
-            } catch (RuntimeException e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Worker throw unhandled exception. will not send any more Rake messages", e);
+            } catch (OutOfMemoryError e) {
+                RakeLogger.e(LOG_TAG_PREFIX, "Caught OOM error. Rake will not send any more messages", e);
+                // TODO metric
 
                 synchronized (handlerLock) {
                     handler = null;
@@ -263,8 +315,9 @@ final public class MessageLoop {
                         RakeLogger.e(LOG_TAG_PREFIX, "Can't halt looper", tooLate);
                     }
                 }
-
-                throw e;
+            } catch (Exception e) {
+                RakeLogger.e(LOG_TAG_PREFIX, "Caught unhandled exception. (ignored)", e);
+                // TODO metric
             }
         } // handleMessage
     }

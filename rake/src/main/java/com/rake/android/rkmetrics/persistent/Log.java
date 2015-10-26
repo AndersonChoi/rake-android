@@ -6,23 +6,23 @@ import org.json.JSONObject;
 public class Log {
     private Log() { throw new RuntimeException("Can't create Log without args"); }
 
-    private Log(String url, String token, JSONObject log) {
+    private Log(String url, String token, JSONObject json) {
         this.url = url;
         this.token = token;
-        this.log = log;
+        this.json = json;
     }
 
     private String url;
     private String token;
-    private JSONObject log;
+    private JSONObject json;
 
     public String getUrl() { return url; }
     public String getToken() { return token; }
-    public JSONObject getLog() { return log; }
+    public JSONObject getJson() { return json; }
 
-    public static Log create(String url, String token, JSONObject log) {
-        if (null == url || null == token || null == log) return null;
+    public static Log create(String url, String token, JSONObject json) {
+        if (null == url || null == token || null == json) return null;
 
-        return new Log(url, token, log);
+        return new Log(url, token, json);
     }
 }

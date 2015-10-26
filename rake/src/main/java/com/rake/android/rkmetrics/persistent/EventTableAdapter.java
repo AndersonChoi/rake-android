@@ -89,7 +89,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      *
      * @param lastId the last id to delete
      */
-    public void removeEvent(final String lastId) {
+    public void removeEventById(final String lastId) {
         final String table = Table.EVENTS.getName();
 
         execute(new SQLiteCallback<Void>() {
@@ -111,7 +111,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      *
      * @param time  the unix epoch in milliseconds to remove events before
      */
-    public void removeEvent(final long time) {
+    public void removeEventByTime(final long time) {
         final String table = Table.EVENTS.getName();
 
         execute(new SQLiteCallback<Void>() {
@@ -144,9 +144,9 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 Cursor c = null;
                 String lastId = null;
                 String mergedLog = null;
+                List<JSONObject> logList = new ArrayList<JSONObject>();
 
                 try {
-                    List<JSONObject> logList = new ArrayList<JSONObject>();
                     c = db.rawQuery(getQuery(), null);
 
                     while (c.moveToNext()) {
@@ -166,6 +166,11 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
                 // TODO logging
                 if (null == lastId || null == mergedLog) return null;
+
+                String message = String.format("Extracting %d rows from the [%s] table",
+                        logList.size(), EventContract.TABLE_NAME);
+
+                RakeLogger.d(LOG_TAG_PREFIX, message);
 
                 // TODO static factory
                 return new ExtractedEvent(lastId, mergedLog);

@@ -1,19 +1,20 @@
 package com.rake.android.rkmetrics.persistent;
 
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 
+import com.rake.android.rkmetrics.util.RakeLogger;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 
 public final class LogTableAdapter extends DatabaseAdapter {
@@ -89,7 +90,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
             public Integer execute(SQLiteDatabase db) {
                 Cursor c = null;
                 ContentValues values = new ContentValues();
-                values.put(LogContract.COLUMN_LOG, log.getLog().toString());
+                values.put(LogContract.COLUMN_LOG, log.getJson().toString());
                 values.put(LogContract.COLUMN_CREATED_AT, System.currentTimeMillis());
                 values.put(LogContract.COLUMN_URL, log.getUrl());
                 values.put(LogContract.COLUMN_TOKEN, log.getToken());
@@ -129,7 +130,16 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     }
                 } finally { if (null != c) c.close(); }
 
-                return Transferable.create(lastId, logList);
+                Transferable t = Transferable.create(lastId, logList);
+
+                if (null != t) {
+                    String message = String.format("Extracting %d rows from the [%s] table",
+                            logList.size(), LogContract.TABLE_NAME);
+
+                    RakeLogger.d(LOG_TAG_PREFIX, message);
+                }
+
+                return t;
             }
 
             @Override

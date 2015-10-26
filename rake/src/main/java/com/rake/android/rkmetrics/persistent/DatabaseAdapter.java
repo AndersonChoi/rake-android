@@ -33,7 +33,7 @@ abstract class DatabaseAdapter {
     protected static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
     protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
 
-    private static final int DATABASE_VERSION = 4;
+    private static final int DATABASE_VERSION = 5;
 
     protected static final String COMMA_SEP = ", ";
     protected static final String QUERY_END = ");";
@@ -64,16 +64,13 @@ abstract class DatabaseAdapter {
         public void onCreate(SQLiteDatabase db) {
             RakeLogger.d(LOG_TAG_PREFIX, "Create database: " + DATABASE_NAME);
 
-            String createTableQuery = EventTableAdapter.EventContract.QUERY_CREATE_TABLE;
-            String createIndexQuery = EventTableAdapter.EventContract.QUERY_CREATE_INDEX;
+            String createTableQuery = LogTableAdapter.LogContract.QUERY_CREATE_TABLE;
+            String createIndexQuery = LogTableAdapter.LogContract.QUERY_CREATE_INDEX;
             RakeLogger.d(LOG_TAG_PREFIX, "Create table with query: \n" + createTableQuery);
             RakeLogger.d(LOG_TAG_PREFIX, "Create index with query: \n" + createIndexQuery);
 
             db.execSQL(createTableQuery);
             db.execSQL(createIndexQuery);
-
-//            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
-//            db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
         }
 
         @Override
@@ -83,24 +80,19 @@ abstract class DatabaseAdapter {
 
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
-            db.execSQL(EventTableAdapter.EventContract.QUERY_DROP_TABLE);
-            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
-            db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
+            if (oldVersion < 4) { /* DO NOT SUPPORT */
+                db.execSQL(EventTableAdapter.EventContract.QUERY_DROP_TABLE);
+                db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
+                db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
+            }
 
-//            if (oldVersion < 4) { /* DO NOT SUPPORT */
-//                db.execSQL("DROP TABLE IF EXISTS " + Table.EVENTS.getName());
-//                db.execSQL(EventTableAdapter.QUERY_CREATE_EVENTS_TABLE);
-//                db.execSQL(EventTableAdapter.QUERY_EVENTS_TIME_INDEX);
-//
-//            }
-//
-//            /**
-//             * Version 4 -> 5: `Log` 테이블이 추가되었음
-//             */
-//            if (oldVersion < 5) {
-//                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
-//                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
-//            }
+            /**
+             * Version 4 -> 5: `Log` 테이블이 추가되었음
+             */
+            if (oldVersion < 5) {
+                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
+                db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
+            }
 
         }
     }

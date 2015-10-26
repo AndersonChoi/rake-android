@@ -1,6 +1,7 @@
 package com.rake.android.rkmetrics.persistent;
 
-import java.util.ArrayList;
+import org.json.JSONArray;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -17,7 +18,7 @@ public class Transferable {
      */
     private Transferable() { throw new RuntimeException("Can't create Log without args"); }
     private Transferable(String lastId,
-                         Map<String, Map<String, List<String>>> logMap) {
+                         Map<String, Map<String, JSONArray>> logMap) {
 
         this.lastId = lastId;
         this.logMap = logMap;
@@ -27,7 +28,7 @@ public class Transferable {
      * variables, getters
      */
     private String lastId; /* `rake` Database PK */
-    private Map<String, Map<String, List<String>>> logMap; /* url to log */
+    private Map<String, Map<String, JSONArray>> logMap; /* url to log */
 
     public String getLastId() { return lastId; }
 
@@ -41,33 +42,31 @@ public class Transferable {
         return new HashSet(getLogMap().get(url).keySet());
     }
 
-    public Map<String, Map<String, List<String>>> getLogMap() {
-        return new HashMap<String, Map<String, List<String>>>(logMap);
+    public Map<String, Map<String, JSONArray>> getLogMap() {
+        return new HashMap<String, Map<String, JSONArray>>(logMap);
     }
 
     /**
      * static functions
      */
 
-    public static Transferable create(String lastId, List<Log> logList) {
+    public static Transferable create(String lastId, List<Log> logs) {
 
-        if (null == lastId || null == logList || 0 == logList.size()) return null;
+        if (null == lastId || null == logs || 0 == logs.size()) return null;
 
-        Map<String, Map<String, List<String>>> urlMap = new HashMap<String, Map<String, List<String>>>();
+        Map<String, Map<String, JSONArray>> urlMap = new HashMap<String, Map<String, JSONArray>>();
 
-        for (Log l : logList) {
-            if (!urlMap.containsKey(l.getUrl())) /* if urlMap doesn't have the url */
-                urlMap.put(l.getUrl(), new HashMap<String, List<String>>());
+        for (Log log : logs) {
+            if (!urlMap.containsKey(log.getUrl())) /* if urlMap doesn't have the url */
+                urlMap.put(log.getUrl(), new HashMap<String, JSONArray>());
 
-            Map<String, List<String>> tokenMap = urlMap.get(l.getUrl());
+            Map<String, JSONArray> tokenMap = urlMap.get(log.getUrl());
 
-            if (!tokenMap.containsKey(l.getToken()))
-                tokenMap.put(l.getToken(), new ArrayList<String>());
+            if (!tokenMap.containsKey(log.getToken()))
+                tokenMap.put(log.getToken(), new JSONArray());
 
-            List<String> stringifiedLogList = tokenMap.get(l.getToken());
-
-            /* stringify JSONObject and put it into the list */
-            stringifiedLogList.add(l.getLog().toString());
+            JSONArray jsonArr = tokenMap.get(log.getToken());
+            jsonArr.put(log.getJson());
         }
 
         return new Transferable(lastId, urlMap);
