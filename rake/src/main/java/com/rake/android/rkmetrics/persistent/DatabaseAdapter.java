@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics.persistent;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
@@ -125,6 +126,11 @@ abstract class DatabaseAdapter {
         } finally {
             dbHelper.close();
         }
+    }
+
+    // TODO column index to enum type
+    protected String getStringFromCursor(Cursor cursor, String columnIndex) throws SQLiteException {
+        return cursor.getString(cursor.getColumnIndex(columnIndex));
     }
 
     protected <T> T executeAndReturnT(SQLiteCallback<T> callback) {

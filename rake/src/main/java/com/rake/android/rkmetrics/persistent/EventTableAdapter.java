@@ -136,8 +136,6 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * representing the events, or null if none could be successfully retrieved.
      */
     public ExtractedEvent getExtractEvent() {
-        Cursor c = null;
-        String data = null;
         final String table = Table.EVENTS.getName();
 
         ExtractedEvent event = executeAndReturnT(new SQLiteCallback<ExtractedEvent>() {
@@ -152,6 +150,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                     c = db.rawQuery(getQuery(), null);
 
                     while (c.moveToNext()) {
+                        // TODO c.getString getColumnIndex to helper function
                         if (c.isLast()) lastId = c.getString(c.getColumnIndex(EventContract._ID));
 
                         String log = c.getString(c.getColumnIndex(EventContract.COLUMN_DATA));
