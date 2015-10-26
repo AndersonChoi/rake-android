@@ -15,9 +15,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class EventTableAdapter extends DatabaseAdapter {
 
     public static class EventContract implements BaseColumns {
@@ -136,50 +133,46 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * representing the events, or null if none could be successfully retrieved.
      */
     public ExtractedEvent getExtractEvent() {
-        final String table = Table.EVENTS.getName();
-
         ExtractedEvent event = executeAndReturnT(new SQLiteCallback<ExtractedEvent>() {
             @Override
             public ExtractedEvent execute(SQLiteDatabase db) {
                 Cursor c = null;
                 String lastId = null;
-                String mergedLog = null;
-                List<JSONObject> logList = new ArrayList<JSONObject>();
+                JSONArray jsonArr = new JSONArray();
 
                 try {
                     c = db.rawQuery(getQuery(), null);
 
                     while (c.moveToNext()) {
                         // TODO c.getString getColumnIndex to helper function
-                        if (c.isLast()) lastId = c.getString(c.getColumnIndex(EventContract._ID));
+                        if (c.isLast()) lastId = getStringFromCursor(c, EventContract._ID);
 
-                        String log = c.getString(c.getColumnIndex(EventContract.COLUMN_DATA));
+                        String log = getStringFromCursor(c, EventContract.COLUMN_DATA);
 
-                        try { logList.add(new JSONObject(log)); } /* if an exception occurred, ignore it */
+                        try { jsonArr.put(new JSONObject(log)); } /* if an exception occurred, ignore it */
                         catch (JSONException e) { RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
                     }
-
-                    mergedLog = logList.toString();
 
                  /* if JSONException or SQLiteException occurred, just throw out eventually returning null. */
                 } finally { if (null != c) c.close(); }
 
-                // TODO logging
-                if (null == lastId || null == mergedLog) return null;
-
-                String message = String.format("Extracting %d rows from the [%s] table",
-                        logList.size(), EventContract.TABLE_NAME);
-
-                RakeLogger.d(LOG_TAG_PREFIX, message);
 
                 // TODO static factory
-                return new ExtractedEvent(lastId, mergedLog);
+                ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);
+
+                if (null != e) {
+                    String message = String.format("Extracting %d rows from the [%s] table",
+                            jsonArr.length(), EventContract.TABLE_NAME);
+                    RakeLogger.d(LOG_TAG_PREFIX, message);
+                }
+
+                return e;
             }
 
             @Override
             public String getQuery() {
-                // TODO string
-                return "SELECT * FROM " + table + " ORDER BY " + EventContract.COLUMN_CREATED_AT + " ASC LIMIT " + RakeConfig.TRACK_MAX_LOG_COUNT;
+                return String.format("SELECT * FROM %s ORDER BY %s ASC LIMIT %d",
+                        EventContract.TABLE_NAME, EventContract.COLUMN_CREATED_AT, RakeConfig.TRACK_MAX_LOG_COUNT);
             }
         });
 

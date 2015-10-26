@@ -279,6 +279,7 @@ final public class MessageLoop {
                 if (command == TRACK) {
                     Log log = (Log) msg.obj;
                     int logQueueLength = logTableAdapter.addLog(log);
+
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendLogFromLogTable();
