@@ -117,7 +117,8 @@ tasks.build.doLast {
         into releaseJarDir
     }
 
-    createJavadoc.execute()
+    if (branchName.startsWith("release"))
+        createJavadoc.execute()
 }
 
 
