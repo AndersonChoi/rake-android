@@ -8,6 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 
+import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.util.RakeLogger;
 
 import org.json.JSONArray;
@@ -167,12 +168,14 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 // TODO logging
                 if (null == lastId || null == mergedLog) return null;
 
+                // TODO static factory
                 return new ExtractedEvent(lastId, mergedLog);
             }
 
             @Override
             public String getQuery() {
-                return "SELECT * FROM " + table + " ORDER BY " + EventContract.COLUMN_CREATED_AT + " ASC LIMIT 50";
+                // TODO string
+                return "SELECT * FROM " + table + " ORDER BY " + EventContract.COLUMN_CREATED_AT + " ASC LIMIT " + RakeConfig.TRACK_MAX_LOG_COUNT;
             }
         });
 
