@@ -5,7 +5,7 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import java.io.Closeable;
 import java.io.IOException;
 
-public class StreamUtils {
+public class StreamUtil {
     public static void closeQuietly(Closeable stream) {
         try {
             if (null != stream) stream.close();

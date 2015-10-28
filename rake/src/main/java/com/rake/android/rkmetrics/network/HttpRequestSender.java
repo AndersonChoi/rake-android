@@ -2,8 +2,9 @@ package com.rake.android.rkmetrics.network;
 
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.RakeLogger;
-import com.rake.android.rkmetrics.util.StreamUtils;
-import com.rake.android.rkmetrics.util.StringUtils;
+import com.rake.android.rkmetrics.util.StreamUtil;
+import com.rake.android.rkmetrics.util.StringUtil;
+
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -103,32 +104,32 @@ final public class HttpRequestSender {
             String responseBody = builder.toString();
             result = interpretResponse(responseBody);
 
-            String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
+            String message = String.format("Response code: %d, response body: %s", statusCode, responseBody);
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
         } catch (MalformedURLException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid URL", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid URL", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (UnsupportedEncodingException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid encoding", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid encoding", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (ProtocolException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid protocol", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (IOException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid protocol", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "memory insufficient", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Memory insufficient", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (Exception e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid protocol", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } finally {
             if (null != conn) conn.disconnect();
 
-            StreamUtils.closeQuietly(writer);
-            StreamUtils.closeQuietly(os);
+            StreamUtil.closeQuietly(writer);
+            StreamUtil.closeQuietly(os);
         }
 
         return result;
@@ -186,28 +187,28 @@ final public class HttpRequestSender {
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
-            String responseBody = StringUtils.inputStreamToString(responseEntity.getContent());
+            String responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
             int statusCode = response.getStatusLine().getStatusCode();
 
-            String message = String.format("response code: %d, response body: %s", statusCode, responseBody);
+            String message = String.format("Response code: %d, Response body: %s", statusCode, responseBody);
             RakeLogger.d(LOG_TAG_PREFIX, message);
 
             // TODO interpretResponseCode
             result = interpretResponse(responseBody);
 
         } catch(UnsupportedEncodingException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "invalid encoding", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Invalid encoding", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (IOException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "cannot post message to Rake Servers (May Retry)", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "cannot post message to Rake Servers, will not retry.", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (GeneralSecurityException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "cannot build SSL Client", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
         } catch (Exception e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "caused by", e);
+            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         }
 
         return result;
@@ -227,13 +228,13 @@ final public class HttpRequestSender {
 
     private static RequestResult interpretResponse(String response) {
         if (null == response) {
-            RakeLogger.e(LOG_TAG_PREFIX, "response body is empty. retry later");
+            RakeLogger.e(LOG_TAG_PREFIX, "Response body is empty. (Retry)");
             return RequestResult.FAILURE_RECOVERABLE;
         }
 
         if (response.startsWith("1")) return RequestResult.SUCCESS;
 
-        RakeLogger.e(LOG_TAG_PREFIX, "server returned negative response. make sure that your token is valid");
+        RakeLogger.e(LOG_TAG_PREFIX, "Server returned negative response. make sure that your token is valid");
         return RequestResult.FAILURE_UNRECOVERABLE;
     }
 

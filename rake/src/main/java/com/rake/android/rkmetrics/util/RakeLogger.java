@@ -64,7 +64,7 @@ final public class RakeLogger {
     }
 
     private static String getTagWithThreadId(String tag) {
-        return String.format("%s[Thread %d]", tag, Thread.currentThread().getId());
+        return String.format("%s [Thread %d]", tag, Thread.currentThread().getId());
     }
 
     public static int t(String tag, String msg) {
