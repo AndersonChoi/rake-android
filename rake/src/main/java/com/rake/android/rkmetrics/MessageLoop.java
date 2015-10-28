@@ -27,14 +27,14 @@ import java.util.concurrent.SynchronousQueue;
 /**
  * Manage communication of events with the internal database and the Rake servers (Singleton)
  */
-final public class MessageLoop {
+final class MessageLoop {
 
-    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
-    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
-    private static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
 
-    public enum Command {
+    enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
         AUTO_FLUSH_CAPACITY(3),
@@ -79,13 +79,13 @@ final public class MessageLoop {
         handler = createMessageHandler();
     }
 
-    public static synchronized MessageLoop getInstance(Context appContext) {
+    static synchronized MessageLoop getInstance(Context appContext) {
         if (null == instance) { instance = new MessageLoop(appContext); }
 
         return instance;
     }
 
-    public void track(Log log) {
+    void track(Log log) {
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
         m.obj = log;
@@ -93,25 +93,25 @@ final public class MessageLoop {
         runMessage(m);
     }
 
-    public void flush() {
+    void flush() {
         Message m = Message.obtain();
         m.what = Command.MANUAL_FLUSH.code;
 
         runMessage(m);
     }
 
-    public void hardKill() {
+    void hardKill() {
         Message m = Message.obtain();
         m.what = Command.KILL_WORKER.code;
 
         runMessage(m);
     }
 
-    public static void setFlushInterval(long millis) {
+    static void setFlushInterval(long millis) {
         FLUSH_INTERVAL = millis;
     }
 
-    public static long getFlushInterval() {
+    static long getFlushInterval() {
         return FLUSH_INTERVAL;
     }
 
