@@ -85,6 +85,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void track(RakeAPI.Env env) {
         RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        shuttle.action("flush");
         getRakeInstance(env).track(shuttle.toJSONObject());
     }
 
