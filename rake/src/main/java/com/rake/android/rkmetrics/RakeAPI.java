@@ -37,14 +37,15 @@ public class RakeAPI {
         @Override public String toString() { return this.env; }
     }
 
+    // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
     // TODO: move into MessageHandler
     private static String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
 
-    private Env env = Env.DEV;
+    private final Env env;
     private final String tag;
     private final Context context;
-    private final SystemInformation sysInfo;
+    private final SystemInformation sysInfo; // TODO: duplicated?
     private final MessageLoop messageLoop;
     private final String token;
     private final SharedPreferences storedPreferences;
@@ -55,36 +56,17 @@ public class RakeAPI {
         // usage: add("mdn");
     }};
 
-    private RakeAPI(Context appContext, String token) {
+    private RakeAPI(Context appContext, String token, Env env) {
         this.context = appContext;
         this.token = token;
-        this.tag = String.format("%s[%s]", RakeConfig.LOG_TAG_PREFIX, token);
+        this.tag = String.format("%s RCI<TOKEN = %s, ENV = %s>", RakeConfig.LOG_TAG_PREFIX, token, env);
+        this.env = env;
 
         messageLoop = MessageLoop.getInstance(appContext);
         sysInfo = getSystemInformation();
 
         storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
         readSuperProperties();
-    }
-
-    /**
-     * Create RakeAPI instance. (singleton per {@code token})
-     *
-     * @param context       Android Application Context
-     * @param token         Rake Token
-     * @param isDevServer   indicate whether RakeAPI send log to development server or live server
-     *                      If {@code false} used,
-     *                      RakeAPI will send log to <strong>development server</strong> ({@code pg.rake.skplanet.com})
-     *                      If {@code true} is used,
-     *                      RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com}).
-     *
-     *
-     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code isDevServer} value.
-     * @deprecated          As of 0.3.17, replaced by {@link #getInstance(Context, String, Env, Logging)}}
-     */
-    public static RakeAPI getInstance(Context context, String token, Boolean isDevServer) {
-        Env env = (isDevServer == true) ? Env.DEV : Env.LIVE;
-        return getInstance(context, token, env, RakeLogger.loggingMode /* use current logging mode */);
     }
 
     /**
@@ -120,9 +102,8 @@ public class RakeAPI {
                 if (Env.DEV == env) setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
                 else setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
 
-                rake = new RakeAPI(appContext, token);
+                rake = new RakeAPI(appContext, token, env);
                 instances.put(appContext, rake);
-                rake.env = env;
             }
 
             return rake;
@@ -230,6 +211,7 @@ public class RakeAPI {
             propertiesObj.put("token", token);
 
             // time
+            // TODO: thread-unsafe
             propertiesObj.put("base_time", TimeUtil.baseTimeFormat.format(now));
             propertiesObj.put("local_time", TimeUtil.localTimeFormat.format(now));
 
@@ -288,20 +270,6 @@ public class RakeAPI {
 
     /* package */ static synchronized String getBaseEndpoint() {
         return RakeAPI.baseEndpoint;
-    }
-
-    /**
-     * Enable or disable logging.
-     *
-     * @param debug indicate whether enable logging or not
-     * @deprecated As of 0.3.17, replaced by
-     *             {@link #setLogging(Logging)}
-     *             {@link #getInstance(Context, String, Env, Logging)}
-     */
-
-    public static void setDebug(Boolean debug) {
-        if (debug)  setLogging(Logging.ENABLE);
-        else setLogging(Logging.DISABLE);
     }
 
     /**
