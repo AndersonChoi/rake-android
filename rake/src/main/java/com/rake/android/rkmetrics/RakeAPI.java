@@ -6,16 +6,17 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import com.rake.android.rkmetrics.util.TimeUtil;
-import com.rake.android.rkmetrics.util.UriUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.*;
 
+import static com.rake.android.rkmetrics.network.Endpoint.*;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public class RakeAPI {
@@ -41,7 +42,7 @@ public class RakeAPI {
 
     private final String tag;
 
-    private String url;
+    private Endpoint endpoint;
     private final Env env;
     private final String token;
 
@@ -56,18 +57,23 @@ public class RakeAPI {
         // usage: add("mdn");
     }};
 
-    private RakeAPI(Context appContext, String token, Env env, String url) {
-        this.tag = String.format("%s RC [TOKEN = %s, ENV = %s]", RakeConfig.LOG_TAG_PREFIX, token, env);
+    private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
+
+        this.tag = String.format("%s (%s, %s, %s)",
+                RakeConfig.LOG_TAG_PREFIX, token, env, endpoint.name());
+
+        RakeLogger.d(tag, "Creating instance");
+
         this.context = appContext;
 
-        this.url = url;
-        this.env = env;
         this.token = token;
+        this.env = env;
+        this.endpoint = endpoint;
 
-        messageLoop = MessageLoop.getInstance(appContext);
-        sysInfo = getSystemInformation();
+        this.messageLoop = MessageLoop.getInstance(appContext);
+        this.sysInfo = getSystemInformation();
+        this.storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
 
-        storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
         readSuperProperties();
     }
 
@@ -101,9 +107,8 @@ public class RakeAPI {
 
             if (rake == null) {
                 // url should be set before initializing rake instance
-                String url = (Env.DEV == env) ? UriUtil.DEV_BASE_ENDPOINT : UriUtil.LIVE_BASE_ENDPOINT;
-
-                rake = new RakeAPI(appContext, token, env, url);
+                Endpoint endpoint = (Env.DEV == env) ? DEV_ENDPOINT_CHARGED : LIVE_ENDPOINT_CHARGED;
+                rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             }
 
@@ -221,10 +226,11 @@ public class RakeAPI {
 
             RakeLogger.d(tag, "track() called\n" + dataObj);
 
-            Log log = Log.create(url, token, dataObj);
+            String uri = endpoint.getUri();
+            Log log = Log.create(uri, token, dataObj);
 
             if (null == log) {
-                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, url);
+                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, uri);
                 RakeLogger.e(tag, message);
                 return;
             }
@@ -237,13 +243,41 @@ public class RakeAPI {
         }
     }
 
-    // TODO: ENUM
-    public void setEndpoint(String url) {
-        this.url = url;
+    /**
+     * Change end point
+     *
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_FREE}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_CHARGED}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_FREE}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_CHARGED}
+     *
+     * @param endpoint
+     * @see {@link com.rake.android.rkmetrics.network.Endpoint}
+     */
+    public void setEndpoint(Endpoint endpoint) {
+
+        if (this.endpoint.getEnv() != endpoint.getEnv()) {
+            String message = String.format("Can't set endpoint from %s to %s",
+                    this.endpoint.getEnv(), endpoint.getEnv());
+
+            throw new IllegalArgumentException(message);
+        }
+
+        this.endpoint = endpoint;
+
+        String message = String.format("Set endpoint from %s to %s",
+                this.endpoint.getEnv(), endpoint.getEnv());
+        RakeLogger.d(tag, message);
     }
 
-    public String getEndpoint() {
-        return url;
+    /**
+     * Get current end point of this instance
+     *
+     * @return endpoint
+     * @see {@link com.rake.android.rkmetrics.network.Endpoint}
+     */
+    public Endpoint getEndpoint() {
+        return endpoint;
     }
 
     /**
