@@ -66,6 +66,7 @@ abstract class DatabaseAdapter {
 
             String createTableQuery = LogTableAdapter.LogContract.QUERY_CREATE_TABLE;
             String createIndexQuery = LogTableAdapter.LogContract.QUERY_CREATE_INDEX;
+
             RakeLogger.d(LOG_TAG_PREFIX, "Create table with query: \n" + createTableQuery);
             RakeLogger.d(LOG_TAG_PREFIX, "Create index with query: \n" + createIndexQuery);
 
@@ -93,7 +94,6 @@ abstract class DatabaseAdapter {
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
             }
-
         }
     }
 
@@ -145,5 +145,4 @@ abstract class DatabaseAdapter {
             dbHelper.close();
         }
     }
-
 }

@@ -18,23 +18,25 @@ public class Transferable {
      */
     private Transferable() { throw new RuntimeException("Can't create Log without args"); }
     private Transferable(String lastId,
+                         int logCount,
                          Map<String, Map<String, JSONArray>> logMap) {
 
         this.lastId = lastId;
+        this.logCount = logCount;
         this.logMap = logMap;
     }
 
     /**
      * variables, getters
      */
+
+    private int logCount;
     private String lastId; /* `rake` Database PK */
     private Map<String, Map<String, JSONArray>> logMap; /* url to log */
 
     public String getLastId() { return lastId; }
-
-    public Set<String> getUrls() {
-        return new HashSet<String>(logMap.keySet());
-    }
+    public int getLogCount() { return logCount; }
+    public Set<String> getUrls() { return new HashSet<String>(logMap.keySet()); }
 
     public Set<String> getTokens(String url) {
         if (null == url || !logMap.containsKey(url)) return Collections.EMPTY_SET;
@@ -56,6 +58,8 @@ public class Transferable {
 
         Map<String, Map<String, JSONArray>> urlMap = new HashMap<String, Map<String, JSONArray>>();
 
+        int logCount = 0;
+
         for (Log log : logs) {
             if (!urlMap.containsKey(log.getUrl())) /* if urlMap doesn't have the url */
                 urlMap.put(log.getUrl(), new HashMap<String, JSONArray>());
@@ -67,8 +71,10 @@ public class Transferable {
 
             JSONArray jsonArr = tokenMap.get(log.getToken());
             jsonArr.put(log.getJson());
+
+            logCount = logCount + 1;
         }
 
-        return new Transferable(lastId, urlMap);
+        return new Transferable(lastId, logCount, urlMap);
     }
 }

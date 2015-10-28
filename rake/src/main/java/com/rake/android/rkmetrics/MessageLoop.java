@@ -140,7 +140,7 @@ final class MessageLoop {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                RakeLogger.i(LOG_TAG_PREFIX, "Starting worker thread " + this.getId());
+                RakeLogger.d(LOG_TAG_PREFIX, "Starting [Thread " + this.getId() + "]");
 
                 android.os.Looper.prepare();
 
@@ -182,7 +182,7 @@ final class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.d(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
+            RakeLogger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -229,9 +229,11 @@ final class MessageLoop {
             for(String url : logMap.keySet()) {
                 for (String token: logMap.get(url).keySet()) {
 
+                    String message = String.format("Sending %d log to %s", t.getLogCount(), url);
+                    RakeLogger.t(LOG_TAG_PREFIX, message);
+
                     String stringified = logMap.get(url).get(token).toString();
-                    String endpoint = url; /* TODO + "/" + token */
-                    RequestResult result = HttpRequestSender.sendRequest(stringified, endpoint);
+                    RequestResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
 
                     if (RequestResult.SUCCESS == result)
                         logTableAdapter.removeLogById(lastId);
@@ -262,10 +264,13 @@ final class MessageLoop {
             if (event != null) {
                 String lastId = event.getLastId();
                 String log = event.getLog();
+                String url = Endpoint.LIVE_ENDPOINT_FREE.getUri();
 
                 /* assume that RakeAPI runs with Env.LIVE option */
-                RequestResult result = HttpRequestSender.sendRequest(
-                        log, Endpoint.LIVE_ENDPOINT_CHARGED.getUri());
+                String message = String.format("Sending %d events to %s", event.getLogCount(), url);
+                RakeLogger.t(LOG_TAG_PREFIX, message);
+
+                RequestResult result = HttpRequestSender.sendRequest(log, url);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (RequestResult.SUCCESS == result) {
