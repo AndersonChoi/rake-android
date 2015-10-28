@@ -9,14 +9,13 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import com.rake.android.rkmetrics.util.TimeUtil;
+import com.rake.android.rkmetrics.util.UriUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.*;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.DEV_HOST;
-import static com.rake.android.rkmetrics.config.RakeConfig.LIVE_HOST;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public class RakeAPI {
@@ -39,15 +38,16 @@ public class RakeAPI {
 
     // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
-    // TODO: move into MessageHandler
-    private static String baseEndpoint = RakeConfig.EMPTY_BASE_ENDPOINT;
 
-    private final Env env;
     private final String tag;
+
+    private String url;
+    private final Env env;
+    private final String token;
+
     private final Context context;
     private final SystemInformation sysInfo; // TODO: duplicated?
-    private final MessageLoop messageLoop;
-    private final String token;
+    private final MessageLoop messageLoop; /* singleton */
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
@@ -56,11 +56,13 @@ public class RakeAPI {
         // usage: add("mdn");
     }};
 
-    private RakeAPI(Context appContext, String token, Env env) {
+    private RakeAPI(Context appContext, String token, Env env, String url) {
+        this.tag = String.format("%s RC [TOKEN = %s, ENV = %s]", RakeConfig.LOG_TAG_PREFIX, token, env);
         this.context = appContext;
-        this.token = token;
-        this.tag = String.format("%s RCI<TOKEN = %s, ENV = %s>", RakeConfig.LOG_TAG_PREFIX, token, env);
+
+        this.url = url;
         this.env = env;
+        this.token = token;
 
         messageLoop = MessageLoop.getInstance(appContext);
         sysInfo = getSystemInformation();
@@ -99,10 +101,9 @@ public class RakeAPI {
 
             if (rake == null) {
                 // url should be set before initializing rake instance
-                if (Env.DEV == env) setBaseEndpoint(RakeConfig.DEV_BASE_ENDPOINT);
-                else setBaseEndpoint(RakeConfig.LIVE_BASE_ENDPOINT);
+                String url = (Env.DEV == env) ? UriUtil.DEV_BASE_ENDPOINT : UriUtil.LIVE_BASE_ENDPOINT;
 
-                rake = new RakeAPI(appContext, token, env);
+                rake = new RakeAPI(appContext, token, env, url);
                 instances.put(appContext, rake);
             }
 
@@ -220,10 +221,10 @@ public class RakeAPI {
 
             RakeLogger.d(tag, "track() called\n" + dataObj);
 
-            Log log = Log.create(getBaseEndpoint(), token, dataObj);
+            Log log = Log.create(url, token, dataObj);
 
             if (null == log) {
-                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, getBaseEndpoint());
+                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, url);
                 RakeLogger.e(tag, message);
                 return;
             }
@@ -236,40 +237,13 @@ public class RakeAPI {
         }
     }
 
-    public void setRakeServer(Context context, String server) {
-        RakeAPI.setBaseEndpoint(server);
+    // TODO: ENUM
+    public void setEndpoint(String url) {
+        this.url = url;
     }
 
-    /**
-     * @param baseEndpoint
-     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code baseEndpoint}.
-     */
-    private static synchronized void setBaseEndpoint(String baseEndpoint) throws IllegalArgumentException {
-        if (null == baseEndpoint) {
-            RakeLogger.e(LOG_TAG_PREFIX, "MessageLoop.baseEndpoint can't be null");
-        }
-
-        RakeAPI.checkInvalidEndpoint(baseEndpoint);
-
-        RakeAPI.baseEndpoint = baseEndpoint;
-        RakeLogger.d(LOG_TAG_PREFIX, "Set endpoint to " + baseEndpoint);
-    }
-
-    private static void checkInvalidEndpoint(String baseEndpoint) {
-        /*
-         * MessageLoop have only one host type (DEV_HOST or LIVE_HOST). not both of them
-         * See, JIRA RAKE-390
-         */
-
-        if  ((RakeAPI.baseEndpoint.startsWith(DEV_HOST) && baseEndpoint.startsWith(LIVE_HOST)) ||
-                (RakeAPI.baseEndpoint.startsWith(LIVE_HOST) && baseEndpoint.startsWith(DEV_HOST))) {
-            throw new IllegalArgumentException(
-                    "Can't use both RakeAPI.Env.DEV and RakeAPI.Env.LIVE at the same time");
-        }
-    }
-
-    /* package */ static synchronized String getBaseEndpoint() {
-        return RakeAPI.baseEndpoint;
+    public String getEndpoint() {
+        return url;
     }
 
     /**

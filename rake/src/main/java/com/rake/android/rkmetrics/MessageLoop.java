@@ -16,6 +16,7 @@ import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.persistent.Transferable;
 import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.UriUtil;
 
 import org.json.JSONArray;
 
@@ -229,7 +230,7 @@ final class MessageLoop {
                 for (String token: logMap.get(url).keySet()) {
 
                     String stringified = logMap.get(url).get(token).toString();
-                    String endpoint = url + ENDPOINT_TRACK_PATH; /* TODO + "/" + token */
+                    String endpoint = url + UriUtil.ENDPOINT_TRACK_PATH; /* TODO + "/" + token */
                     RequestResult result = HttpRequestSender.sendRequest(stringified, endpoint);
 
                     if (RequestResult.SUCCESS == result)
@@ -262,10 +263,9 @@ final class MessageLoop {
                 String lastId = event.getLastId();
                 String log = event.getLog();
 
-                // TODO: convert instance method, support multiple urls
+                /* assume that RakeAPI runs with Env.LIVE option */
                 RequestResult result = HttpRequestSender.sendRequest(
-                        log,
-                        RakeAPI.getBaseEndpoint() + ENDPOINT_TRACK_PATH);
+                        log, UriUtil.LIVE_BASE_ENDPOINT + UriUtil.ENDPOINT_TRACK_PATH);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (RequestResult.SUCCESS == result) {
