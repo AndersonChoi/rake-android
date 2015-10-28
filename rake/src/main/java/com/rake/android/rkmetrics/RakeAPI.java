@@ -130,11 +130,15 @@ public class RakeAPI {
     /**
      * Set flush interval
      *
-     * @param context android application context
      * @param milliseconds flush interval (milliseconds)
      */
-    public static void setFlushInterval(Context context, long milliseconds) {
+    public static void setFlushInterval(long milliseconds) {
+        RakeLogger.d(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
         MessageLoop.setFlushInterval(milliseconds);
+    }
+
+    public static long getFlushInterval() {
+        return MessageLoop.getFlushInterval();
     }
 
     /**

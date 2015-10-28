@@ -14,15 +14,13 @@ final public class RakeConfig {
     private RakeConfig() {}
 
     public static final int TRACK_MAX_LOG_COUNT = 50;
-    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
 
     public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
     public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
     static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
-    // version number will be replaced automatically when building.
+    // version number will be replaced automatically before compiling.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.3.20";
 
     // NOTE: some clients use 8553 port using `RakeAPI.setRakeServer` function

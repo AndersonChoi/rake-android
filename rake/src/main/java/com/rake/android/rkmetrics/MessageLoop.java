@@ -29,6 +29,11 @@ import java.util.concurrent.SynchronousQueue;
  */
 final public class MessageLoop {
 
+    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    private static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+
     public enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
@@ -57,7 +62,6 @@ final public class MessageLoop {
     }
 
     private static volatile Handler handler;
-    private static long flushInterval = RakeConfig.DEFAULT_FLUSH_INTERVAL;
 
     private static MessageLoop instance;
 
@@ -96,17 +100,22 @@ final public class MessageLoop {
         runMessage(m);
     }
 
-    public static void setFlushInterval(long interval /* milliseconds */) {
-        flushInterval = interval;
-        RakeLogger.d(LOG_TAG_PREFIX, "Set flush interval to " + interval);
-    }
-
     public void hardKill() {
         Message m = Message.obtain();
         m.what = Command.KILL_WORKER.code;
 
         runMessage(m);
     }
+
+    public static void setFlushInterval(long millis) {
+        FLUSH_INTERVAL = millis;
+    }
+
+    public static long getFlushInterval() {
+        return FLUSH_INTERVAL;
+    }
+
+    /* package */
 
     private void runMessage(Message msg) {
         if (isDead()) {
@@ -191,13 +200,13 @@ final public class MessageLoop {
             logTableAdapter = LogTableAdapter.getInstance(appContext);
 
             RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
-            logTableAdapter.removeLogByTime(System.currentTimeMillis() - RakeConfig.DATA_EXPIRATION_TIME);
+            logTableAdapter.removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             /* flush legacy table `events` */
-            sendEmptyMessage(FLUSH_EVENT_TABLE.code);
+            sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
 
             /* send initial auto-flush message */
-            sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
+            sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
         }
 
         private void sendLogFromLogTable() {
@@ -262,7 +271,7 @@ final public class MessageLoop {
                 if (RequestResult.SUCCESS == result) {
                     eventTableAdapter.removeEventById(lastId);
                 } else if (RequestResult.FAILURE_RECOVERABLE == result) { // try again later
-                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, flushInterval);
+                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
                 } else if (RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     eventTableAdapter.removeEventById(lastId);
                 } else {
@@ -293,7 +302,7 @@ final public class MessageLoop {
                     sendLogFromLogTable();
 
                     if (!hasMessages(AUTO_FLUSH_INTERVAL.code))
-                        sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, flushInterval);
+                        sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);
                 } else if (command == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
