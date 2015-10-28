@@ -2,8 +2,9 @@ package com.rake.android.rkmetrics.network;
 
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.RakeLogger;
-import com.rake.android.rkmetrics.util.StreamUtils;
-import com.rake.android.rkmetrics.util.StringUtils;
+import com.rake.android.rkmetrics.util.StreamUtil;
+import com.rake.android.rkmetrics.util.StringUtil;
+
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -127,8 +128,8 @@ final public class HttpRequestSender {
         } finally {
             if (null != conn) conn.disconnect();
 
-            StreamUtils.closeQuietly(writer);
-            StreamUtils.closeQuietly(os);
+            StreamUtil.closeQuietly(writer);
+            StreamUtil.closeQuietly(os);
         }
 
         return result;
@@ -186,7 +187,7 @@ final public class HttpRequestSender {
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
-            String responseBody = StringUtils.inputStreamToString(responseEntity.getContent());
+            String responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
             int statusCode = response.getStatusLine().getStatusCode();
 
             String message = String.format("Response code: %d, Response body: %s", statusCode, responseBody);

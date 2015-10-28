@@ -5,7 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 
-public class StringUtils {
+public class StringUtil {
 
     /**
      * Static utility method to convert an InputStream to a String

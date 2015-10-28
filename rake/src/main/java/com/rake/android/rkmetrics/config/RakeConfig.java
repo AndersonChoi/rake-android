@@ -1,8 +1,7 @@
 package com.rake.android.rkmetrics.config;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Locale;
+import com.rake.android.rkmetrics.util.TimeUtil;
+
 import java.util.TimeZone;
 
 /**
@@ -14,10 +13,6 @@ final public class RakeConfig {
     private RakeConfig() {}
 
     public static final int TRACK_MAX_LOG_COUNT = 50;
-
-    public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
-    public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
-    static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically before compiling.

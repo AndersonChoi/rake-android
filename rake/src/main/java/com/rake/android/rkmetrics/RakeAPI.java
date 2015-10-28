@@ -8,6 +8,8 @@ import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.TimeUtil;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -228,8 +230,8 @@ public class RakeAPI {
             propertiesObj.put("token", token);
 
             // time
-            propertiesObj.put("base_time", RakeConfig.baseTimeFormat.format(now));
-            propertiesObj.put("local_time", RakeConfig.localTimeFormat.format(now));
+            propertiesObj.put("base_time", TimeUtil.baseTimeFormat.format(now));
+            propertiesObj.put("local_time", TimeUtil.localTimeFormat.format(now));
 
             // 4. put properties
             dataObj.put("properties", propertiesObj);
