@@ -11,9 +11,8 @@ import android.view.MenuItem;
 import android.widget.Button;
 
 import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
-
-import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -55,6 +54,13 @@ public class MainActivity extends AppCompatActivity {
             flush(RakeAPI.Env.DEV);
         });
 
+        Button btnSetFreeEndpointDevRake =
+                (Button) findViewById(R.id.btnSetFreeEndpointDevRake);
+        btnSetFreeEndpointDevRake.setOnClickListener((View v) -> {
+            setFreeEndpoint(RakeAPI.Env.DEV);
+        });
+
+        /** LIVE */
         Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
         btnInstallLiveRake.setOnClickListener((View v) -> {
             install(RakeAPI.Env.LIVE);
@@ -69,14 +75,22 @@ public class MainActivity extends AppCompatActivity {
         btnFlushLiveRake.setOnClickListener((View v) -> {
             flush(RakeAPI.Env.LIVE);
         });
+
+        Button btnSetFreeEndpointLiveRake =
+                (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
+        btnSetFreeEndpointLiveRake.setOnClickListener((View v) -> {
+            setFreeEndpoint(RakeAPI.Env.LIVE);
+        });
     }
 
     private void install(RakeAPI.Env env) {
         String token = getToken(env);
-        if (RakeAPI.Env.DEV == env)
+        if (RakeAPI.Env.DEV == env) {
             devRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
-        else
+        }
+        else {
             liveRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+        }
     }
 
     private void flush(RakeAPI.Env env) {
@@ -87,6 +101,10 @@ public class MainActivity extends AppCompatActivity {
         RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
         shuttle.action("flush");
         getRakeInstance(env).track(shuttle.toJSONObject());
+    }
+
+    private void setFreeEndpoint(RakeAPI.Env env) {
+        getRakeInstance(env).setEndpoint(Endpoint.FREE);
     }
 
     private RakeAPI getRakeInstance(RakeAPI.Env env) {

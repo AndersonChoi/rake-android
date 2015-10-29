@@ -37,6 +37,12 @@
             android:layout_height="wrap_content" />
 
         <Button
+            android:text="@string/btnSetFreeEndpointDevRake"
+            android:id="@+id/btnSetFreeEndpointDevRake"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
             android:text="@string/btnInstallLiveRake"
             android:id="@+id/btnInstallLiveRake"
             android:layout_width="fill_parent"
@@ -51,6 +57,12 @@
         <Button
             android:text="@string/btnFlushLiveRake"
             android:id="@+id/btnFlushLiveRake"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:text="@string/btnSetFreeEndpointLiveRake"
+            android:id="@+id/btnSetFreeEndpointLiveRake"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" />
 

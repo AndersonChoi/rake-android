@@ -31,9 +31,11 @@ import java.util.concurrent.SynchronousQueue;
 final class MessageLoop {
 
     static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+
     static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
     static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
     static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+
 
     enum Command {
         TRACK(1),

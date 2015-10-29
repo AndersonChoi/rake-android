@@ -6,8 +6,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Endpoint {
-    CHARGED,
-    FREE;
+    CHARGED("CHANGED"),
+    FREE("FREE");
 
     public final static String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";
     public final static String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/track";
@@ -16,7 +16,9 @@ public enum Endpoint {
 
     public final static Endpoint DEFAULT = CHARGED;
 
-    Endpoint() {}
+    private String value;
+
+    Endpoint(String value) { this.value = value;}
     /**
      * 사용자에게 노출시키지 않기 위해 인스턴스 변수로 만들기 static block 에서 초기화
      */
