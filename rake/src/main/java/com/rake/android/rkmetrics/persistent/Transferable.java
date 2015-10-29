@@ -1,0 +1,85 @@
+package com.rake.android.rkmetrics.persistent;
+
+import org.json.JSONArray;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+
+/* immutable object */
+public class Transferable {
+
+    /**
+     * constructors
+     */
+    private Transferable() { throw new RuntimeException("Can't create Log without args"); }
+    private Transferable(String lastId,
+                         Map<String, Map<String, JSONArray>> logMap,
+                         Map<String, Integer> countMap) {
+
+        this.lastId = lastId;
+        this.logMap = logMap;
+        this.countMap = countMap;
+    }
+
+    /**
+     * variables, getters
+     */
+
+    private String lastId; /* `rake` Database PK */
+    private Map<String, Map<String, JSONArray>> logMap; /* url to log */
+
+    private Map<String, Integer> countMap;
+
+    public String getLastId() { return lastId; }
+    // TODO create count
+    public Set<String> getUrls() { return new HashSet<String>(logMap.keySet()); }
+    public Map<String, Integer> getCountMap() { /* not immutable */ return countMap; }
+
+    public Set<String> getTokens(String url) {
+        if (null == url || !logMap.containsKey(url)) return Collections.EMPTY_SET;
+
+        return new HashSet(getLogMap().get(url).keySet());
+    }
+
+    public Map<String, Map<String, JSONArray>> getLogMap() {
+        return new HashMap<String, Map<String, JSONArray>>(logMap);
+    }
+
+    /**
+     * static functions
+     */
+
+    public static Transferable create(String lastId, List<Log> logs) {
+
+        if (null == lastId || null == logs || 0 == logs.size()) return null;
+
+        Map<String, Map<String, JSONArray>> urlMap = new HashMap<String, Map<String, JSONArray>>();
+        Map<String, Integer> countMap = new HashMap<String, Integer>();
+
+        for (Log log : logs) {
+            if (!urlMap.containsKey(log.getUrl())) { /* if urlMap doesn't have the url */
+                urlMap.put(log.getUrl(), new HashMap<String, JSONArray>());
+                countMap.put(log.getUrl(), 0);
+            }
+
+            Map<String, JSONArray> tokenMap = urlMap.get(log.getUrl());
+
+            if (!tokenMap.containsKey(log.getToken()))
+                tokenMap.put(log.getToken(), new JSONArray());
+
+            JSONArray jsonArr = tokenMap.get(log.getToken());
+            jsonArr.put(log.getJson());
+
+            /* increase count */
+            int count = countMap.get(log.getUrl());
+            countMap.put(log.getUrl(), count + 1);
+        }
+
+        return new Transferable(lastId, urlMap, countMap);
+    }
+}

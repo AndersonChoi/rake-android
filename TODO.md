@@ -1,16 +1,30 @@
+# 0.3.21
+
+- remove nested map
+- Token URL
+
 # 0.3.20
 
-- HttpUrlConnection support
-- Locale.US
+- ~~git rev-parse current branch and replace TOKENs in Token.java~~
+- mUlti INstance
+- Builder pattern (+ autoflush disable option)
+- Shuttle Metric
 
-- MultiInstance
-    * running test
-    * static function -> remove
-    * database update
-    
+## API 변경
 
-- RakeHttp
-TOKEN 에 PRREFIX 붙고, 내부적으로 URL 을 결정
+- setFlushInterval 에서 첫번째 인자인 Context 제거 
+- getFlushInterval 추가
+- RakeAPI 클래스가 final 클래스로 변경
+- 0.3.17 부터 deprecated 되었던 생성자 public static RakeAPI getInstance(Context context, String token, Boolean isDevServer) 를 제거
+- 0.3.17 부터 depreacted 되었던 생성자 public static void setDebug(Boolean debug) {
+- remove context from setRakeServer(Context context, String server)
+- setRakeServer -> setEndpoint
+
+## Design 변경
+
+- Database version update 4 -> 5
+- events -> log 테이블
+
 
 GetInstance(TOKEN, LoggingMode)
 
@@ -19,7 +33,7 @@ GetInstance(TOKEN, LoggingMode)
 
 - 테스트 케이스 만들기 1. 다른 url 2. 즉시 플러시시 오류
 
-- android studio project 로 변경
+- ~~android studio project 로 변경~~
 
 - update frequency -> convert TimerTask
 - remove handler lock
@@ -49,6 +63,9 @@ rakeDev.track(shuttle.toJSONObject());
 
 # 0.3.19
 
+- HttpUrlConnection support
+- Locale.US
+
 # 0.3.18 
 
 - ~~Https Security Problem~~
@@ -68,7 +85,7 @@ rakeDev.track(shuttle.toJSONObject());
 - ~~post 메소드 NPE 처리~~
 - ~~post 메소드 gzip 헤더 제거~~
 - ~~statusCode 500 일 경우 
-- ~~log tag~~
+- ~~json tag~~
 - ~~debug 시 로깅 부분에서 if guard 제거~~
 
 # Next
