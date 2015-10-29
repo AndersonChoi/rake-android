@@ -11,6 +11,7 @@ import android.view.MenuItem;
 import android.widget.Button;
 
 import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        RakeAPI.setLogging(RakeAPI.Logging.ENABLE);
         initialize();
     }
 
@@ -80,6 +82,19 @@ public class MainActivity extends AppCompatActivity {
                 (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
         btnSetFreeEndpointLiveRake.setOnClickListener((View v) -> {
             setFreeEndpoint(RakeAPI.Env.LIVE);
+        });
+
+        /** GLOBAL */
+        Button btnSetAutoFlushON =
+                (Button) findViewById(R.id.btnSetAutoFlushON);
+        btnSetAutoFlushON.setOnClickListener((View v) -> {
+            RakeAPI.setAutoFlush(AutoFlush.ON);
+        });
+
+        Button btnSetAutoFlushOFF =
+                (Button) findViewById(R.id.btnSetAutoFlushOFF);
+        btnSetAutoFlushOFF.setOnClickListener((View v) -> {
+            RakeAPI.setAutoFlush(AutoFlush.OFF);
         });
     }
 

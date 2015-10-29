@@ -66,5 +66,17 @@
             android:layout_width="fill_parent"
             android:layout_height="wrap_content" />
 
+        <Button
+            android:text="@string/btnSetAutoFlushON"
+            android:id="@+id/btnSetAutoFlushON"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
+        <Button
+            android:text="@string/btnSetAutoFlushOFF"
+            android:id="@+id/btnSetAutoFlushOFF"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content" />
+
     </LinearLayout>
 </RelativeLayout>

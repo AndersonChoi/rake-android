@@ -12,4 +12,7 @@
     <string name="btnFlushLiveRake">Flush (Live)</string>
     <string name="btnSetFreeEndpointLiveRake">Set Free Endpoint (Live)</string>
 
+    <string name="btnSetAutoFlushON">AutoFlush ON</string>
+    <string name="btnSetAutoFlushOFF">AutoFlush OFF</string>
+
 </resources>
