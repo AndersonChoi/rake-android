@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Message;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
@@ -16,7 +17,6 @@ import org.json.JSONObject;
 
 import java.util.*;
 
-import static com.rake.android.rkmetrics.network.Endpoint.*;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public class RakeAPI {
@@ -30,17 +30,32 @@ public class RakeAPI {
     }
 
     public enum Env {
-        LIVE("LIVE"), DEV("DEV");
+        LIVE("LIVE"),
+        DEV("DEV");
 
-        private String env;
+        private final String env;
         Env(String env) { this.env = env; }
+
         @Override public String toString() { return this.env; }
+    }
+
+    public enum AutoFlush {
+        ON("ON"),
+        OFF("OFF");
+
+        private final String value;
+        AutoFlush(String value) { this.value = value; }
+
+        @Override
+        public String toString() {
+            return this.value;
+        }
     }
 
     // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
-    private final String tag;
+    private String tag;
 
     private Endpoint endpoint;
     private final Env env;
@@ -52,15 +67,9 @@ public class RakeAPI {
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
-    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
-        // black list
-        // usage: add("mdn");
-    }};
-
     private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
 
-        this.tag = String.format("%s (%s, %s, %s)",
-                RakeConfig.LOG_TAG_PREFIX, token, env, endpoint.name());
+        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint);
 
         RakeLogger.d(tag, "Creating instance");
 
@@ -107,7 +116,7 @@ public class RakeAPI {
 
             if (rake == null) {
                 // url should be set before initializing rake instance
-                Endpoint endpoint = (Env.DEV == env) ? DEV_ENDPOINT_CHARGED : LIVE_ENDPOINT_CHARGED;
+                Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             }
@@ -116,19 +125,43 @@ public class RakeAPI {
         }
     }
 
+
+    /* Class methods */
+
     /**
      * Set flush interval
      *
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(long milliseconds) {
-        RakeLogger.d(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
+        RakeLogger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
         MessageLoop.setFlushInterval(milliseconds);
     }
 
     public static long getFlushInterval() {
         return MessageLoop.getFlushInterval();
     }
+
+    public static void setAutoFlush(AutoFlush autoFlush) {
+        AutoFlush old = MessageLoop.getAutoFlushOption();
+        String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
+        RakeLogger.i(LOG_TAG_PREFIX, message);
+
+        MessageLoop.setAutoFlushOption(autoFlush);
+    }
+
+    public static AutoFlush getAutoFlush() { return MessageLoop.getAutoFlushOption(); }
+
+    private static String createTag(String prefix, String token, Env e, Endpoint ep) {
+        return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
+    }
+
+    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
+        // black list
+        // usage: add("mdn");
+    }};
+
+    /* Instance methods */
 
     /**
      * Save JSONObject (shuttle) into SQLite.
@@ -226,7 +259,7 @@ public class RakeAPI {
 
             RakeLogger.d(tag, "track() called\n" + dataObj);
 
-            String uri = endpoint.getUri();
+            String uri = endpoint.getURI(env);
             Log log = Log.create(uri, token, dataObj);
 
             if (null == log) {
@@ -246,27 +279,18 @@ public class RakeAPI {
     /**
      * Change end point
      *
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_FREE}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_CHARGED}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_FREE}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_CHARGED}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
      *
      * @param endpoint
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
      */
     public void setEndpoint(Endpoint endpoint) {
-
-        if (this.endpoint.getEnv() != endpoint.getEnv()) {
-            String message = String.format("Can't set endpoint from %s to %s",
-                    this.endpoint.getEnv(), endpoint.getEnv());
-
-            throw new IllegalArgumentException(message);
-        }
-
+        Endpoint old = this.endpoint;
+        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
         this.endpoint = endpoint;
 
-        String message = String.format("Set endpoint from %s to %s",
-                this.endpoint.getEnv(), endpoint.getEnv());
+        String message = String.format("Changed endpoint from %s to %s", old, endpoint);
         RakeLogger.d(tag, message);
     }
 

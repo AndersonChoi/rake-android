@@ -61,4 +61,7 @@ public class TransferableSpec {
         clazz.newInstance();
     }
 
+    // TODO countMap test
+
+
 }

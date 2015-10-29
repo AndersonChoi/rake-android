@@ -4,7 +4,6 @@ import android.app.Application;
 import android.os.Handler;
 
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.util.functional.Callback;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,13 +11,11 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import static com.rake.android.rkmetrics.network.Endpoint.*;
 import com.rake.android.rkmetrics.RakeAPI.Env;
+import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
 
 import static org.junit.Assert.*;
@@ -42,7 +39,7 @@ public class RakeAPISpec {
     @Test
     public void setFlushInterval() {
         long defaultInterval = MessageLoop.DEFAULT_FLUSH_INTERVAL;
-        long newInterval = 5 * 1000L;
+        long newInterval = defaultInterval + 1000;
 
         assertEquals(MessageLoop.DEFAULT_FLUSH_INTERVAL,
                 RakeAPI.getFlushInterval());
@@ -54,85 +51,55 @@ public class RakeAPISpec {
     }
 
     @Test
-    public void test_Env_Live_시_라이브서버_과금_URL_로_세팅되어야함() {
-        RakeAPI r = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-        assertEquals(DEV_ENDPOINT_CHARGED, r.getEndpoint());
+    public void Env_Live_시_라이브서버_과금_URL_로_세팅되어야함() {
+        Env e = Env.DEV;
+        RakeAPI r = RakeAPI.getInstance(app, genToken(), e, Logging.ENABLE);
+        assertEquals(Endpoint.CHARGED_ENDPOINT_DEV, r.getEndpoint().getURI(e));
     }
 
     @Test
-    public void test_Env_Dev_시_개발서버_과금_URL_로_세팅되어야함() {
-        RakeAPI r = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
-        assertEquals(Endpoint.LIVE_ENDPOINT_CHARGED, r.getEndpoint());
+    public void Env_Dev_시_개발서버_과금_URL_로_세팅되어야함() {
+        Env e = Env.LIVE;
+        RakeAPI r = RakeAPI.getInstance(app, genToken(), e, Logging.ENABLE);
+        assertEquals(Endpoint.CHARGED_ENDPOINT_LIVE, r.getEndpoint().getURI(e));
     }
 
     @Test
-    public void 비과금에서_무과금으로_URL_변경이가능해야함() {
-        RakeAPI devRake = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-        devRake.setEndpoint(DEV_ENDPOINT_FREE);
-        assertEquals(DEV_ENDPOINT_FREE, devRake.getEndpoint());
-
-        RakeAPI liveRake = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
-        liveRake.setEndpoint(LIVE_ENDPOINT_FREE);
-        assertEquals(LIVE_ENDPOINT_FREE, liveRake.getEndpoint());
-    }
-
-    @Test
-    public void 개발과_라이브간_URL_전환시_IllegalArgumentException_을_던져야함() {
-
-        List<Endpoint> devEndpoints =
-                Arrays.asList(DEV_ENDPOINT_CHARGED, DEV_ENDPOINT_FREE);
-
-        List<Endpoint> liveEndpoints =
-                Arrays.asList(LIVE_ENDPOINT_CHARGED, LIVE_ENDPOINT_FREE);
-
-        // 개발 과금 -> 라이브 과금
-        // 개발 과금 -> 라이브 무과금
-        // 개발 무과금 -> 라이브 과금
-        // 개발 무과금 -> 라이브 무과금
-        for(final Endpoint dev : devEndpoints) {
-            for(final Endpoint live : liveEndpoints) {
-                handledIllegalArgumentException(new Callback() {
-                    @Override
-                    public void execute() {
-                        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-                        r1.setEndpoint(dev);
-
-                        r1.setEndpoint(live); /* IllegalArgumentException occurred */
-                    }
-                });
-            }
-        }
-
-        // 라이브 과금 -> 개발 과금
-        // 라이브 과금 -> 개발 무과금
-        // 라이브 무과금 -> 개발 과금
-        // 라이브 무과금 -> 개발 과금
-        for(final Endpoint live : liveEndpoints) {
-            for(final Endpoint dev : devEndpoints) {
-                handledIllegalArgumentException(new Callback() {
-                    @Override
-                    public void execute() {
-                        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
-                        r1.setEndpoint(live);
-
-                        r1.setEndpoint(dev); /* IllegalArgumentException occurred */
-                    }
-                });
-            }
-        }
-    }
-
-    public static void handledIllegalArgumentException(Callback callback) {
-        try { callback.execute(); throw new RuntimeException("Expected IllegalArgumentException"); }
-        catch (IllegalArgumentException e) { /* ignore */ }
-    }
-
-    @Test
-    public void test_복수의_Env_를_지원해야함() {
+    public void 복수의_Env_를_지원해야함() {
         RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-        assertEquals(Endpoint.DEV_ENDPOINT_CHARGED, r1.getEndpoint());
-
         RakeAPI r2 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
-        assertEquals(Endpoint.LIVE_ENDPOINT_CHARGED, r2.getEndpoint());
+    }
+
+    @Test
+    public void setEndpoint() {
+        /** ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
+
+        String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";
+        String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/track";
+        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/track";
+        String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/track";
+
+        Env e1 = Env.DEV;
+        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), e1, Logging.ENABLE);
+        r1.setEndpoint(FREE);
+        assertEquals(Endpoint.FREE_ENDPOINT_DEV, r1.getEndpoint().getURI(e1));
+
+        Env e2 = Env.LIVE;
+        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), e2, Logging.ENABLE);
+        r2.setEndpoint(FREE);
+        assertEquals(Endpoint.FREE_ENDPOINT_LIVE, r2.getEndpoint().getURI(e2));
+    }
+
+    @Test
+    public void 최초_AutoFlush_는_ON_이어야함() {
+        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
+
+        assertEquals(AutoFlush.ON, RakeAPI.getAutoFlush());
+        assertEquals(AutoFlush.ON, RakeAPI.getAutoFlush());
+
+        RakeAPI.setAutoFlush(AutoFlush.OFF);
+        assertEquals(AutoFlush.OFF, RakeAPI.getAutoFlush());
     }
 }
+
