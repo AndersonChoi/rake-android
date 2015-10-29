@@ -4,7 +4,6 @@ import android.app.Application;
 import android.os.Handler;
 
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.util.functional.Callback;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,13 +11,11 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.UUID;
 
 import static com.rake.android.rkmetrics.network.Endpoint.*;
 import com.rake.android.rkmetrics.RakeAPI.Env;
+import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
 
 import static org.junit.Assert.*;
@@ -92,6 +89,17 @@ public class RakeAPISpec {
         r2.setEndpoint(FREE);
         assertEquals(Endpoint.FREE_ENDPOINT_LIVE, r2.getEndpoint().getURI(e2));
     }
-}
 
+    @Test
+    public void 최초_AutoFlush_는_ON_이어야함() {
+        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
+
+        assertEquals(AutoFlush.ON, RakeAPI.getAutoFlush());
+        assertEquals(AutoFlush.ON, RakeAPI.getAutoFlush());
+
+        RakeAPI.setAutoFlush(AutoFlush.OFF);
+        assertEquals(AutoFlush.OFF, RakeAPI.getAutoFlush());
+    }
+}
 

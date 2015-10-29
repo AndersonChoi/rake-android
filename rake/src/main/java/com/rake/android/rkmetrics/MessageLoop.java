@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics;
 
 import static com.rake.android.rkmetrics.config.RakeConfig.*;
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
+import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
 import static com.rake.android.rkmetrics.network.HttpRequestSender.RequestResult;
 
 import android.content.Context;
@@ -17,6 +18,7 @@ import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.persistent.Transferable;
 import com.rake.android.rkmetrics.util.RakeLogger;
 import com.rake.android.rkmetrics.network.Endpoint;
+import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
 import org.json.JSONArray;
 
@@ -36,6 +38,8 @@ final class MessageLoop {
     static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
     static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
 
+    static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
+    static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
     enum Command {
         TRACK(1),
@@ -82,10 +86,41 @@ final class MessageLoop {
         handler = createMessageHandler();
     }
 
-    static synchronized MessageLoop getInstance(Context appContext) {
+    /* Class methods */
+    /* package */ static synchronized MessageLoop getInstance(Context appContext) {
         if (null == instance) { instance = new MessageLoop(appContext); }
 
         return instance;
+    }
+
+    /* package */ static synchronized void setFlushInterval(long millis) {
+        FLUSH_INTERVAL = millis;
+    }
+
+    /* package */ static synchronized long getFlushInterval() { return FLUSH_INTERVAL; }
+
+    /* package */ static synchronized void setAutoFlushOption(AutoFlush option) {
+        MessageLoop.autoFlushOption = option;
+
+        /* 인스턴스가 존재하면, AUTO_FLUSH_INTERVAL 루프를 재시작 */
+        if (null != instance) {
+            instance.activateAutoFlushInterval();
+        }
+    }
+
+    /* package */ static synchronized AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
+
+    /* Instance methods */
+
+    private void activateAutoFlushInterval() {
+        Message m = Message.obtain();
+        m.what = AUTO_FLUSH_INTERVAL.code;
+
+        runMessage(m);
+    }
+
+    private synchronized boolean isAutoFlushON() {
+        return ON == autoFlushOption;
     }
 
     void track(Log log) {
@@ -109,17 +144,6 @@ final class MessageLoop {
 
         runMessage(m);
     }
-
-    static void setFlushInterval(long millis) {
-        FLUSH_INTERVAL = millis;
-    }
-
-    static long getFlushInterval() {
-        return FLUSH_INTERVAL;
-    }
-
-    /* package */
-
     private void runMessage(Message msg) {
         if (isDead()) {
             // thread died under suspicious circumstances.
@@ -208,7 +232,6 @@ final class MessageLoop {
             /* flush legacy table `events` */
             sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
 
-            /* send initial auto-flush message */
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
         }
 
@@ -298,18 +321,24 @@ final class MessageLoop {
 
                     RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
-                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT) sendLogFromLogTable();
+                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON())
+                        sendLogFromLogTable();
+
                 } else if (command == FLUSH_EVENT_TABLE) {
                     sendLogFromEventTable();
+
                 } else if (command == MANUAL_FLUSH) {
                     sendLogFromLogTable();
-                } else if (command == AUTO_FLUSH_CAPACITY) {
-                    sendLogFromLogTable();
-                } else if (command == AUTO_FLUSH_INTERVAL) {
+
+                } else if (command == AUTO_FLUSH_CAPACITY && isAutoFlushON()) {
                     sendLogFromLogTable();
 
-                    if (!hasMessages(AUTO_FLUSH_INTERVAL.code))
+                } else if (command == AUTO_FLUSH_INTERVAL && isAutoFlushON()) {
+                    sendLogFromLogTable();
+
+                    if (!hasMessages(AUTO_FLUSH_INTERVAL.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);
+
                 } else if (command == KILL_WORKER) {
                     RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
@@ -317,6 +346,7 @@ final class MessageLoop {
                         handler = null;
                         android.os.Looper.myLooper().quit();
                     }
+
                 } else { /* UNKNOWN COMMAND */
                     RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
                 }

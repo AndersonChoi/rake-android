@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Message;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
@@ -33,12 +34,22 @@ public class RakeAPI {
         DEV("DEV");
 
         private final String env;
-
-        Env(String env) {
-            this.env = env;
-        }
+        Env(String env) { this.env = env; }
 
         @Override public String toString() { return this.env; }
+    }
+
+    public enum AutoFlush {
+        ON("ON"),
+        OFF("OFF");
+
+        private final String value;
+        AutoFlush(String value) { this.value = value; }
+
+        @Override
+        public String toString() {
+            return this.value;
+        }
     }
 
     // TODO: remove nested map
@@ -55,15 +66,6 @@ public class RakeAPI {
     private final MessageLoop messageLoop; /* singleton */
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
-
-    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
-        // black list
-        // usage: add("mdn");
-    }};
-
-    private static String createTag(String prefix, String token, Env e, Endpoint ep) {
-        return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
-    }
 
     private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
 
@@ -123,19 +125,43 @@ public class RakeAPI {
         }
     }
 
+
+    /* Class methods */
+
     /**
      * Set flush interval
      *
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(long milliseconds) {
-        RakeLogger.d(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
+        RakeLogger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
         MessageLoop.setFlushInterval(milliseconds);
     }
 
     public static long getFlushInterval() {
         return MessageLoop.getFlushInterval();
     }
+
+    public static void setAutoFlush(AutoFlush autoFlush) {
+        AutoFlush old = MessageLoop.getAutoFlushOption();
+        String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
+        RakeLogger.i(LOG_TAG_PREFIX, message);
+
+        MessageLoop.setAutoFlushOption(autoFlush);
+    }
+
+    public static AutoFlush getAutoFlush() { return MessageLoop.getAutoFlushOption(); }
+
+    private static String createTag(String prefix, String token, Env e, Endpoint ep) {
+        return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
+    }
+
+    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
+        // black list
+        // usage: add("mdn");
+    }};
+
+    /* Instance methods */
 
     /**
      * Save JSONObject (shuttle) into SQLite.
