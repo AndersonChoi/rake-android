@@ -264,7 +264,7 @@ final class MessageLoop {
             if (event != null) {
                 String lastId = event.getLastId();
                 String log = event.getLog();
-                String url = Endpoint.LIVE_ENDPOINT_FREE.getUri();
+                String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("Sending %d events to %s", event.getLogCount(), url);

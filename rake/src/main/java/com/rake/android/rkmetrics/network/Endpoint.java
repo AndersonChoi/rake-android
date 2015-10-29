@@ -2,39 +2,38 @@ package com.rake.android.rkmetrics.network;
 
 import com.rake.android.rkmetrics.RakeAPI.Env;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
 public enum Endpoint {
+    CHARGED,
+    FREE;
 
-    DEV_ENDPOINT_CHARGED("https://pg.rake.skplanet.com:8443/log/track", Env.DEV),
-    DEV_ENDPOINT_FREE("https://pg.rake.skplanet.com:8553/log/track", Env.DEV),
-    LIVE_ENDPOINT_CHARGED("https://rake.skplanet.com:8443/log/track", Env.LIVE),
-    LIVE_ENDPOINT_FREE("https://rake.skplanet.com:8553/log/track", Env.LIVE);
+    public final static String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";
+    public final static String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/track";
+    public final static String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/track";
+    public final static String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/track";
 
-    private final String uri;
-    private final Env env;
+    public final static Endpoint DEFAULT = CHARGED;
 
-    Endpoint(String uri, Env env) {
-        this.uri = uri;
-        this.env = env;
+    Endpoint() {}
+    /**
+     * 사용자에게 노출시키지 않기 위해 인스턴스 변수로 만들기 static block 에서 초기화
+     */
+
+    private Map<Env, String> uriPerEnv;
+
+    static {
+        CHARGED.uriPerEnv = new HashMap<Env, String>();
+        CHARGED.uriPerEnv.put(Env.DEV, CHARGED_ENDPOINT_DEV);
+        CHARGED.uriPerEnv.put(Env.LIVE, CHARGED_ENDPOINT_LIVE);
+
+        FREE.uriPerEnv = new HashMap<Env, String>();
+        FREE.uriPerEnv.put(Env.DEV, FREE_ENDPOINT_DEV);
+        FREE.uriPerEnv.put(Env.LIVE, FREE_ENDPOINT_LIVE);
     }
 
-    public String getUri() { return uri; }
-    public Env getEnv() { return env; }
-
-    private final static List<Endpoint> devEndpoints =
-            Arrays.asList(DEV_ENDPOINT_FREE, DEV_ENDPOINT_CHARGED);
-
-    private final static List<Endpoint> liveEndpoints =
-            Arrays.asList(LIVE_ENDPOINT_FREE, LIVE_ENDPOINT_CHARGED);
-
-    public static List<Endpoint> getDevEndpoints() {
-        return new ArrayList<Endpoint>(devEndpoints); /* return immutable */
-    }
-
-    public static List<Endpoint> getLiveEndpoints() {
-        return new ArrayList<Endpoint>(liveEndpoints); /* return immutable */
+    public String getURI(Env env) {
+        return uriPerEnv.get(env);
     }
 }

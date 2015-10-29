@@ -16,7 +16,6 @@ import org.json.JSONObject;
 
 import java.util.*;
 
-import static com.rake.android.rkmetrics.network.Endpoint.*;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public class RakeAPI {
@@ -30,17 +29,22 @@ public class RakeAPI {
     }
 
     public enum Env {
-        LIVE("LIVE"), DEV("DEV");
+        LIVE("LIVE"),
+        DEV("DEV");
 
-        private String env;
-        Env(String env) { this.env = env; }
+        private final String env;
+
+        Env(String env) {
+            this.env = env;
+        }
+
         @Override public String toString() { return this.env; }
     }
 
     // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
 
-    private final String tag;
+    private String tag;
 
     private Endpoint endpoint;
     private final Env env;
@@ -57,10 +61,13 @@ public class RakeAPI {
         // usage: add("mdn");
     }};
 
+    private static String createTag(String prefix, String token, Env e, Endpoint ep) {
+        return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
+    }
+
     private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
 
-        this.tag = String.format("%s (%s, %s, %s)",
-                RakeConfig.LOG_TAG_PREFIX, token, env, endpoint.name());
+        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint);
 
         RakeLogger.d(tag, "Creating instance");
 
@@ -107,7 +114,7 @@ public class RakeAPI {
 
             if (rake == null) {
                 // url should be set before initializing rake instance
-                Endpoint endpoint = (Env.DEV == env) ? DEV_ENDPOINT_CHARGED : LIVE_ENDPOINT_CHARGED;
+                Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             }
@@ -226,7 +233,7 @@ public class RakeAPI {
 
             RakeLogger.d(tag, "track() called\n" + dataObj);
 
-            String uri = endpoint.getUri();
+            String uri = endpoint.getURI(env);
             Log log = Log.create(uri, token, dataObj);
 
             if (null == log) {
@@ -246,27 +253,18 @@ public class RakeAPI {
     /**
      * Change end point
      *
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_FREE}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#DEV_ENDPOINT_CHARGED}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_FREE}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#LIVE_ENDPOINT_CHARGED}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
+     * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
      *
      * @param endpoint
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
      */
     public void setEndpoint(Endpoint endpoint) {
-
-        if (this.endpoint.getEnv() != endpoint.getEnv()) {
-            String message = String.format("Can't set endpoint from %s to %s",
-                    this.endpoint.getEnv(), endpoint.getEnv());
-
-            throw new IllegalArgumentException(message);
-        }
-
+        Endpoint old = this.endpoint;
+        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
         this.endpoint = endpoint;
 
-        String message = String.format("Set endpoint from %s to %s",
-                this.endpoint.getEnv(), endpoint.getEnv());
+        String message = String.format("Changed endpoint from %s to %s", old, endpoint);
         RakeLogger.d(tag, message);
     }
 
