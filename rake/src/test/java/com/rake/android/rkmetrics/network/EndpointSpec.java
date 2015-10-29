@@ -29,4 +29,10 @@ public class EndpointSpec {
         assertEquals(CHARGED_ENDPOINT_LIVE, CHARGED.getURI(LIVE));
         assertEquals(FREE_ENDPOINT_LIVE, FREE.getURI(LIVE));
     }
+
+    /**
+     * ON -> OFF 변경시 뜸 track 호출 도중에
+     * 10-29 17:55:43.765 30732-30732/com.skplanet.rake.application I/Rake: Set auto-flush option from OFF to OFF
+     10-29 17:55:43.765 30732-31852/com.skplanet.rake.application E/Rake: Unexpected message received by Rake worker: { when=0 what=4 target=com.rake.android.rkmetrics.MessageLoop$MessageHandler }
+     */
 }

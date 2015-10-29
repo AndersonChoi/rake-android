@@ -254,7 +254,7 @@ final class MessageLoop {
             for(String url : logMap.keySet()) {
                 for (String token: logMap.get(url).keySet()) {
 
-                    String message = String.format("Sending %d log to %s", t.getLogCount(), url);
+                    String message = String.format("Sending %d log to %s", t.getCountMap().get(url), url);
                     RakeLogger.t(LOG_TAG_PREFIX, message);
 
                     String stringified = logMap.get(url).get(token).toString();
