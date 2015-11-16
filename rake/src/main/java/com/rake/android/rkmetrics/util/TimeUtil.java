@@ -7,9 +7,29 @@ import java.util.TimeZone;
 
 public class TimeUtil {
 
-    // TODO: thread-local, thread-unsafe shared object
-    public static final DateFormat baseTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
-    public static final DateFormat localTimeFormat = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
+    private static final ThreadLocal<SimpleDateFormat> baseTimeFormatter = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            SimpleDateFormat format = new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
+            format.setTimeZone(TimeZone.getTimeZone("Asia/Seoul"));
 
-    static { baseTimeFormat.setTimeZone(TimeZone.getTimeZone("Asia/Seoul")); }
+            return format;
+        }
+    };
+
+    private static final ThreadLocal<SimpleDateFormat> localTimeFormatter = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            return new SimpleDateFormat("yyyyMMddHHmmssSSS", Locale.US);
+        }
+    };
+
+    public static DateFormat getBaseFormatter() {
+        return baseTimeFormatter.get();
+    }
+
+    public static DateFormat getLocalFormatter() {
+        return localTimeFormatter.get();
+    }
+
 }
