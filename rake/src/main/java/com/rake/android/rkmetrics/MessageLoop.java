@@ -11,6 +11,7 @@ import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
+import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
@@ -230,7 +231,8 @@ final class MessageLoop {
             logTableAdapter.removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             /* flush legacy table `events` */
-            sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
+            if (DatabaseAdapter.upgradedFrom4To5)
+                sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
 
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
         }

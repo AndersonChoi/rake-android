@@ -6,6 +6,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteException;
 import android.provider.BaseColumns;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
@@ -153,9 +154,8 @@ public final class EventTableAdapter extends DatabaseAdapter {
                         catch (JSONException e) { RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
                     }
 
-                 /* if JSONException or SQLiteException occurred, just throw out eventually returning null. */
+                /* if JSONException occurred, just throw out eventually returning null. */
                 } finally { if (null != c) c.close(); }
-
 
                 // TODO static factory
                 ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);

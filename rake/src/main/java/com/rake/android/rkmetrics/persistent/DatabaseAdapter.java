@@ -15,7 +15,7 @@ import java.io.File;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-abstract class DatabaseAdapter {
+public abstract class DatabaseAdapter {
     public enum Table {
         EVENTS("events"),
         LOG("log");
@@ -34,6 +34,7 @@ abstract class DatabaseAdapter {
     protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
 
     private static final int DATABASE_VERSION = 5;
+    public static boolean upgradedFrom4To5 = false;
 
     protected static final String COMMA_SEP = ", ";
     protected static final String QUERY_END = ");";
@@ -94,6 +95,12 @@ abstract class DatabaseAdapter {
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
             }
+
+            /** Event 테이블을 바로 Log 테이블로 옮길 수 없기 때문에 라이브 로그라 가정하고
+             * Event 테이블 플러시를 위한 Flag 값을 설정
+             */
+            if (4 == oldVersion && 5 == newVersion)
+                upgradedFrom4To5 = true;
         }
     }
 

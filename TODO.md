@@ -1,14 +1,19 @@
-# 0.3.21
+# 0.5.0
 
-- remove nested map
+- Builder pattern
 - Token URL
 
-# 0.3.20
+# 0.4.1 
+
+- remove nested map
+- Thread unsafe TimeUtil
+- Shuttle Metric
+
+# 0.4.0 
 
 - ~~git rev-parse current branch and replace TOKENs in Token.java~~
-- mUlti INstance
-- Builder pattern (+ autoflush disable option)
-- Shuttle Metric
+- Multi Instance
+- autoflush disable option)
 
 ## API 변경
 
