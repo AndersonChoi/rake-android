@@ -251,8 +251,8 @@ public class RakeAPI {
 
             // time
             // TODO: thread-unsafe
-            propertiesObj.put("base_time", TimeUtil.baseTimeFormat.format(now));
-            propertiesObj.put("local_time", TimeUtil.localTimeFormat.format(now));
+            propertiesObj.put("base_time", TimeUtil.getBaseFormatter().format(now));
+            propertiesObj.put("local_time", TimeUtil.getLocalFormatter().format(now));
 
             // 4. put properties
             dataObj.put("properties", propertiesObj);
