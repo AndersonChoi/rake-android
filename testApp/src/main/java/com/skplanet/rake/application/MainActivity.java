@@ -13,7 +13,7 @@ import android.widget.Button;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
+import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -113,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void track(RakeAPI.Env env) {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        RakeClientTestSentinelShuttle shuttle = new RakeClientTestSentinelShuttle();
         shuttle.action("flush");
         getRakeInstance(env).track(shuttle.toJSONObject());
     }
