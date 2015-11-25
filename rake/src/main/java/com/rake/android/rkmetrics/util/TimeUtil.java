@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics.util;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -24,12 +25,7 @@ public class TimeUtil {
         }
     };
 
-    public static DateFormat getBaseFormatter() {
-        return baseTimeFormatter.get();
-    }
-
-    public static DateFormat getLocalFormatter() {
-        return localTimeFormatter.get();
-    }
-
+    public static DateFormat getBaseFormatter() { return baseTimeFormatter.get(); }
+    public static DateFormat getLocalFormatter() { return localTimeFormatter.get(); }
+    public static String getCurrentTime() { return baseTimeFormatter.get().format(new Date()); }
 }
