@@ -8,6 +8,7 @@
 - remove nested map
 - Thread unsafe TimeUtil
 - Shuttle Metric
+- `-keep class com.skplanet.pdp.sentinel.shuttle.** { *; }` 난독화해제 반드시 하도록 할 것
 
 # 0.4.0 
 
