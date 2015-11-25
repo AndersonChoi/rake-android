@@ -1,3 +1,6 @@
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'idea'
@@ -5,6 +8,24 @@ apply plugin: 'idea'
 version = '0.4.0-SNAPSHOT'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
+
+/* constant */
+def currentProjectDir = "${rootProject.projectDir}/rake"
+def tempJar = "${archivesBaseName}-${version}-withoutShuttle.jar"
+def completeJar = "${archivesBaseName}-${version}.jar"
+def docsDir = "${rootProject.projectDir}/docs/"
+def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
+def releaseDir = "${rootProject.projectDir}/release"
+def releaseJarDir = "$releaseDir/jar"
+def aarDir = "$currentProjectDir/build/outputs/aar"
+def debugAAR = "rake-debug.aar"
+def debugAARPath = "$aarDir/$debugAAR"
+def testAppLibDir = "${rootProject.projectDir}/testApp/libs"
+def includedDir = "${currentProjectDir}/libs/included";
+def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+def logger = { String message -> println("[RAKE BUILDER] $message") }
+
+
 
 android {
     compileSdkVersion 19
@@ -29,7 +50,9 @@ android {
 }
 
 dependencies {
-    // compile 'com.android.support:appcompat-v7:23.0.0'
+    // provided fileTree(dir: 'libs/provided', include ['*.jar'])
+    compile fileTree(dir: 'libs/included', include: ['*.jar'])
+
     testCompile 'junit:junit:4.12'
     testCompile 'org.apache.httpcomponents:httpclient:4.4.1'
     testCompile 'com.github.tomakehurst:wiremock:1.55'
@@ -47,36 +70,22 @@ uploadArchives {
     }
 }
 
-/* contants */
-
-def currentProjectDir = "${rootProject.projectDir}/rake"
-def jarName = "${archivesBaseName}-${version}.jar"
-def docsDir = "${rootProject.projectDir}/docs/"
-def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
-def releaseDir = "${rootProject.projectDir}/release"
-def releaseJarDir = "$releaseDir/jar"
-def aarDir = "$currentProjectDir/build/outputs/aar"
-def defaultDebugAARName = "rake-debug.aar"
-def defaultDebugAARPath = "$aarDir/$defaultDebugAARName"
-def testAppLibDir = "${rootProject.projectDir}/testApp/libs"
-
-def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
-def updateFile = { String path, String pattern, String replace ->
-    def encoding = "UTF-8"
-    def regex = ~/$pattern/
-    def f = new File(path)
-
-    String content = f.getText(encoding)
-    def old = content.find(regex)
-    content = content.replaceAll(regex, replace)
-
-    assert(content.find(regex) == replace)
-    f.write(content, encoding)
-
-    println "[INFO] version $old in RakeAPI.java was replaced with $replace"
-}
-
 gradle.projectsEvaluated { /* update version before compiling */
+    def updateFile = { String path, String pattern, String replace ->
+        def encoding = "UTF-8"
+        def regex = ~/$pattern/
+        def f = new File(path)
+
+        String content = f.getText(encoding)
+        def old = content.find(regex)
+        content = content.replaceAll(regex, replace)
+
+        assert(content.find(regex) == replace)
+        f.write(content, encoding)
+
+        logger "version $old in RakeAPI.java was replaced with $replace"
+    }
+
     if (branchName.startsWith("release")) {
 
         String v = version.tokenize('-')[0]
@@ -97,29 +106,74 @@ task createJavadoc(type: Javadoc) {
 
 tasks.build.doLast {
 
-    copy { /* extract jar from AAR */
-        from zipTree(file(defaultDebugAARPath))
-        into aarDir
-        rename "classes.jar", jarName
-        exclude "R.txt", "assets", "aidl", "aapt/**/*", "res/**/*", "AndroidManifest.xml",
-                "libs/**/*"
-        includeEmptyDirs = false
-    }
+    extractJarFromAar.execute();
+    zipWithShuttle.execute();
+    copyCompleteJarToTestApp.execute();
 
-    copy { /* copy jar to testApp/libs */
-        from aarDir
-        include jarName
-        into testAppLibDir
-    }
-
-    copy { /* copy jar to release/jar */
-        from aarDir
-        include jarName
-        into releaseJarDir
-    }
-
-    if (branchName.startsWith("release"))
+    if (branchName.startsWith("release")) {
         createJavadoc.execute()
+        copyCompleteJarToReleaseDir.execute();
+    }
 }
 
+/* extract jar from AAR and create rake.jar without shuttle */
+task extractJarFromAar(type: Copy) {
+
+    logger "extracting ${tempJar} from ${debugAARPath}"
+
+    from zipTree(file(debugAARPath))
+    into aarDir
+    rename "classes.jar", tempJar
+    exclude "R.txt", "assets", "aidl", "aapt/**/*", "res/**/*", "AndroidManifest.xml",
+            "libs/**/*"
+    includeEmptyDirs = false
+}
+
+/* zip rake-android.jar with shuttle.jar */
+task zipWithShuttle(type: Zip) {
+
+    /* constants */
+    String shuttleJarNamePrefix = "rakemetricSentinelShuttle"
+    def shuttleJarNames = []
+
+    /* logic */
+    new File("${includedDir}").eachFile { file ->
+        if (file.path.contains(shuttleJarNamePrefix))
+            shuttleJarNames << file.path
+    }
+
+    if (shuttleJarNames.size > 1)
+        throw new IllegalStateException("multiple shuttle jar exists in ${includedDir}")
+    else if (shuttleJarNames.size == 0)
+        throw new IllegalStateException("can not find shuttle jar in ${includedDir}")
+
+    String shuttleJarName = shuttleJarNames[0]
+    logger "provided shuttle: ${shuttleJarName}"
+
+    // merge crash-logger.jar with shuttle.jar
+    from zipTree(file("${shuttleJarName}"))
+    from zipTree(file("${aarDir}/${tempJar}"))
+    exclude ".gitkeep", "META-INF/", "${shuttleJarNamePrefix}.java"
+    include "**/*"
+    extension "jar"
+    destinationDir file("${aarDir}")
+}
+
+task copyCompleteJarToTestApp(type: Copy) {
+
+    logger "copy $aarDir/$completeJar to ${testAppLibDir}/"
+
+    from aarDir
+    include completeJar
+    into testAppLibDir
+}
+
+task copyCompleteJarToReleaseDir(type: Copy) {
+
+    logger "copy $aarDir/$completeJar to ${releaseJarDir}/"
+
+    from aarDir
+    include completeJar
+    into releaseJarDir
+}
 
