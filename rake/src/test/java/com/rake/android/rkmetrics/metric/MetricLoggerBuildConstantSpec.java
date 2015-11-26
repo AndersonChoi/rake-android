@@ -13,9 +13,9 @@ import java.io.InputStreamReader;
 /**
  * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 BUILD_CONSTANT_BRANCH 값을 빌드타임에 build.gradle 에서
  * BUILD_CONSTANT_BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
- * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
+ * `build.gradle` 과 `MetricLoggerBuildConstantSpec.java` 를 참조할 것
  */
-public class MetricLoggerTokenSpec {
+public class MetricLoggerBuildConstantSpec {
 
     /**
      * 아래의 환경변수 및 상수 이름들은 build.gradle 에 있는 이름과 동일해야 함
