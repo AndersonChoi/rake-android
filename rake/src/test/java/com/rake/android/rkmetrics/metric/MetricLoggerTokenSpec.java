@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.metric;
 
+import com.rake.android.rkmetrics.RakeAPI;
+
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Test;
@@ -9,8 +11,8 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
- * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 BRANCH 값을 빌드타임에 build.gradle 에서
- * BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
+ * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 BUILD_CONSTANT_BRANCH 값을 빌드타임에 build.gradle 에서
+ * BUILD_CONSTANT_BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
  * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
  */
 public class MetricLoggerTokenSpec {
@@ -39,13 +41,20 @@ public class MetricLoggerTokenSpec {
         String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
 
         if (releaseBranch == branch) {
-            String TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE);
-
-            assertThat(MetricLogger.METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_LIVE));
+            assertThat(MetricLogger.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_LIVE));
         } else { /* DEV */
-            String TOKEN_DEV  = System.getenv(ENV_METRIC_TOKEN_DEV);
+            assertThat(MetricLogger.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_DEV));
+        }
+    }
 
-            assertThat(MetricLogger.METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_DEV));
+    @Test
+    public void 현재_Git_브랜치가_release_면_Env_LIVE_를_리턴() throws IOException {
+        String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
+
+        if (releaseBranch == branch) { /* Env.LIVE */
+           assertThat(MetricLogger.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.LIVE);
+        } else { /* Env.DEV */
+            assertThat(MetricLogger.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.DEV);
         }
     }
 

@@ -29,6 +29,10 @@ public class RakeAPI {
         @Override public String toString() { return mode; }
     }
 
+    /**
+     * 공개 API 의 일부이며 빌드스크립트에서 사용되는 ENUM 이므로 이름 변경시
+     * rake-android/rake/build.gradle 도 변경할 것
+     */
     public enum Env {
         LIVE("LIVE"),
         DEV("DEV");
