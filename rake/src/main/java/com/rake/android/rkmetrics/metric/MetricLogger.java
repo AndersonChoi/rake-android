@@ -6,7 +6,7 @@ public final class MetricLogger { /* singleton */
     private MetricLogger() {}
 
     /**
-     * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
+     * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
      * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
      *
      * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해 BRANCH 값을 이용한다.
@@ -15,7 +15,7 @@ public final class MetricLogger { /* singleton */
      * 정규식도 변경해야 함.
      */
     public static final String BRANCH = "feature/RAKE-383-metric";
-    public static final String METRIC_TOKEN = "";
+    public static final String METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
 
     /**
      * static members
@@ -31,6 +31,7 @@ public final class MetricLogger { /* singleton */
     /**
      * instance members
      */
+
 
 
 

@@ -53,7 +53,7 @@ String FILLED_BRANCH = "String $VAR_BRANCH = \"$branchName\""
 
 String VAR_METRIC_TOKEN = "METRIC_TOKEN";
 Pattern REGEX_METRIC_TOKEN_FILLED = ~/String $VAR_METRIC_TOKEN = "(.)*"/
-String EMPTY_METRIC_TOKEN = "String $VAR_METRIC_TOKEN = \"\""
+String FILLED_METRIC_TOKEN_DEV = null
 
 /**
  * 빌드스크립트 시작
@@ -103,71 +103,73 @@ uploadArchives {
     }
 }
 
-def updateVersionInConfigFile = {
+task updateVersionInSource(type: Copy) {
+    def updateVersionInConfigFile = {
 
-    String v = version.tokenize('-')[0]
-    Pattern pattern = ~/"r0.5.0_c(.)*"/
-    String  replace = "\"r0.5.0_c${v}\""
-    String  path = FILE_REPLACED_CONFIG
+        String v = version.tokenize('-')[0]
+        Pattern pattern = ~/"r0.5.0_c(.)*"/
+        String  replace = "\"r0.5.0_c${v}\""
+        String  path = FILE_REPLACED_CONFIG
 
-    updateFile(path, pattern, replace)
-}
-
-def getMetricToken = {
-    /**
-     * 아래의 환경변수 및 상수 이름들은 MetricLoggerTokenSpec.java 에 있는 이름과 동일해야 함
-     */
-    String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE";
-    String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
-    String releaseBranch = "release"
-
-    /* 환경변수 검증 */
-    String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE)
-    String METRIC_TOKEN_DEV  = System.getenv(ENV_METRIC_TOKEN_DEV)
-
-    if (null == METRIC_TOKEN_LIVE) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_LIVE required");
-    if (null == METRIC_TOKEN_DEV)  throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_DEV required");
-
-    /* 토큰값 설정 */
-    String METRIC_TOKEN = null;
-
-    if (releaseBranch.equals(branchName)) METRIC_TOKEN = METRIC_TOKEN_LIVE
-    else METRIC_TOKEN = METRIC_TOKEN_DEV
-
-    return METRIC_TOKEN
-}
-
-def getFilledMetricToken = {
-    String METRIC_TOKEN = getMetricToken()
-
-    String FILLED_METRIC_TOKEN = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN\""
-
-    return FILLED_METRIC_TOKEN
-}
-
-def fillMetricToken =  {
-
-    String FILLED_METRIC_TOKEN = getFilledMetricToken()
-    /**
-     * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
-     * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
-     *
-     * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해
-     * BRANCH 값을 이용한다.
-     */
-
-    updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_BRANCH, FILLED_BRANCH) /* BRANCH 업데이트 */
-    updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN) /* METRIC_TOKEN 업데이트 */
-}
-
-gradle.projectsEvaluated { /* update version before compiling */
-
-
+        updateFile(path, pattern, replace)
+    }
 
     /**
      * build.gradle 에 있는 버전을 이용해, RakeConfig.java 파일 내에 있는 버전을 매 빌드마다 변경
      */
     updateVersionInConfigFile();
+
+}
+
+task fillMetricToken(type: Copy) {
+
+    def getMetricToken = {
+        /**
+         * 아래의 환경변수 및 상수 이름들은 MetricLoggerTokenSpec.java 에 있는 이름과 동일해야 함
+         */
+        String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE";
+        String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
+        String releaseBranch = "release"
+
+        /* 환경변수 검증 */
+        String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE)
+        String METRIC_TOKEN_DEV  = System.getenv(ENV_METRIC_TOKEN_DEV)
+
+        if (null == METRIC_TOKEN_LIVE) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_LIVE required");
+        if (null == METRIC_TOKEN_DEV)  throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_DEV required");
+
+        /* 토큰값 설정 */
+        String METRIC_TOKEN = null;
+        FILLED_METRIC_TOKEN_DEV = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN_DEV\""
+
+        if (releaseBranch.equals(branchName)) METRIC_TOKEN = METRIC_TOKEN_LIVE
+        else METRIC_TOKEN = METRIC_TOKEN_DEV
+
+        return METRIC_TOKEN
+    }
+
+    def getFilledMetricToken = {
+        String METRIC_TOKEN = getMetricToken()
+
+        String FILLED_METRIC_TOKEN = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN\""
+
+        return FILLED_METRIC_TOKEN
+    }
+
+    def fillMetricToken =  {
+
+        String FILLED_METRIC_TOKEN = getFilledMetricToken()
+        /**
+         * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
+         * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
+         *
+         * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해
+         * BRANCH 값을 이용한다.
+         */
+
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_BRANCH, FILLED_BRANCH) /* BRANCH 업데이트 */
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN) /* METRIC_TOKEN 업데이트 */
+    }
 
     /**
      * 환경변수 값을 이용해 MetricLogger.java 에 있는 Rake Client Metric 용 토큰을 빌드타임에 컴파일
@@ -177,6 +179,11 @@ gradle.projectsEvaluated { /* update version before compiling */
     fillMetricToken();
 }
 
+gradle.projectsEvaluated { /* do something before compile */
+    updateVersionInSource.execute()
+    fillMetricToken.execute()
+
+}
 
 task createJavadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
@@ -249,8 +256,8 @@ tasks.build.doLast {
     }
 
     task initializeMetricToken(type: Copy) {
-        logger "Initializing METRIC_TOKEN"
-        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, EMPTY_METRIC_TOKEN)
+        logger "Set METRIC_TOKEN_DEV"
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN_DEV)
     }
 
     extractJarFromAar.execute();

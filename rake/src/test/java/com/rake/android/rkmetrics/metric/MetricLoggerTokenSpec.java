@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 
 /**
- * 소스 코드에 토큰을 노출하지 않기 위해서 BRANCH 값을 빌드타임에 build.gradle 에서
+ * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 BRANCH 값을 빌드타임에 build.gradle 에서
  * BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
  * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
  */
