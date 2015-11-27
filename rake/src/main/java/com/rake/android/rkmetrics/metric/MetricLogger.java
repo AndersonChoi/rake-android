@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.metric;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.app.Application;
 
 import com.rake.android.rkmetrics.RakeAPI;
@@ -52,7 +50,7 @@ public final class MetricLogger { /* singleton */
 
     public static synchronized MetricLogger getInstance(Application app) {
         if (null == app) {
-            Logger.e(LOG_TAG_PREFIX, "Can't initialize MetricLogger using null Application");
+            Logger.e("Can't initialize MetricLogger using null Application");
             return null;
         }
 
@@ -99,7 +97,7 @@ public final class MetricLogger { /* singleton */
 
             shuttle.action(action.getValue());
 
-            Logger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            Logger.e("Uncaught exception", e);
         }
 
         return shuttle;
@@ -148,6 +146,6 @@ public final class MetricLogger { /* singleton */
     }
 
     private static void warning() {
-        Logger.e(LOG_TAG_PREFIX, "DO NOT USE THIS FUNCTION IN PRODUCTION");
+        Logger.e("DO NOT USE THIS FUNCTION IN PRODUCTION");
     }
 }

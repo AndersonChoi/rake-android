@@ -137,7 +137,7 @@ public /* TODO final */ class RakeAPI {
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(long milliseconds) {
-        Logger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
+        Logger.i("Set flush interval to " + milliseconds);
         MessageLoop.setFlushInterval(milliseconds);
     }
 
@@ -148,7 +148,7 @@ public /* TODO final */ class RakeAPI {
     public static void setAutoFlush(AutoFlush autoFlush) {
         AutoFlush old = MessageLoop.getAutoFlushOption();
         String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
-        Logger.i(LOG_TAG_PREFIX, message);
+        Logger.i(message);
 
         MessageLoop.setAutoFlushOption(autoFlush);
     }

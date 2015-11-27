@@ -32,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.rake.android.rkmetrics.android.Compatibility.*;
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 final public class HttpRequestSender {
     public enum RequestResult {
@@ -105,25 +104,25 @@ final public class HttpRequestSender {
             result = interpretResponse(responseBody);
 
             String message = String.format("Response code: %d, response body: %s", statusCode, responseBody);
-            Logger.d(LOG_TAG_PREFIX, message);
+            Logger.d(message);
 
         } catch (MalformedURLException e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid URL", e);
+            Logger.e("Invalid URL", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (UnsupportedEncodingException e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid encoding", e);
+            Logger.e("Invalid encoding", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (ProtocolException e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
+            Logger.e("Invalid protocol", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (IOException e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
+            Logger.e("Invalid protocol", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            Logger.e(LOG_TAG_PREFIX, "Memory insufficient", e);
+            Logger.e("Memory insufficient", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (Exception e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid protocol", e);
+            Logger.e("Invalid protocol", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } finally {
             if (null != conn) conn.disconnect();
@@ -176,14 +175,14 @@ final public class HttpRequestSender {
             HttpResponse response = client.execute(httppost);
 
             if (null == response) {
-                Logger.d(LOG_TAG_PREFIX, "HttpResponse is null. Retry later");
+                Logger.d("HttpResponse is null. Retry later");
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
             HttpEntity responseEntity = response.getEntity();
 
             if (null == responseEntity) {
-                Logger.d(LOG_TAG_PREFIX, "HttpEntity is null. retry later");
+                Logger.d("HttpEntity is null. retry later");
                 return RequestResult.FAILURE_RECOVERABLE;
             }
 
@@ -191,24 +190,24 @@ final public class HttpRequestSender {
             int statusCode = response.getStatusLine().getStatusCode();
 
             String message = String.format("Response code: %d, Response body: %s", statusCode, responseBody);
-            Logger.d(LOG_TAG_PREFIX, message);
+            Logger.d(message);
 
             // TODO interpretResponseCode
             result = interpretResponse(responseBody);
 
         } catch(UnsupportedEncodingException e) {
-            Logger.e(LOG_TAG_PREFIX, "Invalid encoding", e);
+            Logger.e("Invalid encoding", e);
             result = RequestResult.FAILURE_UNRECOVERABLE;
         } catch (IOException e) {
-            Logger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers (May Retry)", e);
+            Logger.e("Cannot post message to Rake Servers (May Retry)", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (OutOfMemoryError e) {
-            Logger.e(LOG_TAG_PREFIX, "Cannot post message to Rake Servers, will not retry.", e);
+            Logger.e("Cannot post message to Rake Servers, will not retry.", e);
             result = RequestResult.FAILURE_RECOVERABLE;
         } catch (GeneralSecurityException e) {
-            Logger.e(LOG_TAG_PREFIX, "Cannot build SSL Client", e);
+            Logger.e("Cannot build SSL Client", e);
         } catch (Exception e) {
-            Logger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            Logger.e("Uncaught exception", e);
         }
 
         return result;
@@ -218,7 +217,7 @@ final public class HttpRequestSender {
         // TODO HttpsUrlConnection.HTTP_OK -> UrlConnection 과 HttpClient 의 상수가 다름 (값이 아니라 상수 이름)
         if (HttpStatus.SC_OK == statusCode) return RequestResult.SUCCESS;
         else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == statusCode) {
-            Logger.e(LOG_TAG_PREFIX, "Internal Server Error. retry later");
+            Logger.e("Internal Server Error. retry later");
             return RequestResult.FAILURE_RECOVERABLE; /* retry */
         }
 
@@ -228,13 +227,13 @@ final public class HttpRequestSender {
 
     private static RequestResult interpretResponse(String response) {
         if (null == response) {
-            Logger.e(LOG_TAG_PREFIX, "Response body is empty. (Retry)");
+            Logger.e("Response body is empty. (Retry)");
             return RequestResult.FAILURE_RECOVERABLE;
         }
 
         if (response.startsWith("1")) return RequestResult.SUCCESS;
 
-        Logger.e(LOG_TAG_PREFIX, "Server returned negative response. make sure that your token is valid");
+        Logger.e("Server returned negative response. make sure that your token is valid");
         return RequestResult.FAILURE_UNRECOVERABLE;
     }
 

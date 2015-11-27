@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.persistent;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -136,7 +134,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     String message = String.format("Extracting %d rows from the [%s] table",
                             logList.size(), LogContract.TABLE_NAME);
 
-                    Logger.d(LOG_TAG_PREFIX, message);
+                    Logger.d(message);
                 }
 
                 return t;

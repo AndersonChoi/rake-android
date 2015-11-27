@@ -101,12 +101,6 @@ public class MetricLoggerSpec {
     }
 
     @Test
-    public void MetricLogger_write_는_예외를_잡아_ERROR_이벤트를_셔틀에_기록해야함() {
-        logger = MetricLogger.getInstance(app);
-
-    }
-
-    @Test
     public void MetricLogger_write_는_셔틀에_operation_time_을_기록해야함_Action_이_Track_이_아닐경우() {
 
     }

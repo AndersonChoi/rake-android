@@ -7,8 +7,6 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 public final class Compatibility {
 
     public enum APILevel {
@@ -44,7 +42,7 @@ public final class Compatibility {
             final Field SDK_INT = Build.VERSION.class.getField("SDK_INT");
             apiLevel = SDK_INT.getInt(null);
         } catch (Exception e) {
-            Logger.e(LOG_TAG_PREFIX, "can not retrieve API level", e);
+            Logger.e("Can not retrieve API level", e);
             apiLevel = (Build.VERSION.SDK_INT);
         }
 
