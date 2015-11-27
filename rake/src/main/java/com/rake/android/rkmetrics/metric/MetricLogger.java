@@ -29,6 +29,12 @@ public final class MetricLogger { /* singleton */
     public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-383-metric";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
+    /**
+     * constants
+     */
+    public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
+    public static final String FIELD_NAME_STACKTRACE_STACKTRACE = "stacktrace";
+
     private RakeAPI rake; /* 테스트를 위해 패키지 범위 */
 
     private MetricLogger(Application app) {
@@ -39,17 +45,10 @@ public final class MetricLogger { /* singleton */
                 (BUILD_CONSTANT_ENV == RakeAPI.Env.DEV) ? RakeAPI.Logging.ENABLE : RakeAPI.Logging.DISABLE);
     }
 
-    private static final ThreadLocal<RakeClientMetricSentinelShuttle> metricShuttles =
-            new ThreadLocal<RakeClientMetricSentinelShuttle>() {
-                @Override
-                protected RakeClientMetricSentinelShuttle initialValue() {
-                    return new RakeClientMetricSentinelShuttle();
-                }
-            };
-
     /**
      * static members
      */
+
     private static MetricLogger instance;
 
     public static synchronized MetricLogger getInstance(Application app) {
@@ -63,6 +62,15 @@ public final class MetricLogger { /* singleton */
         return instance;
     }
 
+    private static final ThreadLocal<RakeClientMetricSentinelShuttle> metricShuttles =
+            new ThreadLocal<RakeClientMetricSentinelShuttle>() {
+                @Override
+                protected RakeClientMetricSentinelShuttle initialValue() {
+                    return new RakeClientMetricSentinelShuttle();
+                }
+            };
+
+
     /**
      * instance members
      */
@@ -71,27 +79,55 @@ public final class MetricLogger { /* singleton */
             Callback<RakeClientMetricSentinelShuttle, Action> callback) {
 
         RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
+        shuttle = initializeShuttle(shuttle);
+
+        Action action = Action.EMPTY;
 
         try {
-            callback.execute(shuttle);
+            /**
+             * action 필드는 callback 내부에서 기록하게 되어있으나 다음의 경우를 위해 리턴하도록 함
+             * - 못잡은 예외를 Action.Empty 값으로 기록하기 위해
+             * - 리턴된 Action 값을 활용해 Shuttle 에 추가적인 값을 기록하기 위해
+             */
+            action = callback.execute(shuttle);
         } catch (Exception e) {
 
-            StringWriter sw = new StringWriter();
-            PrintWriter  pw = new PrintWriter(sw);
-            e.printStackTrace(pw);
-
             shuttle.setBodyOf__ERROR(
-                    e.getClass().getSimpleName(), /* exception_type*/
-                    sw.toString(), /* stacktrace */
+                    getExceptionType(e), /* exception_type*/
+                    getStacktraceString(e), /* stacktrace */
                     null  /* thread_info */
             );
 
-            // TODO send to rake
+            shuttle.action(action.getValue());
 
             RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         }
 
         return shuttle;
+    }
+
+    public static RakeClientMetricSentinelShuttle initializeShuttle(RakeClientMetricSentinelShuttle shuttle) {
+        shuttle.action(null);
+        shuttle.status(null);
+        shuttle.clearBody();
+
+        return shuttle;
+    }
+
+    public static String getExceptionType(Throwable e) {
+        if (null == e) return null;
+
+        return e.getClass().getSimpleName();
+    }
+
+    public static String getStacktraceString(Throwable e) {
+        if (null == e) return null;
+
+        StringWriter sw = new StringWriter();
+        PrintWriter  pw = new PrintWriter(sw);
+        e.printStackTrace(pw);
+
+        return pw.toString();
     }
 
     /**
