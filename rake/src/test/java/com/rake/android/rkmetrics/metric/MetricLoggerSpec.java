@@ -1,10 +1,10 @@
 package com.rake.android.rkmetrics.metric;
 
 import static com.rake.android.rkmetrics.metric.MetricLogger.*;
+import static com.rake.android.rkmetrics.metric.ShuttleProfiler.*;
 
 import android.app.Application;
 
-import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
@@ -13,8 +13,6 @@ import static org.assertj.core.api.Assertions.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -71,7 +69,7 @@ public class MetricLoggerSpec {
 
         JSONObject body = shuttle.getBody();
         String exceptionType = body.getString(FIELD_NAME_EXCEPTION_TYPE);
-        String stacktrace = body.getString(FIELD_NAME_STACKTRACE_STACKTRACE);
+        String stacktrace = body.getString(FIELD_NAME_STACKTRACE);
 
         assertThat(exceptionType).isNotNull();
         assertThat(stacktrace).isNotNull();
@@ -97,7 +95,26 @@ public class MetricLoggerSpec {
 
     @Test
     public void MetricLogger_initializeShuttle_은_셔틀의_키와_바디를_초기화_해야함() {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
 
+        /* header */
+        shuttle.action("install");
+        shuttle.status("status");
+
+        /* body */
+        shuttle.exception_type(new OutOfMemoryError("").getClass().getSimpleName());
+
+        shuttle = MetricLogger.initializeShuttle(shuttle);
+        String bodyString = shuttle.bodyToString();
+
+        /* header validation */
+        assertThat(hasHeaderValue(shuttle, FIELD_NAME_ACTION, EMPTY_HEADER_VALUE)).isTrue();
+        assertThat(hasHeaderValue(shuttle, FIELD_NAME_STATUS, EMPTY_HEADER_VALUE)).isTrue();
+
+        /* body validation */
+        assertThat(bodyString).isEqualTo(EMPTY_BODY_STRING);
+        assertThat(hasBodyValue(shuttle, FIELD_NAME_EXCEPTION_TYPE, "")).isFalse();
+        assertThat(hasBodyValue(shuttle, FIELD_NAME_STACKTRACE, "")).isFalse();
     }
 
     @Test

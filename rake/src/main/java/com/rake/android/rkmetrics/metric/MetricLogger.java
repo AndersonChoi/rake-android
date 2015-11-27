@@ -19,18 +19,22 @@ public final class MetricLogger { /* singleton */
      * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해 BUILD_CONSTANT_BRANCH 값을 이용한다.
      * `release` 브랜치일 경우에만 BUILD_CONSTANT_ENV 값이 Env.LIVE 이고 나머지의 경우에는 Env.DEV 여야 한다.
      *
-     * 아래의 변수 이름, 스페이스바, 변수 값 어느 하나라도 변경시 build.gradle 상수와
+     * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-383-metric";
+    public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
     /**
      * constants
      */
+
+    public static final String FIELD_NAME_SHUTTLE_SHUTTLE_PROPERTY = "_$property";
+    public static final String FIELD_NAME_ACTION = "action";
+    public static final String FIELD_NAME_STATUS = "status";
     public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
-    public static final String FIELD_NAME_STACKTRACE_STACKTRACE = "stacktrace";
+    public static final String FIELD_NAME_STACKTRACE = "stacktrace";
 
     private RakeAPI rake; /* 테스트를 위해 패키지 범위 */
 
@@ -66,7 +70,6 @@ public final class MetricLogger { /* singleton */
                     return new RakeClientMetricSentinelShuttle();
                 }
             };
-
 
     /**
      * instance members
