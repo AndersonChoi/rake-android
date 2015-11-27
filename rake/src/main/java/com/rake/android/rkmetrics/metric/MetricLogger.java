@@ -12,6 +12,7 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.EmptyStackException;
 
 public final class MetricLogger { /* singleton */
     /**
@@ -28,22 +29,17 @@ public final class MetricLogger { /* singleton */
     public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-383-metric";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
-    public RakeAPI rake;
+    private RakeAPI rake; /* 테스트를 위해 패키지 범위 */
 
     private MetricLogger(Application app) {
-
-        if (null == app) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't initialize MetricLogger using null Application");
-            return;
-        }
-
         rake = RakeAPI.getInstance(
                 app.getApplicationContext(),
                 BUILD_CONSTANT_METRIC_TOKEN,
                 BUILD_CONSTANT_ENV,
                 (BUILD_CONSTANT_ENV == RakeAPI.Env.DEV) ? RakeAPI.Logging.ENABLE : RakeAPI.Logging.DISABLE);
     }
-    public static final ThreadLocal<RakeClientMetricSentinelShuttle> metricShuttles =
+
+    private static final ThreadLocal<RakeClientMetricSentinelShuttle> metricShuttles =
             new ThreadLocal<RakeClientMetricSentinelShuttle>() {
                 @Override
                 protected RakeClientMetricSentinelShuttle initialValue() {
@@ -57,6 +53,11 @@ public final class MetricLogger { /* singleton */
     private static MetricLogger instance;
 
     public static synchronized MetricLogger getInstance(Application app) {
+        if (null == app) {
+            RakeLogger.e(LOG_TAG_PREFIX, "Can't initialize MetricLogger using null Application");
+            return null;
+        }
+
         if (null == instance) instance = new MetricLogger(app);
 
         return instance;
@@ -66,12 +67,14 @@ public final class MetricLogger { /* singleton */
      * instance members
      */
 
-    public void write(Callback<RakeClientMetricSentinelShuttle, Void> callback) {
+    public RakeClientMetricSentinelShuttle write(
+            Callback<RakeClientMetricSentinelShuttle, Action> callback) {
+
+        RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
 
         try {
-            callback.execute(metricShuttles.get());
+            callback.execute(shuttle);
         } catch (Exception e) {
-            RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
 
             StringWriter sw = new StringWriter();
             PrintWriter  pw = new PrintWriter(sw);
@@ -84,6 +87,32 @@ public final class MetricLogger { /* singleton */
             );
 
             // TODO send to rake
+
+            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         }
+
+        return shuttle;
+    }
+
+    /**
+     * package functions to support test
+     */
+
+    /* package */ static void initialize() {
+        warning();
+
+        if (null != instance)
+            if (null != instance.rake) instance.rake = null;
+
+        instance = null;
+    }
+
+    /* package */ RakeAPI getRake() {
+        warning();
+        return rake;
+    }
+
+    private static void warning() {
+        RakeLogger.e(LOG_TAG_PREFIX, "DO NOT USE THIS FUNCTION IN PRODUCTION");
     }
 }
