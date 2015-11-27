@@ -13,6 +13,7 @@ import static org.assertj.core.api.Assertions.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -23,7 +24,7 @@ import org.robolectric.shadows.ShadowLog;
 import java.io.InvalidClassException;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
+@Config(manifest = Config.NONE)
 public class MetricLoggerSpec {
 
     MetricLogger logger;
@@ -94,7 +95,7 @@ public class MetricLoggerSpec {
     }
 
     @Test
-    public void MetricLogger_initializeShuttle_은_셔틀의_키와_바디를_초기화_해야함() {
+    public void initializeShuttle_은_셔틀의_키와_바디를_초기화_해야함() {
         RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
 
         /* header */
@@ -118,12 +119,23 @@ public class MetricLoggerSpec {
     }
 
     @Test
-    public void MetricLogger_write_는_셔틀에_operation_time_을_기록해야함_Action_이_Track_이_아닐경우() {
+    public void flush_시에_연산시간_로그사이즈_플러시타입_서버응답시간_서버응답코드_서버응답바디_를_기록해야함() {
 
     }
 
-    @Test
-    public void MetricLogger_write_는_셔틀에_operation_time_list_을_기록해야함_Action_이_Track_일때() {
+    @Ignore
+    public void write_는_셔틀에_operation_time_list_을_기록해야함_Action_이_Track_일때() {
+        TODO();
+    }
 
+    @Ignore
+    public void write_는_셔틀에_operation_time_을_기록해야함_Action_이_Track_이_아닐경우() {
+        TODO();
+    }
+
+
+
+    public void TODO() {
+        new RuntimeException("TODO");
     }
 }

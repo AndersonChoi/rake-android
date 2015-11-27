@@ -1,15 +1,21 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.*;
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
-import static com.rake.android.rkmetrics.network.HttpRequestSender.RequestResult;
+import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_EMPTY_TABLE;
+import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_INVALID_ARGUMENT;
+import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_RECOVERABLE;
+import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_UNRECOVERABLE;
+import static com.rake.android.rkmetrics.network.TransmissionResult.*;
+import static com.rake.android.rkmetrics.metric.flush.FlushResult.*;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.flush.FlushResult;
+import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
@@ -237,12 +243,12 @@ final class MessageLoop {
             sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
         }
 
-        private void sendLogFromLogTable() {
+        private FlushResult extractFromLogTableAndSend() {
            updateFlushFrequency();
 
             Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
 
-            if (null == t) return; /* flushing empty table */
+            if (null == t) return FAILURE_EMPTY_TABLE;
 
             String lastId = t.getLastId();
             Set<String> urls = t.getUrls();
@@ -250,7 +256,7 @@ final class MessageLoop {
 
             if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
                 Logger.e("Invalid empty Transferable"); /* should not be here! */
-                return;
+                return FAILURE_INVALID_ARGUMENT;
             }
 
             for(String url : logMap.keySet()) {
@@ -263,21 +269,26 @@ final class MessageLoop {
                     Logger.t(message);
 
                     String stringified = jsons.toString();
-                    RequestResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
+                    TransmissionResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
 
-                    if (RequestResult.SUCCESS == result)
+                    if (TransmissionResult.SUCCESS == result) {
                         logTableAdapter.removeLogById(lastId);
-                    else if (RequestResult.FAILURE_RECOVERABLE == result) {
-                        // TODO metric logging
+                    } else if (TransmissionResult.FAILURE_RECOVERABLE == result) {
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                    } else if (RequestResult.FAILURE_UNRECOVERABLE == result) {
-                        // TODO metric logging
+
+                        return FAILURE_RECOVERABLE;
+                    } else if (TransmissionResult.FAILURE_UNRECOVERABLE == result) {
                         logTableAdapter.removeLogById(lastId);
+
+                        return FAILURE_UNRECOVERABLE;
                     } else {
-                        Logger.e("Invalid RequestResult: " + result);
+                        Logger.e("Invalid TransmissionResult: " + result);
+                        return FAILURE_INVALID_ARGUMENT;
                     }
                 }
             }
+
+            return FAILURE_UNKNOWN;
         }
 
         private boolean hasFlushMessage() {
@@ -287,7 +298,7 @@ final class MessageLoop {
         }
 
         /* to support legacy table `Event` */
-        private void sendLogFromEventTable() {
+        private void extractFromEventTableAndSend() {
             updateFlushFrequency();
             ExtractedEvent event = eventTableAdapter.getExtractEvent();
 
@@ -300,17 +311,17 @@ final class MessageLoop {
                 String message = String.format("Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                RequestResult result = HttpRequestSender.sendRequest(log, url);
+                TransmissionResult result = HttpRequestSender.sendRequest(log, url);
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
-                if (RequestResult.SUCCESS == result) {
+                if (TransmissionResult.SUCCESS == result) {
                     eventTableAdapter.removeEventById(lastId);
-                } else if (RequestResult.FAILURE_RECOVERABLE == result) { // try again later
+                } else if (TransmissionResult.FAILURE_RECOVERABLE == result) { // try again later
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
-                } else if (RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
+                } else if (TransmissionResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     eventTableAdapter.removeEventById(lastId);
                 } else {
-                    Logger.e("Invalid RequestResult: " + result);
+                    Logger.e("Invalid TransmissionResult: " + result);
                 }
             }
         }
@@ -327,18 +338,17 @@ final class MessageLoop {
                     Logger.t("Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON())
-                        sendLogFromLogTable();
+                        extractFromLogTableAndSend();
 
                 } else if (command == FLUSH_EVENT_TABLE) {
-                    sendLogFromEventTable();
+                    extractFromEventTableAndSend();
                 } else if (command == MANUAL_FLUSH) {
-                    sendLogFromLogTable();
-
+                    extractFromLogTableAndSend();
                 } else if (command == AUTO_FLUSH_CAPACITY && isAutoFlushON()) {
-                    sendLogFromLogTable();
+                    extractFromLogTableAndSend();
 
                 } else if (command == AUTO_FLUSH_INTERVAL && isAutoFlushON()) {
-                    sendLogFromLogTable();
+                    extractFromLogTableAndSend();
 
                     if (!hasMessages(AUTO_FLUSH_INTERVAL.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);

@@ -1,6 +1,7 @@
 package com.rake.android.rkmetrics.metric;
 
 import android.app.Application;
+import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.util.Logger;
@@ -11,6 +12,10 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 
+
+/**
+ * 클래스 이름을 바꿀 경우 build.gradle 내에 빌드 변수 또한 변경해야 함
+ */
 public final class MetricLogger { /* singleton */
     /**
      * 소스 코드에 LIVE TOKEN 을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다
@@ -28,19 +33,27 @@ public final class MetricLogger { /* singleton */
 
     /**
      * constants
+     *
+     * FIELD_NAME_* 들은 스키마에서 가져온 변수 이름으로, 스키마 변경시 업데이트 해 주어야 함.
      */
 
-    public static final String FIELD_NAME_SHUTTLE_SHUTTLE_PROPERTY = "_$property";
     public static final String FIELD_NAME_ACTION = "action";
     public static final String FIELD_NAME_STATUS = "status";
+
     public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
     public static final String FIELD_NAME_STACKTRACE = "stacktrace";
+    public static final String FIELD_NAME_THREAD_INFO = "thread_info";
 
-    private RakeAPI rake; /* 테스트를 위해 패키지 범위 */
+    /* for Action.TRACK */
+    public static final String FIELD_NAME_TRACK_OPERATION_COUNT = "track_operation_count";
+    public static final String FIELD_NAME_TRACK_OPERATION_TIME_LIST = "track_operation_time_list";
+    public static final String FIELD_NAME_TRACKED_LOG_SIZE_LIST = "tracked_log_size_list";
 
-    private MetricLogger(Application app) {
+    private RakeAPI rake;
+
+    private MetricLogger(Context context) {
         rake = RakeAPI.getInstance(
-                app.getApplicationContext(),
+                context,
                 BUILD_CONSTANT_METRIC_TOKEN,
                 BUILD_CONSTANT_ENV,
                 (BUILD_CONSTANT_ENV == RakeAPI.Env.DEV) ? RakeAPI.Logging.ENABLE : RakeAPI.Logging.DISABLE);
@@ -52,13 +65,13 @@ public final class MetricLogger { /* singleton */
 
     private static MetricLogger instance;
 
-    public static synchronized MetricLogger getInstance(Application app) {
-        if (null == app) {
+    public static synchronized MetricLogger getInstance(Context context) {
+        if (null == context) {
             Logger.e("Can't initialize MetricLogger using null Application");
             return null;
         }
 
-        if (null == instance) instance = new MetricLogger(app);
+        if (null == instance) instance = new MetricLogger(context);
 
         return instance;
     }
@@ -70,41 +83,6 @@ public final class MetricLogger { /* singleton */
                     return new RakeClientMetricSentinelShuttle();
                 }
             };
-
-    /**
-     * instance members
-     */
-
-    public RakeClientMetricSentinelShuttle write(
-            Callback<RakeClientMetricSentinelShuttle, Action> callback) {
-
-        RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
-        shuttle = initializeShuttle(shuttle);
-
-        Action action = Action.EMPTY;
-
-        try {
-            /**
-             * action 필드는 callback 내부에서 기록하게 되어있으나 다음의 경우를 위해 리턴하도록 함
-             * - 못잡은 예외를 Action.Empty 값으로 기록하기 위해
-             * - 리턴된 Action 값을 활용해 Shuttle 에 추가적인 값을 기록하기 위해
-             */
-            action = callback.execute(shuttle);
-        } catch (Exception e) {
-
-            shuttle.setBodyOf__ERROR(
-                    getExceptionType(e), /* exception_type*/
-                    getStacktraceString(e), /* stacktrace */
-                    null  /* thread_info */
-            );
-
-            shuttle.action(action.getValue());
-
-            Logger.e("Uncaught exception", e);
-        }
-
-        return shuttle;
-    }
 
     public static RakeClientMetricSentinelShuttle initializeShuttle(RakeClientMetricSentinelShuttle shuttle) {
         shuttle.action(null);
@@ -131,6 +109,56 @@ public final class MetricLogger { /* singleton */
     }
 
     /**
+     * instance members
+     */
+
+    /**
+     * Metric 대상인 Action 을 실행하는 Callback 을 받아 실행하고 리턴된 Action 값을 이용해 *연산 시간 등 추가적인 값을 셔틀에 기록하고
+     * RakeAPI.track 이용해 전송
+     *
+     * - 재귀 문제로 인하여 INSTALL 은 write 에서 기록하지 않고 다른 방법을 통해 메트릭을 저장함 RakeAPI.getInstance 참고
+     */
+    public RakeClientMetricSentinelShuttle write(Callback<RakeClientMetricSentinelShuttle, Action> callback) {
+
+        RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
+        shuttle = initializeShuttle(shuttle);
+
+        Action action = Action.EMPTY;
+
+        try {
+            long startAt = System.currentTimeMillis();
+            action = callback.execute(shuttle);
+            long endAt = System.currentTimeMillis();
+
+            switch(action) {
+                case CONFIGURE:
+                case FLUSH:
+                    break;
+                case INSTALL: /* 함수 시그니쳐 주석참조 */
+                default:
+                case TRACK:
+                    throw new IllegalArgumentException("Unsupported Action: " + action);
+            }
+
+        } catch (Exception e) {
+
+            shuttle.setBodyOf__ERROR(
+                    getExceptionType(e), /* exception_type*/
+                    getStacktraceString(e), /* stacktrace */
+                    null  /* thread_info */
+            );
+
+            shuttle.action(action.getValue());
+
+            Logger.e("Uncaught exception", e);
+        }
+
+        return shuttle;
+    }
+
+    public RakeAPI getRakeAPI() { return rake; }
+
+    /**
      * package functions to support test
      */
 
@@ -149,6 +177,6 @@ public final class MetricLogger { /* singleton */
     }
 
     private static void warning() {
-        Logger.e("DO NOT USE THIS FUNCTION IN PRODUCTION");
+        Logger.e("[CRITICAL] DO NOT USE THIS FUNCTION IN PRODUCTION");
     }
 }

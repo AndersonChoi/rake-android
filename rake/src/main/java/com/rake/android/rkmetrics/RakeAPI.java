@@ -6,10 +6,14 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.Action;
+import com.rake.android.rkmetrics.metric.MetricLogger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
+import com.rake.android.rkmetrics.util.functional.Callback;
+import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -100,10 +104,12 @@ public /* TODO final */ class RakeAPI {
      *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#LIVE} used,
      *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
      *
-     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code RakeAPI.Env}.
      * @param         loggingMode Logging.ENABLE or Logging.DISABLE
      */
-    public static RakeAPI getInstance(Context context, String token, Env env, Logging loggingMode) {
+    public static RakeAPI getInstance(Context context,
+                                      String token,
+                                      Env env,
+                                      Logging loggingMode) {
         setLogging(loggingMode);
 
         synchronized (sInstanceMap) {
@@ -118,7 +124,6 @@ public /* TODO final */ class RakeAPI {
             RakeAPI rake = instances.get(appContext);
 
             if (rake == null) {
-                // url should be set before initializing rake instance
                 Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
@@ -127,9 +132,6 @@ public /* TODO final */ class RakeAPI {
             return rake;
         }
     }
-
-
-    /* Class methods */
 
     /**
      * Set flush interval
@@ -164,13 +166,11 @@ public /* TODO final */ class RakeAPI {
         // usage: add("mdn");
     }};
 
-    /* Instance methods */
-
     /**
-     * Save JSONObject (shuttle) into SQLite.
+     * Save JSONObject created using Shuttle.toJSONObject() into SQLite.
      * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
      *
-     * @param shuttle pass Shuttle.getJSONObject();
+     * @param shuttle pass Shuttle.toJSONObject();
      */
     public void track(JSONObject shuttle) {
         if (null == shuttle) {
@@ -298,7 +298,7 @@ public /* TODO final */ class RakeAPI {
     }
 
     /**
-     * Get current end point of this instance
+     * Get current end point
      *
      * @return endpoint
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
@@ -306,6 +306,12 @@ public /* TODO final */ class RakeAPI {
     public Endpoint getEndpoint() {
         return endpoint;
     }
+
+    /**
+     * Get token
+     * @return String
+     */
+    public String getToken() { return token; }
 
     /**
      * Enable or disable logging.
