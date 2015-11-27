@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.android;
 
 import android.os.Build;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 
 import java.lang.reflect.Field;
 import java.util.HashMap;
@@ -44,7 +44,7 @@ public final class Compatibility {
             final Field SDK_INT = Build.VERSION.class.getField("SDK_INT");
             apiLevel = SDK_INT.getInt(null);
         } catch (Exception e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "can not retrieve API level", e);
+            Logger.e(LOG_TAG_PREFIX, "can not retrieve API level", e);
             apiLevel = (Build.VERSION.SDK_INT);
         }
 

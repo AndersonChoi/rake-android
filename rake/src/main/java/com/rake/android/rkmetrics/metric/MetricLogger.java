@@ -5,14 +5,13 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 import android.app.Application;
 
 import com.rake.android.rkmetrics.RakeAPI;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.EmptyStackException;
 
 public final class MetricLogger { /* singleton */
     /**
@@ -53,7 +52,7 @@ public final class MetricLogger { /* singleton */
 
     public static synchronized MetricLogger getInstance(Application app) {
         if (null == app) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't initialize MetricLogger using null Application");
+            Logger.e(LOG_TAG_PREFIX, "Can't initialize MetricLogger using null Application");
             return null;
         }
 
@@ -100,7 +99,7 @@ public final class MetricLogger { /* singleton */
 
             shuttle.action(action.getValue());
 
-            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            Logger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
         }
 
         return shuttle;
@@ -149,6 +148,6 @@ public final class MetricLogger { /* singleton */
     }
 
     private static void warning() {
-        RakeLogger.e(LOG_TAG_PREFIX, "DO NOT USE THIS FUNCTION IN PRODUCTION");
+        Logger.e(LOG_TAG_PREFIX, "DO NOT USE THIS FUNCTION IN PRODUCTION");
     }
 }

@@ -17,7 +17,7 @@ import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.persistent.Transferable;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
@@ -149,7 +149,7 @@ final class MessageLoop {
         if (isDead()) {
             // thread died under suspicious circumstances.
             // don't try to send any more events.
-            RakeLogger.e(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
+            Logger.e(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
         } else {
             synchronized (handlerLock) {
                 if (handler != null) handler.sendMessage(msg);
@@ -167,7 +167,7 @@ final class MessageLoop {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                RakeLogger.d(LOG_TAG_PREFIX, "Starting [Thread " + this.getId() + "]");
+                Logger.d(LOG_TAG_PREFIX, "Starting [Thread " + this.getId() + "]");
 
                 android.os.Looper.prepare();
 
@@ -180,7 +180,7 @@ final class MessageLoop {
                 try {
                     android.os.Looper.loop();
                 } catch (RuntimeException e) {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Rake Thread dying from RuntimeException", e);
+                    Logger.e(LOG_TAG_PREFIX, "Rake Thread dying from RuntimeException", e);
                 }
             }
         };
@@ -209,7 +209,7 @@ final class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
+            Logger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -227,7 +227,7 @@ final class MessageLoop {
             eventTableAdapter = EventTableAdapter.getInstance(appContext);
             logTableAdapter = LogTableAdapter.getInstance(appContext);
 
-            RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
+            Logger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
             logTableAdapter.removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             /* flush legacy table `events` */
@@ -249,7 +249,7 @@ final class MessageLoop {
             Map<String, Map<String, JSONArray>> logMap = t.getLogMap();
 
             if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Invalid empty Transferable"); /* should not be here! */
+                Logger.e(LOG_TAG_PREFIX, "Invalid empty Transferable"); /* should not be here! */
                 return;
             }
 
@@ -260,7 +260,7 @@ final class MessageLoop {
                     String message = String.format("Sending %d log to %s with token %s",
                             jsons.length(), url, token);
 
-                    RakeLogger.t(LOG_TAG_PREFIX, message);
+                    Logger.t(LOG_TAG_PREFIX, message);
 
                     String stringified = jsons.toString();
                     RequestResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
@@ -274,7 +274,7 @@ final class MessageLoop {
                         // TODO metric logging
                         logTableAdapter.removeLogById(lastId);
                     } else {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
+                        Logger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
                     }
                 }
             }
@@ -298,7 +298,7 @@ final class MessageLoop {
 
                 /* assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("Sending %d events to %s", event.getLogCount(), url);
-                RakeLogger.t(LOG_TAG_PREFIX, message);
+                Logger.t(LOG_TAG_PREFIX, message);
 
                 RequestResult result = HttpRequestSender.sendRequest(log, url);
 
@@ -310,7 +310,7 @@ final class MessageLoop {
                 } else if (RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
                     eventTableAdapter.removeEventById(lastId);
                 } else {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
+                    Logger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
                 }
             }
         }
@@ -324,7 +324,7 @@ final class MessageLoop {
                     Log log = (Log) msg.obj;
                     int logQueueLength = logTableAdapter.addLog(log);
 
-                    RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
+                    Logger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON())
                         sendLogFromLogTable();
@@ -344,7 +344,7 @@ final class MessageLoop {
                         sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);
 
                 } else if (command == KILL_WORKER) {
-                    RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                    Logger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
                         eventTableAdapter.deleteDatabase();
                         handler = null;
@@ -352,22 +352,22 @@ final class MessageLoop {
                     }
 
                 } else { /* UNKNOWN COMMAND */
-                    RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
+                    Logger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
                 }
 
             } catch (OutOfMemoryError e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Caught OOM error. Rake will not send any more messages", e);
+                Logger.e(LOG_TAG_PREFIX, "Caught OOM error. Rake will not send any more messages", e);
                 // TODO metric
 
                 synchronized (handlerLock) {
                     handler = null;
                     try { android.os.Looper.myLooper().quit(); }
                     catch (Exception tooLate) {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Can't halt looper", tooLate);
+                        Logger.e(LOG_TAG_PREFIX, "Can't halt looper", tooLate);
                     }
                 }
             } catch (Exception e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Caught unhandled exception. (ignored)", e);
+                Logger.e(LOG_TAG_PREFIX, "Caught unhandled exception. (ignored)", e);
                 // TODO metric
             }
         } // handleMessage

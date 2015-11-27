@@ -3,13 +3,12 @@ package com.rake.android.rkmetrics;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.os.Message;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
 import org.json.JSONException;
@@ -75,7 +74,7 @@ public /* TODO final */ class RakeAPI {
 
         this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint);
 
-        RakeLogger.d(tag, "Creating instance");
+        Logger.d(tag, "Creating instance");
 
         this.context = appContext;
 
@@ -138,7 +137,7 @@ public /* TODO final */ class RakeAPI {
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(long milliseconds) {
-        RakeLogger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
+        Logger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
         MessageLoop.setFlushInterval(milliseconds);
     }
 
@@ -149,7 +148,7 @@ public /* TODO final */ class RakeAPI {
     public static void setAutoFlush(AutoFlush autoFlush) {
         AutoFlush old = MessageLoop.getAutoFlushOption();
         String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
-        RakeLogger.i(LOG_TAG_PREFIX, message);
+        Logger.i(LOG_TAG_PREFIX, message);
 
         MessageLoop.setAutoFlushOption(autoFlush);
     }
@@ -175,7 +174,7 @@ public /* TODO final */ class RakeAPI {
      */
     public void track(JSONObject shuttle) {
         if (null == shuttle) {
-            RakeLogger.e(tag, "should not pass null into RakeAPI.track()");
+            Logger.e(tag, "should not pass null into RakeAPI.track()");
             return;
         }
 
@@ -261,14 +260,14 @@ public /* TODO final */ class RakeAPI {
             // 4. put properties
             dataObj.put("properties", propertiesObj);
 
-            RakeLogger.d(tag, "track() called\n" + dataObj);
+            Logger.d(tag, "track() called\n" + dataObj);
 
             String uri = endpoint.getURI(env);
             Log log = Log.create(uri, token, dataObj);
 
             if (null == log) {
                 String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, uri);
-                RakeLogger.e(tag, message);
+                Logger.e(tag, message);
                 return;
             }
 
@@ -276,7 +275,7 @@ public /* TODO final */ class RakeAPI {
             if (Env.DEV == env) { flush(); } /* if Env.DEV, flush immediately */
 
         } catch (JSONException e) {
-            RakeLogger.e(tag, "Exception tracking event ", e);
+            Logger.e(tag, "Exception tracking event ", e);
         }
     }
 
@@ -295,7 +294,7 @@ public /* TODO final */ class RakeAPI {
         this.endpoint = endpoint;
 
         String message = String.format("Changed endpoint from %s to %s", old, endpoint);
-        RakeLogger.d(tag, message);
+        Logger.d(tag, message);
     }
 
     /**
@@ -315,14 +314,14 @@ public /* TODO final */ class RakeAPI {
      * @see {@link com.rake.android.rkmetrics.RakeAPI.Logging}
      */
     public static void setLogging(Logging loggingMode) {
-        RakeLogger.loggingMode = loggingMode;
+        Logger.loggingMode = loggingMode;
     }
 
     /**
      * Send log which persisted in SQLite to Rake server.
      */
     public void flush() {
-        RakeLogger.d(tag, "flush() called");
+        Logger.d(tag, "flush() called");
 
         synchronized (messageLoop) {
             messageLoop.flush();
@@ -330,7 +329,7 @@ public /* TODO final */ class RakeAPI {
     }
 
     public void registerSuperProperties(JSONObject superProperties) {
-        RakeLogger.d(tag, "registerSuperProperties");
+        Logger.d(tag, "registerSuperProperties");
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
@@ -339,7 +338,7 @@ public /* TODO final */ class RakeAPI {
                     this.superProperties.put(key, superProperties.get(key));
                 }
             } catch (JSONException e) {
-                RakeLogger.e(tag, "Exception registering super property.", e);
+                Logger.e(tag, "Exception registering super property.", e);
             }
         }
 
@@ -347,14 +346,14 @@ public /* TODO final */ class RakeAPI {
     }
 
     public void unregisterSuperProperty(String superPropertyName) {
-        RakeLogger.d(tag, "unregisterSuperProperty");
+        Logger.d(tag, "unregisterSuperProperty");
         synchronized (superProperties) { superProperties.remove(superPropertyName); }
         storeSuperProperties();
     }
 
 
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
-        RakeLogger.d(tag, "registerSuperPropertiesOnce");
+        Logger.d(tag, "registerSuperPropertiesOnce");
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
@@ -363,7 +362,7 @@ public /* TODO final */ class RakeAPI {
                     try {
                         this.superProperties.put(key, superProperties.get(key));
                     } catch (JSONException e) {
-                        RakeLogger.e(tag, "Exception registering super property.", e);
+                        Logger.e(tag, "Exception registering super property.", e);
                     }
                 }
             }
@@ -373,7 +372,7 @@ public /* TODO final */ class RakeAPI {
     }
 
     public synchronized void clearSuperProperties() {
-        RakeLogger.d(tag, "clearSuperProperties");
+        Logger.d(tag, "clearSuperProperties");
         superProperties = new JSONObject();
     }
 
@@ -417,12 +416,12 @@ public /* TODO final */ class RakeAPI {
 
     private void readSuperProperties() {
         String props = storedPreferences.getString("super_properties", "{}");
-        RakeLogger.d(tag, "Loading Super Properties " + props);
+        Logger.d(tag, "Loading Super Properties " + props);
 
         try {
             superProperties = new JSONObject(props);
         } catch (JSONException e) {
-            RakeLogger.e(tag, "Cannot parse stored superProperties");
+            Logger.e(tag, "Cannot parse stored superProperties");
             superProperties = new JSONObject();
             storeSuperProperties();
         }
@@ -431,7 +430,7 @@ public /* TODO final */ class RakeAPI {
     private void storeSuperProperties() {
         String props = superProperties.toString();
 
-        RakeLogger.d(tag, "Storing Super Properties " + props);
+        Logger.d(tag, "Storing Super Properties " + props);
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
         prefsEditor.putString("super_properties", props);
         prefsEditor.commit();   // synchronous

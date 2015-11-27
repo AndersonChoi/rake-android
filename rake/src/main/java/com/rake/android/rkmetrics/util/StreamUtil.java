@@ -10,7 +10,7 @@ public class StreamUtil {
         try {
             if (null != stream) stream.close();
         } catch (IOException e) {
-            RakeLogger.e(RakeConfig.LOG_TAG_PREFIX, "closeQuietly failed", e);
+            Logger.e(RakeConfig.LOG_TAG_PREFIX, "closeQuietly failed", e);
         }
     }
 }

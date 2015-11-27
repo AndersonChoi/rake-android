@@ -6,11 +6,10 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.provider.BaseColumns;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -151,7 +150,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                         String log = getStringFromCursor(c, EventContract.COLUMN_DATA);
 
                         try { jsonArr.put(new JSONObject(log)); } /* if an exception occurred, ignore it */
-                        catch (JSONException e) { RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
+                        catch (JSONException e) { Logger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
                     }
 
                 /* if JSONException occurred, just throw out eventually returning null. */
@@ -163,7 +162,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 if (null != e) {
                     String message = String.format("Extracting %d rows from the [%s] table",
                             jsonArr.length(), EventContract.TABLE_NAME);
-                    RakeLogger.d(LOG_TAG_PREFIX, message);
+                    Logger.d(LOG_TAG_PREFIX, message);
                 }
 
                 return e;

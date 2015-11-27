@@ -14,7 +14,8 @@ import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
-import com.rake.android.rkmetrics.util.RakeLogger;
+
+import com.rake.android.rkmetrics.util.Logger;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -56,7 +57,7 @@ final public class SystemInformation {
             appVersionName = info.versionName;
             appVersionCode = info.versionCode;
         } catch (NameNotFoundException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't get versionName, versionCode from PackageInfo");
+            Logger.e(LOG_TAG_PREFIX, "Can't get versionName, versionCode from PackageInfo");
         }
 
         // We can't count on these features being available, since we need to
@@ -77,9 +78,9 @@ final public class SystemInformation {
                 foundNFC = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.nfc");
                 foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.telephony");
             } catch (InvocationTargetException e) {
-                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                Logger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             } catch (IllegalAccessException e) {
-                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
+                Logger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             }
         }
 
@@ -169,9 +170,9 @@ final public class SystemInformation {
 
             zf.close();
         } catch(NameNotFoundException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "System information constructed with a context that apparently doesn't exist.");
+            Logger.e(LOG_TAG_PREFIX, "System information constructed with a context that apparently doesn't exist.");
         } catch(IOException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't create ZipFile Instance using given ApplicationInfo");
+            Logger.e(LOG_TAG_PREFIX, "Can't create ZipFile Instance using given ApplicationInfo");
         }
 
         return buildDate;

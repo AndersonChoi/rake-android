@@ -8,7 +8,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -136,7 +136,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     String message = String.format("Extracting %d rows from the [%s] table",
                             logList.size(), LogContract.TABLE_NAME);
 
-                    RakeLogger.d(LOG_TAG_PREFIX, message);
+                    Logger.d(LOG_TAG_PREFIX, message);
                 }
 
                 return t;
