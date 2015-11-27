@@ -6,7 +6,6 @@ import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_EMPTY_
 import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_INVALID_ARGUMENT;
 import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_RECOVERABLE;
 import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_UNRECOVERABLE;
-import static com.rake.android.rkmetrics.network.TransmissionResult.*;
 import static com.rake.android.rkmetrics.metric.flush.FlushResult.*;
 
 import android.content.Context;
@@ -51,8 +50,8 @@ final class MessageLoop {
     enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
-        AUTO_FLUSH_CAPACITY(3),
-        AUTO_FLUSH_INTERVAL(4),
+        AUTO_FLUSH_BY_COUNT(3),
+        AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER (5),
         FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
         UNKNOWN(-1);
@@ -109,7 +108,7 @@ final class MessageLoop {
     /* package */ static synchronized void setAutoFlushOption(AutoFlush option) {
         MessageLoop.autoFlushOption = option;
 
-        /* 인스턴스가 존재하면, AUTO_FLUSH_INTERVAL 루프를 재시작 */
+        /* 인스턴스가 존재하면, AUTO_FLUSH_BY_TIMER 루프를 재시작 */
         if (null != instance) {
             instance.activateAutoFlushInterval();
         }
@@ -121,7 +120,7 @@ final class MessageLoop {
 
     private void activateAutoFlushInterval() {
         Message m = Message.obtain();
-        m.what = AUTO_FLUSH_INTERVAL.code;
+        m.what = AUTO_FLUSH_BY_TIMER.code;
 
         runMessage(m);
     }
@@ -240,7 +239,7 @@ final class MessageLoop {
             if (DatabaseAdapter.upgradedFrom4To5)
                 sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
 
-            sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
+            sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
         private FlushResult extractFromLogTableAndSend() {
@@ -293,8 +292,8 @@ final class MessageLoop {
 
         private boolean hasFlushMessage() {
             return hasMessages(MANUAL_FLUSH.code)
-                    || hasMessages(AUTO_FLUSH_INTERVAL.code)
-                    || hasMessages(AUTO_FLUSH_CAPACITY.code);
+                    || hasMessages(AUTO_FLUSH_BY_TIMER.code)
+                    || hasMessages(AUTO_FLUSH_BY_COUNT.code);
         }
 
         /* to support legacy table `Event` */
@@ -344,14 +343,14 @@ final class MessageLoop {
                     extractFromEventTableAndSend();
                 } else if (command == MANUAL_FLUSH) {
                     extractFromLogTableAndSend();
-                } else if (command == AUTO_FLUSH_CAPACITY && isAutoFlushON()) {
+                } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
                     extractFromLogTableAndSend();
 
-                } else if (command == AUTO_FLUSH_INTERVAL && isAutoFlushON()) {
+                } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
                     extractFromLogTableAndSend();
 
-                    if (!hasMessages(AUTO_FLUSH_INTERVAL.code) && isAutoFlushON())
-                        sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);
+                    if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
+                        sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);
 
                 } else if (command == KILL_WORKER) {
                     Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
