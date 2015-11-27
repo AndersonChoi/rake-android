@@ -4,6 +4,7 @@ import android.app.Application;
 import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.metric.flush.FlushResult;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
@@ -43,6 +44,9 @@ public final class MetricLogger { /* singleton */
     public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
     public static final String FIELD_NAME_STACKTRACE = "stacktrace";
     public static final String FIELD_NAME_THREAD_INFO = "thread_info";
+
+    /* for Action.FLUSH */
+    public static final String FIELD_NAME_OPERATION_TIME = "operation_time";
 
     /* for Action.TRACK */
     public static final String FIELD_NAME_TRACK_OPERATION_COUNT = "track_operation_count";
@@ -112,33 +116,31 @@ public final class MetricLogger { /* singleton */
      * instance members
      */
 
-    /**
-     * Metric 대상인 Action 을 실행하는 Callback 을 받아 실행하고 리턴된 Action 값을 이용해 *연산 시간 등 추가적인 값을 셔틀에 기록하고
-     * RakeAPI.track 이용해 전송
-     *
-     * - 재귀 문제로 인하여 INSTALL 은 write 에서 기록하지 않고 다른 방법을 통해 메트릭을 저장함 RakeAPI.getInstance 참고
-     */
-    public RakeClientMetricSentinelShuttle write(Callback<RakeClientMetricSentinelShuttle, Action> callback) {
 
+
+    public RakeClientMetricSentinelShuttle measureFlush(
+        Callback<RakeClientMetricSentinelShuttle, Void> callback,
+        FlushType flushType) {
         RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
-        shuttle = initializeShuttle(shuttle);
 
-        Action action = Action.EMPTY;
+        initializeShuttle(shuttle);
+
+        shuttle.action(Action.FLUSH.getValue());
+        shuttle.flush_type(flushType.getValue());
+
+        return measureOperationTime(shuttle, callback);
+    }
+
+    public static RakeClientMetricSentinelShuttle measureOperationTime(
+            RakeClientMetricSentinelShuttle shuttle,
+            Callback<RakeClientMetricSentinelShuttle, Void> callback) {
 
         try {
             long startAt = System.currentTimeMillis();
-            action = callback.execute(shuttle);
+            callback.execute(shuttle);
             long endAt = System.currentTimeMillis();
 
-            switch(action) {
-                case CONFIGURE:
-                case FLUSH:
-                    break;
-                case INSTALL: /* 함수 시그니쳐 주석참조 */
-                default:
-                case TRACK:
-                    throw new IllegalArgumentException("Unsupported Action: " + action);
-            }
+            shuttle.operation_time(endAt - startAt);
 
         } catch (Exception e) {
 
@@ -147,8 +149,6 @@ public final class MetricLogger { /* singleton */
                     getStacktraceString(e), /* stacktrace */
                     null  /* thread_info */
             );
-
-            shuttle.action(action.getValue());
 
             Logger.e("Uncaught exception", e);
         }

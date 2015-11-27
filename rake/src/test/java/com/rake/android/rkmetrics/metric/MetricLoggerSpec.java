@@ -53,20 +53,18 @@ public class MetricLoggerSpec {
     }
 
     @Test
-    public void MetricLogger_write_는_예외를_잡아야서_exception_type_과_stacktrace_를_기록해야함()
+    public void measureOperationTime_는_예외를_잡아야서_exception_type_과_stacktrace_를_기록해야함()
             throws JSONException {
-
-        logger = MetricLogger.getInstance(app);
 
         final RuntimeException e = new RuntimeException("intended");
 
-        RakeClientMetricSentinelShuttle shuttle =
-                logger.write(new Callback<RakeClientMetricSentinelShuttle, Action>() {
-                    @Override
-                    public Action execute(RakeClientMetricSentinelShuttle arg) {
-                        throw e;
-                    }
-                });
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        MetricLogger.measureOperationTime(shuttle, new Callback<RakeClientMetricSentinelShuttle, Void>() {
+            @Override
+            public Void execute(RakeClientMetricSentinelShuttle arg) {
+                throw e;
+            }
+        });
 
         JSONObject body = shuttle.getBody();
         String exceptionType = body.getString(FIELD_NAME_EXCEPTION_TYPE);
@@ -76,6 +74,34 @@ public class MetricLoggerSpec {
         assertThat(stacktrace).isNotNull();
 
         assertThat(exceptionType).isEqualTo(getExceptionType(e));
+    }
+
+    @Test
+    public void measureOperationTime_은_연산시간을_기록해야_함() {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+
+        final long OPERATION_TIME = 200L;
+
+        MetricLogger.measureOperationTime(shuttle, new Callback<RakeClientMetricSentinelShuttle, Void>() {
+            @Override
+            public Void execute(RakeClientMetricSentinelShuttle arg) {
+
+                try {
+                    Thread.sleep(OPERATION_TIME);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                return null;
+            }
+        });
+
+
+        assertThat(hasBodyValue(shuttle, FIELD_NAME_OPERATION_TIME, new Callback<Long, Boolean>() {
+            @Override
+            public Boolean execute(Long operationTime) {
+                return operationTime > OPERATION_TIME;
+            }
+        })).isTrue();
     }
 
     @Test
