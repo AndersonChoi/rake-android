@@ -2,18 +2,18 @@ package com.rake.android.rkmetrics;
 
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
-import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_EMPTY_TABLE;
-import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_INVALID_ARGUMENT;
-import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_RECOVERABLE;
-import static com.rake.android.rkmetrics.metric.flush.FlushResult.FAILURE_UNRECOVERABLE;
-import static com.rake.android.rkmetrics.metric.flush.FlushResult.*;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_EMPTY_TABLE;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_INVALID_ARGUMENT;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_RECOVERABLE;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_UNRECOVERABLE;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.metric.flush.FlushResult;
+import com.rake.android.rkmetrics.metric.model.FlushResult;
 import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -242,8 +242,18 @@ final class MessageLoop {
             sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
-        private FlushResult extractFromLogTableAndSend() {
-           updateFlushFrequency();
+        private boolean hasFlushMessage() {
+            return hasMessages(MANUAL_FLUSH.code)
+                    || hasMessages(AUTO_FLUSH_BY_TIMER.code)
+                    || hasMessages(AUTO_FLUSH_BY_COUNT.code);
+        }
+
+        private FlushResult flushLogTable() {
+
+            // TODO
+            // 패스 셔틀 투 flushLogTable? or 도메인 객체 하나 더 만들기?
+
+            updateFlushFrequency();
 
             Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
 
@@ -290,14 +300,8 @@ final class MessageLoop {
             return FAILURE_UNKNOWN;
         }
 
-        private boolean hasFlushMessage() {
-            return hasMessages(MANUAL_FLUSH.code)
-                    || hasMessages(AUTO_FLUSH_BY_TIMER.code)
-                    || hasMessages(AUTO_FLUSH_BY_COUNT.code);
-        }
-
         /* to support legacy table `Event` */
-        private void extractFromEventTableAndSend() {
+        private void flushEventTable() {
             updateFlushFrequency();
             ExtractedEvent event = eventTableAdapter.getExtractEvent();
 
@@ -336,18 +340,20 @@ final class MessageLoop {
 
                     Logger.t("Total log count in SQLite: " + logQueueLength);
 
-                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON())
-                        extractFromLogTableAndSend();
+                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
+                        // TODO sendEmptyDelayed message
+                        flushLogTable();
+                    }
 
                 } else if (command == FLUSH_EVENT_TABLE) {
-                    extractFromEventTableAndSend();
+                    flushEventTable();
                 } else if (command == MANUAL_FLUSH) {
-                    extractFromLogTableAndSend();
+                    FlushResult flushResult = flushLogTable();
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
-                    extractFromLogTableAndSend();
+                    flushLogTable();
 
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    extractFromLogTableAndSend();
+                    flushLogTable();
 
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);

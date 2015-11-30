@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics.metric;
+package com.rake.android.rkmetrics.metric.model;
 
 public enum FlushType {
 

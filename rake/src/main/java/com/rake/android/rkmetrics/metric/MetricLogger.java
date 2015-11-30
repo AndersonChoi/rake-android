@@ -1,17 +1,14 @@
 package com.rake.android.rkmetrics.metric;
 
-import android.app.Application;
 import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
-import com.rake.android.rkmetrics.metric.flush.FlushResult;
+import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.metric.model.Body;
+import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
-
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 
 /**
@@ -37,21 +34,6 @@ public final class MetricLogger { /* singleton */
      *
      * FIELD_NAME_* 들은 스키마에서 가져온 변수 이름으로, 스키마 변경시 업데이트 해 주어야 함.
      */
-
-    public static final String FIELD_NAME_ACTION = "action";
-    public static final String FIELD_NAME_STATUS = "status";
-
-    public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
-    public static final String FIELD_NAME_STACKTRACE = "stacktrace";
-    public static final String FIELD_NAME_THREAD_INFO = "thread_info";
-
-    /* for Action.FLUSH */
-    public static final String FIELD_NAME_OPERATION_TIME = "operation_time";
-
-    /* for Action.TRACK */
-    public static final String FIELD_NAME_TRACK_OPERATION_COUNT = "track_operation_count";
-    public static final String FIELD_NAME_TRACK_OPERATION_TIME_LIST = "track_operation_time_list";
-    public static final String FIELD_NAME_TRACKED_LOG_SIZE_LIST = "tracked_log_size_list";
 
     private RakeAPI rake;
 
@@ -96,27 +78,9 @@ public final class MetricLogger { /* singleton */
         return shuttle;
     }
 
-    public static String getExceptionType(Throwable e) {
-        if (null == e) return null;
-
-        return e.getClass().getSimpleName();
-    }
-
-    public static String getStacktraceString(Throwable e) {
-        if (null == e) return null;
-
-        StringWriter sw = new StringWriter();
-        PrintWriter  pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-
-        return pw.toString();
-    }
-
     /**
      * instance members
      */
-
-
 
     public RakeClientMetricSentinelShuttle measureFlush(
         Callback<RakeClientMetricSentinelShuttle, Void> callback,
@@ -145,8 +109,8 @@ public final class MetricLogger { /* singleton */
         } catch (Exception e) {
 
             shuttle.setBodyOf__ERROR(
-                    getExceptionType(e), /* exception_type*/
-                    getStacktraceString(e), /* stacktrace */
+                    Body.createExceptionType(e), /* exception_type*/
+                    Body.createStacktrace(e), /* stacktrace */
                     null  /* thread_info */
             );
 

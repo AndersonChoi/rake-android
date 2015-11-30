@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics.metric.flush;
+package com.rake.android.rkmetrics.metric.model;
 
 public enum FlushResult {
     FAILURE_EMPTY_TABLE("FAILURE_EMPTY_TABLE"),

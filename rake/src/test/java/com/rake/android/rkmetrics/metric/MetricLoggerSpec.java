@@ -1,6 +1,6 @@
 package com.rake.android.rkmetrics.metric;
 
-import static com.rake.android.rkmetrics.metric.MetricLogger.*;
+import static com.rake.android.rkmetrics.metric.model.Body.*;
 import static com.rake.android.rkmetrics.metric.ShuttleProfiler.*;
 
 import android.app.Application;
@@ -13,15 +13,12 @@ import static org.assertj.core.api.Assertions.*;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
-
-import java.io.InvalidClassException;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
@@ -73,7 +70,7 @@ public class MetricLoggerSpec {
         assertThat(exceptionType).isNotNull();
         assertThat(stacktrace).isNotNull();
 
-        assertThat(exceptionType).isEqualTo(getExceptionType(e));
+        assertThat(exceptionType).isEqualTo(createExceptionType(e));
     }
 
     @Test
@@ -103,63 +100,6 @@ public class MetricLoggerSpec {
             }
         })).isTrue();
     }
-
-    @Test
-    public void 테스트_getExceptionType() {
-        Exception e = new IllegalArgumentException("e");
-
-        assertThat(getExceptionType(null)).isNull();
-        assertThat(getExceptionType(e)).isNotNull();
-    }
-
-    @Test
-    public void 테스트_getStackTraceString() {
-        Exception e = new InvalidClassException("e");
-
-        assertThat(getStacktraceString(null)).isNull();
-        assertThat(getStacktraceString(e)).isNotNull();
-    }
-
-    @Test
-    public void initializeShuttle_은_셔틀의_키와_바디를_초기화_해야함() {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
-
-        /* header */
-        shuttle.action("install");
-        shuttle.status("status");
-
-        /* body */
-        shuttle.exception_type(new OutOfMemoryError("").getClass().getSimpleName());
-
-        shuttle = MetricLogger.initializeShuttle(shuttle);
-        String bodyString = shuttle.bodyToString();
-
-        /* header validation */
-        assertThat(hasHeaderValue(shuttle, FIELD_NAME_ACTION, EMPTY_HEADER_VALUE)).isTrue();
-        assertThat(hasHeaderValue(shuttle, FIELD_NAME_STATUS, EMPTY_HEADER_VALUE)).isTrue();
-
-        /* body validation */
-        assertThat(bodyString).isEqualTo(EMPTY_BODY_STRING);
-        assertThat(hasBodyValue(shuttle, FIELD_NAME_EXCEPTION_TYPE, "")).isFalse();
-        assertThat(hasBodyValue(shuttle, FIELD_NAME_STACKTRACE, "")).isFalse();
-    }
-
-    @Test
-    public void flush_시에_연산시간_로그사이즈_플러시타입_서버응답시간_서버응답코드_서버응답바디_를_기록해야함() {
-
-    }
-
-    @Ignore
-    public void write_는_셔틀에_operation_time_list_을_기록해야함_Action_이_Track_일때() {
-        TODO();
-    }
-
-    @Ignore
-    public void write_는_셔틀에_operation_time_을_기록해야함_Action_이_Track_이_아닐경우() {
-        TODO();
-    }
-
-
 
     public void TODO() {
         new RuntimeException("TODO");

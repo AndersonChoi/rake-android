@@ -6,14 +6,10 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.metric.Action;
-import com.rake.android.rkmetrics.metric.MetricLogger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
-import com.rake.android.rkmetrics.util.functional.Callback;
-import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONException;
 import org.json.JSONObject;
