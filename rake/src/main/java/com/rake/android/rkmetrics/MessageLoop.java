@@ -15,21 +15,15 @@ import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
-import com.rake.android.rkmetrics.persistent.LogDeleteKey;
+import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
-import com.rake.android.rkmetrics.persistent.Transferable;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
-import org.json.JSONArray;
-
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 
 /**
@@ -256,20 +250,13 @@ final class MessageLoop {
 
             updateFlushFrequency();
 
-            Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
+            List<LogChunk> chunks = logTableAdapter.getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
 
-            if (null == t) return;
+            if (null == chunks || 0 == chunks.size()) return;
 
-            String lastId = t.getLastId();
-            Set<String> urls = t.getUrls();
-            Map<String, Map<String, JSONArray>> logMap = t.getLogMap();
-
-            List<LogDeleteKey> deleteKeys = send(lastId, urls, logMap);
-
-            for(LogDeleteKey key : deleteKeys) {
-                logTableAdapter.removeLogByDeleteKey(key);
+            for (LogChunk chunk : chunks) {
+                send(chunk);
             }
-
             Long endAt = System.currentTimeMillis();
 
             Long operationTime = (endAt - startAt);
@@ -281,42 +268,36 @@ final class MessageLoop {
          * 전송된 데이터를 삭제해도 되는지(SUCCESS), 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(FAILURE_UNRECOVERABLE) 를 판단하여
          * 삭제할 로그의 키값인 LogDeleteKey 를 리턴
          */
-        private List<LogDeleteKey> send(String lastId,
-                                        Set<String> urls,
-                                        Map<String, Map<String, JSONArray>> logMap) {
+        private void send(LogChunk chunk) {
 
-            if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
+            if (null == chunk) {
                 Logger.e("Can't flush using Null args");
-                return Collections.EMPTY_LIST;
+                return; // TODO: return FlushMetric
             }
 
-            List<LogDeleteKey> deleteKeys = new ArrayList<LogDeleteKey>();
+            TransmissionResult result =
+                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
 
-            for(String url : logMap.keySet()) {
-                for (String token: logMap.get(url).keySet()) {
+            switch (result) {
+                case SUCCESS:
+                    logTableAdapter.removeLogChunk(chunk);
+                    break;
+                case FAILURE_UNRECOVERABLE:
+                    logTableAdapter.removeLogChunk(chunk);
+                    break;
+                case FAILURE_RECOVERABLE:
+                    if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
+                    break;
 
-                    JSONArray jsons = logMap.get(url).get(token);
-                    String message = String.format("Sending %d log to %s with token %s",
-                            jsons.length(), url, token);
-
-                    Logger.t(message);
-
-                    String stringified = jsons.toString();
-                    TransmissionResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
-
-                    if (TransmissionResult.SUCCESS == result) {
-                        deleteKeys.add(LogDeleteKey.create(lastId, token, url));
-                    } else if (TransmissionResult.FAILURE_RECOVERABLE == result) {
-                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                    } else if (TransmissionResult.FAILURE_UNRECOVERABLE == result) {
-                        deleteKeys.add(LogDeleteKey.create(lastId, token, url));
-                    } else {
-                        Logger.e("Invalid TransmissionResult: " + result);
-                    }
-                }
+                default:
+                    Logger.e("Unknown TransmissionResult");
+                    return;
             }
 
-            return deleteKeys;
+            String message = String.format("Sending %d log to %s with token %s",
+                    chunk.getCount(), chunk.getUrl(), chunk.getToken());
+
+            Logger.t(message);
         }
 
         /**

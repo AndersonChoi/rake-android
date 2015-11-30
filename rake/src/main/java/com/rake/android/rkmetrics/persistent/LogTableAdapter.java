@@ -53,9 +53,9 @@ public final class LogTableAdapter extends DatabaseAdapter {
     }
 
     /**
-     * @param deleteKey Always be not null
+     * @param chunk should not be null
      */
-    public void removeLogByDeleteKey(final LogDeleteKey deleteKey) {
+    public void removeLogChunk(final LogChunk chunk) {
         execute(new SQLiteCallback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
@@ -66,12 +66,12 @@ public final class LogTableAdapter extends DatabaseAdapter {
             @Override
             public String getQuery() {
                 String WHERE_CALUSE_TOKEN = String.format("%s = \"%s\"",
-                        LogContract.COLUMN_TOKEN, deleteKey.getToken());
+                        LogContract.COLUMN_TOKEN, chunk.getToken());
 
                 String WHERE_CALUSE_URL = String.format("%s = \"%s\"",
-                        LogContract.COLUMN_URL, deleteKey.getUrl());
+                        LogContract.COLUMN_URL, chunk.getUrl());
 
-                return LogContract._ID + " <= " + deleteKey.getLastId() +
+                return LogContract._ID + " <= " + chunk.getLastId() +
                         AND + WHERE_CALUSE_TOKEN +
                         AND + WHERE_CALUSE_URL;
             }
@@ -118,11 +118,11 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return ((null == result) ? -1 : result);
     }
 
-    public Transferable getTransferable(final int extractCount) {
+    public List<LogChunk> getLogChunks(final int extractCount) {
 
-        Transferable t = executeAndReturnT(new SQLiteCallback<Transferable>() {
+        List<LogChunk> chunks = executeAndReturnT(new SQLiteCallback<List<LogChunk>>() {
             @Override
-            public Transferable execute(SQLiteDatabase db) {
+            public List<LogChunk> execute(SQLiteDatabase db) {
                 Cursor c = null;
                 String lastId = null;
                 List<Log> logList = new ArrayList<Log>();
@@ -139,16 +139,16 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     }
                 } finally { if (null != c) c.close(); }
 
-                Transferable t = Transferable.create(lastId, logList);
+                List<LogChunk> chunks = LogChunk.create(lastId, logList);
 
-                if (null != t) {
+                if (null != chunks) {
                     String message = String.format("Extracting %d rows from the [%s] table",
                             logList.size(), LogContract.TABLE_NAME);
 
                     Logger.d(message);
                 }
 
-                return t;
+                return chunks;
             }
 
             @Override
@@ -162,7 +162,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
             }
         });
 
-        return t; /* might be null */
+        return chunks;
     }
 
     private Log createLog(Cursor c) {
