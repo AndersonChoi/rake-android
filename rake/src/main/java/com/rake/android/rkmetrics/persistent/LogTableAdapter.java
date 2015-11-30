@@ -52,7 +52,10 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return instance;
     }
 
-    public void removeLogById(final String lastId) {
+    /**
+     * @param deleteKey Always be not null
+     */
+    public void removeLogByDeleteKey(final LogDeleteKey deleteKey) {
         execute(new SQLiteCallback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
@@ -62,7 +65,15 @@ public final class LogTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return LogContract._ID + " <= " + lastId;
+                String WHERE_CALUSE_TOKEN = String.format("%s = \"%s\"",
+                        LogContract.COLUMN_TOKEN, deleteKey.getToken());
+
+                String WHERE_CALUSE_URL = String.format("%s = \"%s\"",
+                        LogContract.COLUMN_URL, deleteKey.getUrl());
+
+                return LogContract._ID + " <= " + deleteKey.getLastId() +
+                        AND + WHERE_CALUSE_TOKEN +
+                        AND + WHERE_CALUSE_URL;
             }
         });
     }

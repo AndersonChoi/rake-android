@@ -2,24 +2,19 @@ package com.rake.android.rkmetrics;
 
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_EMPTY_TABLE;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_INVALID_ARGUMENT;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_RECOVERABLE;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.FAILURE_UNRECOVERABLE;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.metric.model.FlushResult;
 import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
+import com.rake.android.rkmetrics.persistent.LogDeleteKey;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.persistent.Transferable;
 import com.rake.android.rkmetrics.util.Logger;
@@ -28,7 +23,10 @@ import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
 import org.json.JSONArray;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
@@ -248,25 +246,42 @@ final class MessageLoop {
                     || hasMessages(AUTO_FLUSH_BY_COUNT.code);
         }
 
-        private FlushResult flushLogTable() {
-
-            // TODO
-            // 패스 셔틀 투 flushLogTable? or 도메인 객체 하나 더 만들기?
-
+        /**
+         * `log` 테이블에 있는 데이터를 전송
+         */
+        private void flush() {
             updateFlushFrequency();
 
             Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
 
-            if (null == t) return FAILURE_EMPTY_TABLE;
+            if (null == t) return;
 
             String lastId = t.getLastId();
             Set<String> urls = t.getUrls();
             Map<String, Map<String, JSONArray>> logMap = t.getLogMap();
 
-            if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
-                Logger.e("Invalid empty Transferable"); /* should not be here! */
-                return FAILURE_INVALID_ARGUMENT;
+            List<LogDeleteKey> deleteKeys = send(lastId, urls, logMap);
+
+            for(LogDeleteKey key : deleteKeys) {
+                logTableAdapter.removeLogByDeleteKey(key);
             }
+        }
+
+        /**
+         * HttpRequestSender 를 이용해서 데이터를 네트워크로 전송하고,
+         * 전송된 데이터를 삭제해도 되는지(SUCCESS), 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(FAILURE_UNRECOVERABLE) 를 판단하여
+         * 삭제할 로그의 키값인 LogDeleteKey 를 리턴
+         */
+        private List<LogDeleteKey> send(String lastId,
+                                        Set<String> urls,
+                                        Map<String, Map<String, JSONArray>> logMap) {
+
+            if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
+                Logger.e("Can't flush using Null args");
+                return Collections.EMPTY_LIST;
+            }
+
+            List<LogDeleteKey> deleteKeys = new ArrayList<LogDeleteKey>();
 
             for(String url : logMap.keySet()) {
                 for (String token: logMap.get(url).keySet()) {
@@ -281,26 +296,23 @@ final class MessageLoop {
                     TransmissionResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
 
                     if (TransmissionResult.SUCCESS == result) {
-                        logTableAdapter.removeLogById(lastId);
+                        deleteKeys.add(LogDeleteKey.create(lastId, token, url));
                     } else if (TransmissionResult.FAILURE_RECOVERABLE == result) {
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-
-                        return FAILURE_RECOVERABLE;
                     } else if (TransmissionResult.FAILURE_UNRECOVERABLE == result) {
-                        logTableAdapter.removeLogById(lastId);
-
-                        return FAILURE_UNRECOVERABLE;
+                        deleteKeys.add(LogDeleteKey.create(lastId, token, url));
                     } else {
                         Logger.e("Invalid TransmissionResult: " + result);
-                        return FAILURE_INVALID_ARGUMENT;
                     }
                 }
             }
 
-            return FAILURE_UNKNOWN;
+            return deleteKeys;
         }
 
-        /* to support legacy table `Event` */
+        /**
+         * Database Version 4 까지 사용하던 `event` 테이블을 플러시
+         */
         private void flushEventTable() {
             updateFlushFrequency();
             ExtractedEvent event = eventTableAdapter.getExtractEvent();
@@ -342,18 +354,18 @@ final class MessageLoop {
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
                         // TODO sendEmptyDelayed message
-                        flushLogTable();
+                        flush();
                     }
 
                 } else if (command == FLUSH_EVENT_TABLE) {
                     flushEventTable();
                 } else if (command == MANUAL_FLUSH) {
-                    FlushResult flushResult = flushLogTable();
+                    flush();
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
-                    flushLogTable();
+                    flush();
 
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    flushLogTable();
+                    flush();
 
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);

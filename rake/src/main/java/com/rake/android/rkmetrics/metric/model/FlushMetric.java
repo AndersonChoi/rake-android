@@ -5,7 +5,7 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONObject;
 
-public final class Flush extends Body {
+public final class FlushMetric extends Body {
 
     private Header header;
     private Long operation_time;
@@ -16,13 +16,13 @@ public final class Flush extends Body {
     private Long server_response_code;
     private String server_response_body;
 
-    public Flush(Header header) {
+    public FlushMetric(Header header) {
         this.header = header;
     }
 
     public void setOperation_time(Long operationTime) { this.operation_time = operationTime; }
     public void setLogSize(Long logSizeAsBytes) { this.log_size = logSizeAsBytes; }
-    public void setLog_count(Long logCount) { this.log_count = logCount; }
+    public void setLogCount(Long logCount) { this.log_count = logCount; }
     public void setFlushType(FlushType flushType) {
         if (null == flushType) return;
 

@@ -96,7 +96,7 @@ public class MetricLoggerSpec {
         assertThat(hasBodyValue(shuttle, FIELD_NAME_OPERATION_TIME, new Callback<Long, Boolean>() {
             @Override
             public Boolean execute(Long operationTime) {
-                return operationTime > OPERATION_TIME;
+                return operationTime >= OPERATION_TIME;
             }
         })).isTrue();
     }

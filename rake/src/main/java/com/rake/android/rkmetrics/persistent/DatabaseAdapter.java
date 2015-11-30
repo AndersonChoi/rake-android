@@ -31,6 +31,7 @@ public abstract class DatabaseAdapter {
     protected static final String STRING_TYPE_NOT_NULL = " STRING NOT NULL";
     protected static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
     protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
+    protected static final String AND = " AND ";
 
     private static final int DATABASE_VERSION = 5;
     public static boolean upgradedFrom4To5 = false;
