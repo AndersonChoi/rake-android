@@ -8,6 +8,7 @@ import android.os.Handler;
 import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.model.FlushMetric;
 import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -247,9 +248,12 @@ final class MessageLoop {
         }
 
         /**
-         * `log` 테이블에 있는 데이터를 전송
+         * Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송
          */
         private void flush() {
+            Long startAt = System.currentTimeMillis();
+            FlushMetric metric = new FlushMetric();
+
             updateFlushFrequency();
 
             Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
@@ -265,6 +269,11 @@ final class MessageLoop {
             for(LogDeleteKey key : deleteKeys) {
                 logTableAdapter.removeLogByDeleteKey(key);
             }
+
+            Long endAt = System.currentTimeMillis();
+
+            Long operationTime = (endAt - startAt);
+
         }
 
         /**

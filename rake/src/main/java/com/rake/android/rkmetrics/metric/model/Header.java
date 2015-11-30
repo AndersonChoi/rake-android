@@ -1,8 +1,6 @@
 package com.rake.android.rkmetrics.metric.model;
 
-import org.json.JSONObject;
-
-public abstract class Header {
+public class Header {
 
     public static final String FIELD_NAME_ACTION = "action";
     public static final String FIELD_NAME_STATUS = "status";
@@ -17,28 +15,18 @@ public abstract class Header {
     private String transaction_id;
     private String service_token;
 
-    protected Header(String app_package,
-                     String transaction_id,
-                     String service_token) {
-        this.app_package = app_package;
-        this.transaction_id = transaction_id;
-        this.service_token = service_token;
-    }
+    public Header setAction(Action action) { this.action = action; return this; }
+    public String getAction() { if (null == action) return null; return action.getValue(); }
 
-    public String getAction() {
-        if (null == action) return null;
-        return action.getValue();
-    }
+    public Header setStatus(Status status) { this.status = status; return this; }
+    public String getStatus() { if (null == action) return null; return action.getValue(); }
 
-    public String getStatus() {
-        if (null == action) return null;
-        return action.getValue();
-    }
-
-    public abstract JSONObject toJSONObject();
-
+    public Header setAppPackage(String app_package) { this.app_package = app_package; return this; }
     public String getAppPackage() { return app_package; }
-    public String getTransactionId() { return transaction_id; }
-    public String getServiceToken() { return service_token; }
 
+    public Header setTransactionId(String transaction_id) { this.transaction_id = transaction_id; return this; }
+    public String getTransactionId() { return transaction_id; }
+
+    public Header setServiceToken(String service_token) { this.service_token = service_token; return this; }
+    public String getServiceToken() { return service_token; }
 }

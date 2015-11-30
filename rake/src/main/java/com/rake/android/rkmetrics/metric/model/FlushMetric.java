@@ -16,11 +16,10 @@ public final class FlushMetric extends Body {
     private Long server_response_code;
     private String server_response_body;
 
-    public FlushMetric(Header header) {
-        this.header = header;
-    }
+    public FlushMetric() {}
 
-    public void setOperation_time(Long operationTime) { this.operation_time = operationTime; }
+    public void setHeader(Header header) { this.header = header; }
+    public void setOperationTime(Long operationTime) { this.operation_time = operationTime; }
     public void setLogSize(Long logSizeAsBytes) { this.log_size = logSizeAsBytes; }
     public void setLogCount(Long logCount) { this.log_count = logCount; }
     public void setFlushType(FlushType flushType) {
