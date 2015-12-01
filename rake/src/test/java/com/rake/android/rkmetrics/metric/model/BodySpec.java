@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.metric.model;
 
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
-import static com.rake.android.rkmetrics.metric.ShuttleProfiler.*;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
 import static com.rake.android.rkmetrics.metric.model.Header.*;
 import static com.rake.android.rkmetrics.metric.model.Body.*;
 
@@ -10,8 +10,6 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import java.io.InvalidClassException;
 
 @RunWith(JUnit4.class)
 public class BodySpec {

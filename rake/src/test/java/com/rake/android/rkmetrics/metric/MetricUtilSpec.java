@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics.metric;
 import android.app.Application;
 
 import static org.assertj.core.api.Assertions.*;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;

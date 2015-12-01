@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics.metric;
+package com.rake.android.rkmetrics.shuttle;
 
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
@@ -13,7 +13,14 @@ public class ShuttleProfiler {
      */
 
     public static final String FIELD_NAME_SENTINEL_META = "sentinel_meta";
-    public static final String FIELD_NAME_BODY = "_$body";
+    public static final String FIELD_NAME_FIELD_ORDER   = "_$fieldOrder";
+    public static final String FIELD_NAME_PROPERTIES    = "properties";
+    public static final String FIELD_NAME_BODY          = "_$body";
+
+    public static final String PROPERTY_NAME_TOKEN      = "token";
+    public static final String PROPERTY_NAME_BASE_TIME  = "base_time";
+    public static final String PROPERTY_NAME_LOCAL_TIME = "local_time";
+
     public static final String EMPTY_BODY_STRING = new JSONObject().toString();
     public static final String EMPTY_HEADER_VALUE = "";
 

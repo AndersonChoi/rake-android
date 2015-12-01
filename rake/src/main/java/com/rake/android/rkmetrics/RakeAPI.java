@@ -1,5 +1,10 @@
 package com.rake.android.rkmetrics;
 
+
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -15,8 +20,6 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.*;
-
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 public /* TODO final */ class RakeAPI {
 
@@ -189,13 +192,13 @@ public /* TODO final */ class RakeAPI {
             }
 
             JSONObject sentinel_meta;
-            if (shuttle.has("sentinel_meta")) {
-                sentinel_meta = shuttle.getJSONObject("sentinel_meta");
+            if (shuttle.has(FIELD_NAME_SENTINEL_META)) {
+                sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
                 for (Iterator<?> sentinel_meta_keys = sentinel_meta.keys(); sentinel_meta_keys.hasNext(); ) {
                     String sentinel_meta_key = (String) sentinel_meta_keys.next();
                     dataObj.put(sentinel_meta_key, sentinel_meta.get(sentinel_meta_key));
                 }
-                shuttle.remove("sentinel_meta");
+                shuttle.remove(FIELD_NAME_SENTINEL_META);
             } else {
                 // no sentinel shuttle
                 // need to do something here?
@@ -204,7 +207,7 @@ public /* TODO final */ class RakeAPI {
 
             JSONObject fieldOrder;
             try {
-                fieldOrder = (JSONObject) dataObj.get("_$fieldOrder");
+                fieldOrder = (JSONObject) dataObj.get(FIELD_NAME_FIELD_ORDER);
             } catch (JSONException e) {
                 fieldOrder = null;
             }
@@ -246,15 +249,15 @@ public /* TODO final */ class RakeAPI {
             }
 
             // rake token
-            propertiesObj.put("token", token);
+            propertiesObj.put(PROPERTY_NAME_TOKEN, token);
 
             // time
             // TODO: thread-unsafe
-            propertiesObj.put("base_time", TimeUtil.getBaseFormatter().format(now));
-            propertiesObj.put("local_time", TimeUtil.getLocalFormatter().format(now));
+            propertiesObj.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+            propertiesObj.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
             // 4. put properties
-            dataObj.put("properties", propertiesObj);
+            dataObj.put(FIELD_NAME_PROPERTIES, propertiesObj);
 
             Logger.d(tag, "track() called\n" + dataObj);
 
