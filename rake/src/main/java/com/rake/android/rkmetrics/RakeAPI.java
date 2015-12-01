@@ -159,13 +159,17 @@ public /* TODO final */ class RakeAPI {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
 
-    public JSONObject getSuperProperties() throws JSONException {
+    public JSONObject getSuperProperties() {
         JSONObject props = new JSONObject();
 
         synchronized (superProperties) {
             for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
-                props.put(key, superProperties.get(key));
+
+                try { props.put(key, superProperties.get(key)); }
+                catch (JSONException e) { /* logging and ignore it */
+                    Logger.e("Failed to insert a super property", e);
+                }
             }
         }
 
@@ -180,30 +184,47 @@ public /* TODO final */ class RakeAPI {
      */
     public void track(JSONObject shuttle) {
         if (!isShuttle(shuttle)) {
-            Logger.e(tag, "Passed JSONObject is null or not the JSONObject created by Shuttle");
+            Logger.e(tag, "Passed JSONObject is null or was not created using Shuttle.toJSONObject");
             return;
         }
 
+
+        JSONObject superProps = getSuperProperties();
+
+        JSONObject validShuttleFormat = _track(shuttle, superProps);
+
+
+        if (null == validShuttleFormat) return;
+
+        String uri = endpoint.getURI(env);
+        Log log = Log.create(uri, token, validShuttleFormat);
+
+        synchronized (messageLoop) {
+            if (messageLoop.track(log))
+                Logger.d(tag, "Tracked JSONObject\n" + validShuttleFormat);
+            if (Env.DEV == env) messageLoop.flush(); /* if Env.DEV, flush immediately */
+        }
+    }
+
+    private JSONObject _track(JSONObject shuttle, JSONObject superProps) {
+        if (null == shuttle || null == superProps)
+            return null;
+
         Date now = new Date();
+        JSONObject validShuttleFormat = new JSONObject();
 
         try {
-            JSONObject dataField = new JSONObject();
-
             // 1. super properties TODO: remove
-            JSONObject superProps = getSuperProperties();
-
-            JSONObject sentinel_meta;
-
-            sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
+            JSONObject sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
             for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
                 String key = (String) iter.next();
-                dataField.put(key, sentinel_meta.get(key));
+                validShuttleFormat.put(key, sentinel_meta.get(key));
             }
             shuttle.remove(FIELD_NAME_SENTINEL_META);
 
-            JSONObject fieldOrder = dataField.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+            JSONObject fieldOrder = validShuttleFormat.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
 
-            // 2-2. custom properties
+            // 2. Insert user-collected fields
             for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
                 Object value = shuttle.get(key);
@@ -213,40 +234,33 @@ public /* TODO final */ class RakeAPI {
                 } else superProps.put(key, value);
             }
 
-            // 3. auto : device info
-            // get only values in fieldOrder
-            JSONObject defaultProperties = getDefaultEventProperties();
+            // 3. Insert auto-collected fields including token, base_time, local_time
+            // TODO token, time -> getDefault
+            JSONObject defaultProps = getDefaultProps();
 
-            for (Iterator<?> keys = defaultProperties.keys(); keys.hasNext(); ) {
+            superProps.put(PROPERTY_NAME_TOKEN, token);
+            superProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+            superProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+
+            for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
                 boolean addToProperties = true;
 
                 if (fieldOrder.has(key)) addToProperties = true;
                 else addToProperties = false;
 
-                if (addToProperties) { superProps.put(key, defaultProperties.get(key)); }
+                if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
             }
-
-            // rake token
-            superProps.put(PROPERTY_NAME_TOKEN, token);
-            superProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-            superProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
             // 4. put properties
-            dataField.put(FIELD_NAME_PROPERTIES, superProps);
-
-            String uri = endpoint.getURI(env);
-            Log log = Log.create(uri, token, dataField);
-
-            synchronized (messageLoop) {
-                if (messageLoop.track(log))
-                    Logger.d(tag, "Tracked JSONObject\n" + dataField);
-                if (Env.DEV == env) messageLoop.flush(); /* if Env.DEV, flush immediately */
-            }
+            validShuttleFormat.put(FIELD_NAME_PROPERTIES, superProps);
 
         } catch (Exception e) {
             Logger.e(tag, "Failed to track", e);
+            return null;
         }
+
+        return validShuttleFormat;
     }
 
     /**
@@ -367,7 +381,7 @@ public /* TODO final */ class RakeAPI {
         superProperties = new JSONObject();
     }
 
-    private JSONObject getDefaultEventProperties() throws JSONException {
+    private JSONObject getDefaultProps() throws JSONException {
         JSONObject ret = new JSONObject();
 
         ret.put("rake_lib", "android");
