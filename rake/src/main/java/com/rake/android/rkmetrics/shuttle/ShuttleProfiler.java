@@ -7,6 +7,8 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Iterator;
+
 public class ShuttleProfiler {
 
     /** constants */
@@ -121,5 +123,64 @@ public class ShuttleProfiler {
         }
 
         return isShuttle;
+    }
+
+    public static JSONObject transformShuttleFormat(JSONObject shuttle,
+                                                    JSONObject superProps,
+                                                    JSONObject defaultProps) {
+
+        if (null == shuttle || null == superProps || null == defaultProps) {
+            Logger.e("Can't transform JSONObject with null args");
+            return null;
+        }
+
+        if (!isShuttle(shuttle)) {
+            Logger.e("Passed JSONObject is not created by Shuttle.toJSONObject");
+            return null;
+        }
+
+        JSONObject validShuttleFormat = new JSONObject();
+
+        try {
+            // 1. super properties TODO: remove
+            JSONObject sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
+            for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
+                String key = (String) iter.next();
+                validShuttleFormat.put(key, sentinel_meta.get(key));
+            }
+            shuttle.remove(FIELD_NAME_SENTINEL_META);
+
+            JSONObject fieldOrder = validShuttleFormat.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+
+            // 2. Insert user-collected fields
+            for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                Object value = shuttle.get(key);
+
+                if (superProps.has(key) && value.toString().length() == 0) {
+                    // DO NOT overwrite superProps if user inserted nothing
+                } else superProps.put(key, value);
+            }
+
+            // 3. Insert auto-collected fields
+            for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                boolean addToProperties = true;
+
+                if (fieldOrder.has(key)) addToProperties = true;
+                else addToProperties = false;
+
+                if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
+            }
+
+            // 4. put properties
+            validShuttleFormat.put(FIELD_NAME_PROPERTIES, superProps);
+
+        } catch (Exception e) {
+            Logger.e("Failed to track", e);
+            return null;
+        }
+
+        return validShuttleFormat;
     }
 }

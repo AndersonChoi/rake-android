@@ -9,9 +9,11 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.annotation.Config;
 
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 19, manifest = Config.NONE)
 public class ShuttleProfilerSpec {
 
     /**
@@ -80,6 +82,34 @@ public class ShuttleProfilerSpec {
     @Test
     public void isShuttle_positive_case() {
         assertThat(isShuttle(new RakeClientMetricSentinelShuttle().toJSONObject())).isTrue();
+    }
+
+    @Test
+    public void transformShuttleFormat_negative_case_null() {
+        /** 3개의 인자중 하나라도 null 일 경우 리턴값은 null 이어야 함 */
+
+        JSONObject j1 = transformShuttleFormat(null, new JSONObject(), new JSONObject());
+        JSONObject j2 = transformShuttleFormat(new JSONObject(), null, new JSONObject());
+        JSONObject j3 = transformShuttleFormat(new JSONObject(), new JSONObject(), null);
+
+        JSONObject j4 = transformShuttleFormat(new JSONObject(), null, null);
+        JSONObject j5 = transformShuttleFormat(null, new JSONObject(), null);
+        JSONObject j6 = transformShuttleFormat(null, null, new JSONObject());
+
+        JSONObject j7 = transformShuttleFormat(null, null, null);
+
+        assertThat(j1).isNull();
+        assertThat(j2).isNull();
+        assertThat(j3).isNull();
+        assertThat(j4).isNull();
+        assertThat(j5).isNull();
+        assertThat(j6).isNull();
+        assertThat(j7).isNull();
+    }
+
+    @Test
+    public void transformShuttleFormat_negative_case_invalid_shuttle() {
+
     }
 
     private static JSONObject getShuttleWithMissingField(String depth1, String depth2)

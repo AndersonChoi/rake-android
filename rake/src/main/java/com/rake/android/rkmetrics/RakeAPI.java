@@ -159,17 +159,14 @@ public /* TODO final */ class RakeAPI {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
 
-    public JSONObject getSuperProperties() {
+    public JSONObject getSuperProperties() throws JSONException {
         JSONObject props = new JSONObject();
 
         synchronized (superProperties) {
             for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
 
-                try { props.put(key, superProperties.get(key)); }
-                catch (JSONException e) { /* logging and ignore it */
-                    Logger.e("Failed to insert a super property", e);
-                }
+                props.put(key, superProperties.get(key));
             }
         }
 
@@ -183,16 +180,20 @@ public /* TODO final */ class RakeAPI {
      * @param shuttle pass Shuttle.toJSONObject();
      */
     public void track(JSONObject shuttle) {
-        if (!isShuttle(shuttle)) {
-            Logger.e(tag, "Passed JSONObject is null or was not created using Shuttle.toJSONObject");
+        Date now = new Date();
+
+        JSONObject superProps = null;
+        JSONObject defaultProps = null;
+
+        try {
+            superProps = getSuperProperties();
+            defaultProps = getDefaultProps(token, now);
+        } catch (Exception e /* JSONException */) {
+            Logger.e(tag, "Failed to get superProps or defaultProps", e);
             return;
         }
 
-
-        JSONObject superProps = getSuperProperties();
-
-        JSONObject validShuttleFormat = _track(shuttle, superProps);
-
+        JSONObject validShuttleFormat = transformShuttleFormat(shuttle, superProps, defaultProps);
 
         if (null == validShuttleFormat) return;
 
@@ -204,63 +205,6 @@ public /* TODO final */ class RakeAPI {
                 Logger.d(tag, "Tracked JSONObject\n" + validShuttleFormat);
             if (Env.DEV == env) messageLoop.flush(); /* if Env.DEV, flush immediately */
         }
-    }
-
-    private JSONObject _track(JSONObject shuttle, JSONObject superProps) {
-        if (null == shuttle || null == superProps)
-            return null;
-
-        Date now = new Date();
-        JSONObject validShuttleFormat = new JSONObject();
-
-        try {
-            // 1. super properties TODO: remove
-            JSONObject sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
-            for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
-                String key = (String) iter.next();
-                validShuttleFormat.put(key, sentinel_meta.get(key));
-            }
-            shuttle.remove(FIELD_NAME_SENTINEL_META);
-
-            JSONObject fieldOrder = validShuttleFormat.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-
-            // 2. Insert user-collected fields
-            for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
-                String key = (String) keys.next();
-                Object value = shuttle.get(key);
-
-                if (superProps.has(key) && value.toString().length() == 0) {
-                    // DO NOT overwrite superProps if user inserted nothing
-                } else superProps.put(key, value);
-            }
-
-            // 3. Insert auto-collected fields including token, base_time, local_time
-            // TODO token, time -> getDefault
-            JSONObject defaultProps = getDefaultProps();
-
-            superProps.put(PROPERTY_NAME_TOKEN, token);
-            superProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-            superProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
-
-            for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
-                String key = (String) keys.next();
-                boolean addToProperties = true;
-
-                if (fieldOrder.has(key)) addToProperties = true;
-                else addToProperties = false;
-
-                if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
-            }
-
-            // 4. put properties
-            validShuttleFormat.put(FIELD_NAME_PROPERTIES, superProps);
-
-        } catch (Exception e) {
-            Logger.e(tag, "Failed to track", e);
-            return null;
-        }
-
-        return validShuttleFormat;
     }
 
     /**
@@ -381,16 +325,20 @@ public /* TODO final */ class RakeAPI {
         superProperties = new JSONObject();
     }
 
-    private JSONObject getDefaultProps() throws JSONException {
-        JSONObject ret = new JSONObject();
+    private JSONObject getDefaultProps(String token, Date now) throws JSONException {
+        JSONObject defaultProps = new JSONObject();
 
-        ret.put("rake_lib", "android");
-        ret.put("rake_lib_version", RakeConfig.RAKE_LIB_VERSION);
-        ret.put("os_name", "Android");
-        ret.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
-        ret.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);
-        ret.put("device_model", Build.MODEL == null ? "UNKNOWN" : Build.MODEL);
-        ret.put("device_id", sysInfo.getDeviceId());
+        defaultProps.put(PROPERTY_NAME_TOKEN, token);
+        defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+        defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+
+        defaultProps.put("rake_lib", "android");
+        defaultProps.put("rake_lib_version", RakeConfig.RAKE_LIB_VERSION);
+        defaultProps.put("os_name", "Android");
+        defaultProps.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
+        defaultProps.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);
+        defaultProps.put("device_model", Build.MODEL == null ? "UNKNOWN" : Build.MODEL);
+        defaultProps.put("device_id", sysInfo.getDeviceId());
 
         DisplayMetrics displayMetrics = sysInfo.getDisplayMetrics();
         int displayWidth = displayMetrics.widthPixels;
@@ -398,25 +346,25 @@ public /* TODO final */ class RakeAPI {
         StringBuilder resolutionBuilder = new StringBuilder();
 
         // TODO
-        ret.put("screen_height", displayWidth);
-        ret.put("screen_width", displayHeight);
-        ret.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
+        defaultProps.put("screen_height", displayWidth);
+        defaultProps.put("screen_width", displayHeight);
+        defaultProps.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
         // application versionName, buildDate(iff dev mode)
         String appVersionName = sysInfo.getAppVersionName();
         String appBuildDate = sysInfo.getAppBuildDate();
         if (Env.DEV == env && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
-        ret.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
+        defaultProps.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
 
         String carrier = sysInfo.getCurrentNetworkOperator();
-        ret.put("carrier_name", (null != carrier && carrier.length() > 0) ? carrier : "UNKNOWN");
+        defaultProps.put("carrier_name", (null != carrier && carrier.length() > 0) ? carrier : "UNKNOWN");
 
         Boolean isWifi = sysInfo.isWifiConnected();
-        ret.put("network_type", isWifi == null ? "UNKNOWN" : isWifi.booleanValue() == true ? "WIFI" : "NOT WIFI");
+        defaultProps.put("network_type", isWifi == null ? "UNKNOWN" : isWifi.booleanValue() == true ? "WIFI" : "NOT WIFI");
 
-        ret.put("language_code", context.getResources().getConfiguration().locale.getCountry());
+        defaultProps.put("language_code", context.getResources().getConfiguration().locale.getCountry());
 
-        return ret;
+        return defaultProps;
     }
 
     /**

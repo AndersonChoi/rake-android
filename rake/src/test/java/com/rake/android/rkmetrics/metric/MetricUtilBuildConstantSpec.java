@@ -5,6 +5,8 @@ import com.rake.android.rkmetrics.RakeAPI;
 import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -15,6 +17,7 @@ import java.io.InputStreamReader;
  * BUILD_CONSTANT_BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
  * `build.gradle` 과 `MetricUtilBuildConstantSpec.java` 를 참조할 것
  */
+@RunWith(JUnit4.class)
 public class MetricUtilBuildConstantSpec {
 
     /**
