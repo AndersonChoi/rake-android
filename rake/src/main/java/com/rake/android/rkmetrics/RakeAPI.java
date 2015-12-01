@@ -191,17 +191,17 @@ public final class RakeAPI {
             return;
         }
 
-        JSONObject validShuttleFormat = transformShuttle(shuttle, superProps, defaultProps);
-
-        if (null == validShuttleFormat) return;
+        JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
 
         String uri = endpoint.getURI(env);
-        Log log = Log.create(uri, token, validShuttleFormat);
+        Log log = Log.create(uri, token, validShuttle);
 
         synchronized (messageLoop) {
             if (messageLoop.track(log))
-                Logger.d(tag, "Tracked JSONObject\n" + validShuttleFormat);
-            if (Env.DEV == env) messageLoop.flush(); /* if Env.DEV, flush immediately */
+                Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
+
+            if (Env.DEV == env) /* if Env.DEV, flush immediately */
+                messageLoop.flush();
         }
     }
 

@@ -26,6 +26,13 @@ public class ShuttleProfiler {
     public static final String META_FIELD_NAME_SCHEMA_ID         = "_$schemaId";
     public static final String META_FIELD_NAME_PROJECT_ID        = "_$projectId";
 
+    public static final List<String> SENTINEL_META_FIELD_NAMES = Arrays.asList(
+            META_FIELD_NAME_ENCRYPTION_FIELDS,
+            META_FIELD_NAME_FIELD_ORDER,
+            META_FIELD_NAME_SCHEMA_ID,
+            META_FIELD_NAME_PROJECT_ID
+    );
+
     /** in properties */
     public static final String PROPERTY_NAME_TOKEN             = "token";
     public static final String PROPERTY_NAME_BASE_TIME         = "base_time";
@@ -133,6 +140,39 @@ public class ShuttleProfiler {
         return true;
     }
 
+    public static boolean hasValue(JSONObject props, String depth1Key,
+                                   String depth2Key, String expected) {
+
+        if (null == props || null == depth1Key || null == depth2Key || null == expected) {
+            return false;
+        }
+
+        boolean hasValue = true;
+
+        String found = null;
+        String key = depth1Key;
+
+        try {
+            if (null != depth2Key) {
+                props = props.getJSONObject(depth1Key);
+                key = depth2Key;
+            }
+
+            found = props.getString(key);
+        } catch (Exception e) {
+            return false;
+        }
+
+        if (null == found || !expected.equals(found)) return false;
+
+        return hasValue;
+    }
+
+
+    public static boolean hasNoKey(JSONObject json, String depth1Key, String depth2Key) {
+        return !hasKey(json, depth1Key, depth2Key);
+    }
+
     public static boolean hasKey(JSONObject json, String depth1Key, String depth2Key) {
         if (null == json || null == depth1Key) return false;
 
@@ -188,90 +228,159 @@ public class ShuttleProfiler {
         return isShuttle;
     }
 
-    public static boolean isTransformedShuttle(JSONObject transformed) {
-        if (null == transformed) return false;
+    public static boolean hasMeta(JSONObject meta) {
+        if (null == meta) return false;
 
         boolean isValid = true;
 
-        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(transformed, FIELD_NAME_PROPERTIES, null);
-        isValid &= hasKey(transformed, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY);
+        isValid &= hasKey(meta, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(meta, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(meta, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(meta, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasNoKey(meta, FIELD_NAME_SENTINEL_META, null);
 
         return isValid;
     }
 
-    public static boolean hasDefaultProps(JSONObject transformed) {
-        if (null == transformed) return false;
+    public static boolean hasProps(JSONObject validShuttle) {
+        if (null == validShuttle) return false;
 
         boolean isValid = true;
 
+        isValid &= hasKey(validShuttle, FIELD_NAME_PROPERTIES, null);
+        isValid &= hasKey(validShuttle, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY);
+
+        return isValid;
+    }
+
+    public static boolean hasDefaultProps(JSONObject json, String depth1Key) {
+        if (null == json) return false;
+
+        boolean isValid = true;
+
+        try {
+            if (null != depth1Key) json = json.getJSONObject(depth1Key);
+        } catch (Exception e) {
+            return false;
+        }
+
         for (String name : DEFAULT_PROPERTY_NAMES) {
-           isValid &= transformed.has(name);
+           isValid &= hasKey(json, name, null);
         }
 
         return isValid;
     }
 
-    public static JSONObject transformShuttle(JSONObject shuttle,
-                                              JSONObject superProps,
-                                              JSONObject defaultProps) {
+    public static boolean hasMetaFields(JSONObject json) {
+        if (null == json) return false;
 
-        if (null == shuttle || null == superProps || null == defaultProps) {
-            Logger.e("Can't transform JSONObject with null args");
+        boolean isValid = true;
+
+        for (String name : SENTINEL_META_FIELD_NAMES) {
+            isValid &= json.has(name);
+        }
+
+        isValid &= (!json.has(FIELD_NAME_SENTINEL_META));
+
+        return isValid;
+    }
+
+    /**
+     * 1. META 를 extract
+     */
+    public static JSONObject createValidShuttle(JSONObject userProps,
+                                                JSONObject superProps,
+                                                JSONObject defaultProps) {
+
+        if (null == userProps || null == superProps || null == defaultProps) {
+            Logger.e("Can't create valid shuttle using null args");
             return null;
         }
 
-        if (!isShuttle(shuttle)) {
+        JSONObject validShuttle = null;
+
+        try {
+            JSONObject meta = extractMeta(userProps);
+            JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+            JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+            meta.put(FIELD_NAME_PROPERTIES, props);
+            validShuttle = meta;
+        } catch (Exception e) { /* JSONException or NullPointerException */
+            Logger.e("Failed to make valid shuttle", e);
+        }
+
+        return validShuttle;
+    }
+
+    /**
+     * @throws JSONException
+     * @throws NullPointerException
+     */
+    public static JSONObject extractMeta(JSONObject userProps)
+            throws JSONException, NullPointerException {
+
+        if (!isShuttle(userProps)) {
             Logger.e("Passed JSONObject is not created by Shuttle.toJSONObject");
             return null;
         }
 
         JSONObject transformed = new JSONObject();
 
-        try {
-            /** 1. extract META_FIELDS */
-            JSONObject sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
-            for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
-                String key = (String) iter.next();
-                transformed.put(key, sentinel_meta.get(key));
-            }
-            shuttle.remove(FIELD_NAME_SENTINEL_META);
-
-            JSONObject fieldOrder = transformed.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-
-            /** 2. Insert user-collected fields */
-            for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
-                String key = (String) keys.next();
-                Object value = shuttle.get(key);
-
-                if (superProps.has(key) && value.toString().length() == 0) {
-                    // DO NOT overwrite superProps if user inserted nothing
-                } else superProps.put(key, value);
-            }
-
-            /** 3. Insert auto-collected fields */
-            for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
-                String key = (String) keys.next();
-                boolean addToProperties = true;
-
-                if (fieldOrder.has(key)) addToProperties = true;
-                else addToProperties = false;
-
-                /** merge super props with default props */
-                if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
-            }
-
-            /** 4. put properties */
-            transformed.put(FIELD_NAME_PROPERTIES, superProps);
-
-        } catch (Exception e) {
-            Logger.e("Failed to track", e);
-            return null;
+        /** extract META_FIELDS and remove `sentinel_meta` FIELD */
+        JSONObject sentinel_meta = userProps.getJSONObject(FIELD_NAME_SENTINEL_META);
+        for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
+            String key = (String) iter.next();
+            transformed.put(key, sentinel_meta.get(key));
         }
 
+        userProps.remove(FIELD_NAME_SENTINEL_META);
+
         return transformed;
+    }
+
+
+    /**
+     * userProps, superProps, defaultProps 가 merge 될 경우, 같은 Key 에 대해
+     *
+     * - superProps 는 userProps 가 비어있지 않을 경우 덮어쓰지 않음
+     * - defaultProps 는 항상 덮어 씀
+     *
+     * 우선순위는,
+     *
+     * superProps < userProps < defaultProps
+     *
+     * @throws JSONException
+     * @throws NullPointerException
+     */
+    public static JSONObject mergeProps(JSONObject fieldOrder,
+                                        JSONObject userProps,
+                                        JSONObject superProps,
+                                        JSONObject defaultProps)
+            throws JSONException, NullPointerException {
+
+        /** 1. Insert user-collected fields */
+        for (Iterator<?> keys = userProps.keys(); keys.hasNext(); ) {
+            String key = (String) keys.next();
+            Object value = userProps.get(key);
+
+            if (superProps.has(key) && value.toString().length() == 0) {
+                // DO NOT overwrite superProps if user inserted nothing
+            } else superProps.put(key, value);
+        }
+
+        /** 2. Insert auto-collected fields */
+        for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
+            String key = (String) keys.next();
+            boolean addToProperties = true;
+
+            if (fieldOrder.has(key)) addToProperties = true;
+            else addToProperties = false;
+
+            /** merge super props with default props */
+            if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
+        }
+
+        return superProps;
     }
 }

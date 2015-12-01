@@ -1,5 +1,9 @@
 package com.rake.android.rkmetrics.shuttle;
 
+import android.app.Application;
+
+import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.TestUtil;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import static org.assertj.core.api.Assertions.*;
@@ -10,11 +14,16 @@ import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+
+import java.util.Date;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
 public class ShuttleProfilerSpec {
+
+    Application app = RuntimeEnvironment.application;
 
     /**
      * - null 이거나
@@ -85,57 +94,168 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    public void transformShuttleFormat_negative_case_null() {
-        /** 3개의 인자중 하나라도 null 일 경우 리턴값은 null 이어야 함 */
+    public void defaultPropertyNames_length() {
+        /** default properties 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
+        assertThat(DEFAULT_PROPERTY_NAMES.size()).isEqualTo(17);
+    }
 
-        JSONObject j1 = transformShuttle(null, new JSONObject(), new JSONObject());
-        JSONObject j2 = transformShuttle(new JSONObject(), null, new JSONObject());
-        JSONObject j3 = transformShuttle(new JSONObject(), new JSONObject(), null);
+    @Test
+    public void metaFieldNames_length() {
+        /** sentinel meta fields 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
+        assertThat(SENTINEL_META_FIELD_NAMES.size()).isEqualTo(4);
+    }
 
-        JSONObject j4 = transformShuttle(new JSONObject(), null, null);
-        JSONObject j5 = transformShuttle(null, new JSONObject(), null);
-        JSONObject j6 = transformShuttle(null, null, new JSONObject());
-
-        JSONObject j7 = transformShuttle(null, null, null);
+    @Test
+    public void createValidShuttle_negative_case() {
+        JSONObject j1 = createValidShuttle(new JSONObject(), null, null);
+        JSONObject j2 = createValidShuttle(null, new JSONObject(), null);
+        JSONObject j3 = createValidShuttle(null, null, new JSONObject());
+        JSONObject j4 = createValidShuttle(null, null, null);
 
         assertThat(j1).isNull();
         assertThat(j2).isNull();
         assertThat(j3).isNull();
         assertThat(j4).isNull();
-        assertThat(j5).isNull();
-        assertThat(j6).isNull();
-        assertThat(j7).isNull();
+    }
+
+    @Test /** IMPORTANT TEST: FULL test */
+    public void createValidShuttle_should_return_validShuttle() throws JSONException {
+        /**
+         * validShuttle 은
+         *
+         * - 4개의 META 필드가 TOP-LEVEL 에 존재
+         * - properties TOP-LEVEL 에 존재
+         * - properties._$body 가 존재
+         * - 자동수집필드 (default props) 가 properties 에 존재
+         */
+
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject superProps = new JSONObject();
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+
+        JSONObject validShuttle = createValidShuttle(userProps, superProps, defaultProps);
+
+        hasMeta(validShuttle);
+        hasProps(validShuttle);
+        hasDefaultProps(validShuttle, FIELD_NAME_PROPERTIES);
     }
 
     @Test
-    public void transformShuttleFormat_positive_case() {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
-        JSONObject defaultProps = new JSONObject();
-        JSONObject superProps   = new JSONObject();
-        JSONObject validShuttle = transformShuttle(
-                shuttle.toJSONObject(), superProps, defaultProps);
+    public void superProps_should_not_override_userProps() throws JSONException {
+        /**
+         * superProp 는 userProps 가 있을 경우에 덮어 쓰면 안됌
+         */
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
 
-        // isTransformedShuttle 테스트와의 교차 검증을 위해 필드를 아래와 같이 직접 나열
-        assertThat(hasKey(validShuttle, META_FIELD_NAME_ENCRYPTION_FIELDS, null)).isTrue();
-        assertThat(hasKey(validShuttle, META_FIELD_NAME_SCHEMA_ID, null)).isTrue();
-        assertThat(hasKey(validShuttle, META_FIELD_NAME_PROJECT_ID, null)).isTrue();
-        assertThat(hasKey(validShuttle, META_FIELD_NAME_FIELD_ORDER, null)).isTrue();
-        assertThat(hasKey(validShuttle, FIELD_NAME_PROPERTIES, null)).isTrue();
-        assertThat(hasKey(validShuttle, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY)).isTrue();
+        /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
+        String sampleHeaderKey = "transaction_id";
+        String sampleHeaderValue = "origin tx id";
+        String overridedHeaderValue = "override tx id";
+        assertThat(userProps.has(sampleHeaderKey)).isTrue();
+
+        userProps.put(sampleHeaderKey, sampleHeaderValue);
+
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject superProps = new JSONObject();
+        superProps.put(sampleHeaderKey, overridedHeaderValue);
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
     @Test
-    public void test_isTransformedShuttle() {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
-        JSONObject defaultProps = new JSONObject();
-        JSONObject superProps   = new JSONObject();
-        JSONObject transformed = transformShuttle(
-                shuttle.toJSONObject(), superProps, defaultProps);
+    public void superProps_can_override_given_userProps_field_is_empty() throws JSONException {
+        /**
+         * superProp 는 userProps 가 없을 경우 덮어쓸 수 있음
+         */
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
 
+        /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
+        String sampleHeaderKey = "transaction_id";
+        String sampleHeaderValue = "example tx id";
+        assertThat(userProps.has(sampleHeaderKey)).isTrue();
+
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject superProps = new JSONObject();
+        superProps.put(sampleHeaderKey, sampleHeaderValue);
+
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
+    }
+
+    @Test
+    public void mergeProps_should_preserve_defaultProps() throws JSONException {
+        /**
+         * 사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
+         */
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        userProps.put(PROPERTY_NAME_RAKE_LIB, "invalid rake_lib");
+        JSONObject superProps = new JSONObject();
+        superProps.put(PROPERTY_NAME_TOKEN, "invalid token");
+
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+
+        String token = TestUtil.genToken();
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, token, new Date());
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+        hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
+    }
+
+    @Test
+    public void mergeProps_should_return_props_which_has_body_and_defaultProps() throws JSONException {
+        /**
+         * mergeProps() 의 결과는,
+         *
+         * defaultProps 를 가지고 있어야 하고,
+         * _$body 키도 가지고 있어야 함
+         */
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject superProps = new JSONObject();
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        assertThat(hasKey(props, FIELD_NAME_BODY, null)).isTrue();
+        assertThat(hasDefaultProps(props, null)).isTrue();
+    }
+
+    @Test
+    public void extractMeta_negative_case_null() throws JSONException {
+        JSONObject j1 = extractMeta(null);
+        assertThat(j1).isNull();
+    }
+
+    @Test
+    public void extractMeta_should_return_meta() throws JSONException {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        JSONObject transformed = extractMeta(shuttle.toJSONObject());
+
+        assertThat(hasMetaFields(transformed)).isTrue();
+    }
+
+    @Test
+    public void test_hasMeta() throws JSONException {
+        JSONObject shuttle = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject transformed = extractMeta(shuttle);
         JSONObject invalid = new JSONObject();
 
-        assertThat(isTransformedShuttle(transformed)).isTrue();
-        assertThat(isTransformedShuttle(invalid)).isFalse();
+        assertThat(hasMeta(transformed)).isTrue();
+        assertThat(hasMeta(invalid)).isFalse();
     }
 
     @Test
@@ -183,5 +303,4 @@ public class ShuttleProfilerSpec {
 
         return shuttle;
     }
-
 }

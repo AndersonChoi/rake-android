@@ -21,17 +21,12 @@ import org.robolectric.annotation.Config;
 
 import java.util.Date;
 import java.util.Iterator;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.*;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
 public class RakeAPISpec {
-
-    public static String genToken() {
-        return UUID.randomUUID().toString();
-    }
 
     Application app = RuntimeEnvironment.application;
     RakeAPI rake = RakeAPI.getInstance(
@@ -56,32 +51,32 @@ public class RakeAPISpec {
     @Test
     public void Env_Live_시_라이브서버_과금_URL_로_세팅되어야함() {
         Env e = Env.DEV;
-        RakeAPI r = RakeAPI.getInstance(app, genToken(), e, Logging.ENABLE);
+        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), e, Logging.ENABLE);
         assertThat(Endpoint.CHARGED_ENDPOINT_DEV).isEqualTo(r.getEndpoint().getURI(e));
     }
 
     @Test
     public void Env_Dev_시_개발서버_과금_URL_로_세팅되어야함() {
         Env e = Env.LIVE;
-        RakeAPI r = RakeAPI.getInstance(app, genToken(), e, Logging.ENABLE);
+        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), e, Logging.ENABLE);
         assertThat(Endpoint.CHARGED_ENDPOINT_LIVE).isEqualTo(r.getEndpoint().getURI(e));
     }
 
     @Test
     public void 복수의_Env_를_지원해야함() {
-        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
+        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.LIVE, Logging.ENABLE);
     }
 
     @Test
     public void setEndpoint() {
         Env e1 = Env.DEV;
-        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), e1, Logging.ENABLE);
+        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), e1, Logging.ENABLE);
         r1.setEndpoint(FREE);
         assertThat(Endpoint.FREE_ENDPOINT_DEV).isEqualTo(r1.getEndpoint().getURI(e1));
 
         Env e2 = Env.LIVE;
-        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), e2, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), e2, Logging.ENABLE);
         r2.setEndpoint(FREE);
         assertThat(Endpoint.FREE_ENDPOINT_LIVE).isEqualTo(r2.getEndpoint().getURI(e2));
     }
@@ -103,8 +98,8 @@ public class RakeAPISpec {
 
     @Test
     public void 최초_AutoFlush_는_ON_이어야함() {
-        RakeAPI r1 = RakeAPI.getInstance(app, genToken(), Env.DEV, Logging.ENABLE);
-        RakeAPI r2 = RakeAPI.getInstance(app, genToken(), Env.LIVE, Logging.ENABLE);
+        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.LIVE, Logging.ENABLE);
 
         assertThat(AutoFlush.ON).isEqualTo(RakeAPI.getAutoFlush());
         assertThat(AutoFlush.ON).isEqualTo(RakeAPI.getAutoFlush());
@@ -115,21 +110,16 @@ public class RakeAPISpec {
 
     @Test
     public void test_getDefaultProperties() throws JSONException {
-        String token = genToken();
+        String token = TestUtil.genToken();
         JSONObject defaultProps = RakeAPI.getDefaultProps(app, Env.DEV, token, new Date());
 
         /** 교차 검증, defaultProps Keys <-> DEFAULT_PROPERTY_NAMES */
         for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
-
             assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
         }
 
-
-        System.out.println(defaultProps.toString());
-
         for (String key : DEFAULT_PROPERTY_NAMES) {
-            System.out.println(key);
             assertThat(defaultProps.has(key)).isTrue();
         }
     }
