@@ -129,12 +129,19 @@ final class MessageLoop {
         return ON == autoFlushOption;
     }
 
-    void track(Log log) {
+    boolean track(Log log) {
+        if (null == log) {
+            Logger.e("Can't track null `Log`");
+            return false;
+        }
+
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
         m.obj = log;
 
         runMessage(m);
+
+        return true;
     }
 
     void flush() {

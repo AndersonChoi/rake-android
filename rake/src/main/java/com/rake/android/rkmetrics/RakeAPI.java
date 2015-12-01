@@ -187,93 +187,65 @@ public /* TODO final */ class RakeAPI {
         Date now = new Date();
 
         try {
-            JSONObject dataObj = new JSONObject();
+            JSONObject dataField = new JSONObject();
 
             // 1. super properties TODO: remove
-            JSONObject props = getSuperProperties();
+            JSONObject superProps = getSuperProperties();
 
             JSONObject sentinel_meta;
-            if (shuttle.has(FIELD_NAME_SENTINEL_META)) {
-                sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
-                for (Iterator<?> sentinel_meta_keys = sentinel_meta.keys(); sentinel_meta_keys.hasNext(); ) {
-                    String sentinel_meta_key = (String) sentinel_meta_keys.next();
-                    dataObj.put(sentinel_meta_key, sentinel_meta.get(sentinel_meta_key));
-                }
-                shuttle.remove(FIELD_NAME_SENTINEL_META);
-            } else {
-                // no sentinel com.rake.android.rkmetrics.shuttle
-                // need to do something here?
-                // get/make sentinel_meta for this project
-            }
 
-            JSONObject fieldOrder;
-            try {
-                fieldOrder = (JSONObject) dataObj.get(META_FIELD_NAME_FIELD_ORDER);
-            } catch (JSONException e) {
-                fieldOrder = null;
+            sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
+            for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
+                String key = (String) iter.next();
+                dataField.put(key, sentinel_meta.get(key));
             }
+            shuttle.remove(FIELD_NAME_SENTINEL_META);
+
+            JSONObject fieldOrder = dataField.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
 
             // 2-2. custom properties
-            if (shuttle != null) {
-                for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    if (fieldOrder != null && fieldOrder.has(key)) {    // field defined in schema
-                        if (props.has(key) && shuttle.get(key).toString().length() == 0) {
-                            // Do not overwrite super properties with empty string of properties.
-                        } else {
-                            props.put(key, shuttle.get(key));
-                        }
-                    } else if (fieldOrder == null) { // no fieldOrder (maybe not shuttle)
-                        props.put(key, shuttle.get(key));
-                    }
-                }
+            for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                Object value = shuttle.get(key);
+
+                if (superProps.has(key) && value.toString().length() == 0) {
+                    // DO NOT overwrite superProps if user inserted nothing
+                } else superProps.put(key, value);
             }
 
             // 3. auto : device info
             // get only values in fieldOrder
             JSONObject defaultProperties = getDefaultEventProperties();
-            if (defaultProperties != null) {
-                for (Iterator<?> keys = defaultProperties.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    boolean addToProperties = true;
 
-                    if (fieldOrder != null) {
-                        if (fieldOrder.has(key)) { addToProperties = true; }
-                        else { addToProperties = false; }
+            for (Iterator<?> keys = defaultProperties.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                boolean addToProperties = true;
 
-                    }
+                if (fieldOrder.has(key)) addToProperties = true;
+                else addToProperties = false;
 
-                    if (addToProperties) { props.put(key, defaultProperties.get(key)); }
-                }
+                if (addToProperties) { superProps.put(key, defaultProperties.get(key)); }
             }
 
             // rake token
-            props.put(PROPERTY_NAME_TOKEN, token);
-
-            // time
-            // TODO: thread-unsafe
-            props.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-            props.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+            superProps.put(PROPERTY_NAME_TOKEN, token);
+            superProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+            superProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
             // 4. put properties
-            dataObj.put(FIELD_NAME_PROPERTIES, props);
-
-            Logger.d(tag, "track() called\n" + dataObj);
+            dataField.put(FIELD_NAME_PROPERTIES, superProps);
 
             String uri = endpoint.getURI(env);
-            Log log = Log.create(uri, token, dataObj);
+            Log log = Log.create(uri, token, dataField);
 
-            if (null == log) {
-                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, uri);
-                Logger.e(tag, message);
-                return;
+            synchronized (messageLoop) {
+                if (messageLoop.track(log))
+                    Logger.d(tag, "Tracked JSONObject\n" + dataField);
+                if (Env.DEV == env) messageLoop.flush(); /* if Env.DEV, flush immediately */
             }
 
-            synchronized (messageLoop) { messageLoop.track(log); }
-            if (Env.DEV == env) { flush(); } /* if Env.DEV, flush immediately */
-
-        } catch (JSONException e) {
-            Logger.e(tag, "Exception tracking event ", e);
+        } catch (Exception e) {
+            Logger.e(tag, "Failed to track", e);
         }
     }
 
@@ -325,7 +297,7 @@ public /* TODO final */ class RakeAPI {
      * Send log which persisted in SQLite to Rake server.
      */
     public void flush() {
-        Logger.d(tag, "flush() called");
+        Logger.d(tag, "Flush");
 
         synchronized (messageLoop) {
             messageLoop.flush();
