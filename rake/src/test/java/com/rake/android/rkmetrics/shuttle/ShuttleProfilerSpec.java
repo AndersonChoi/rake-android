@@ -88,15 +88,15 @@ public class ShuttleProfilerSpec {
     public void transformShuttleFormat_negative_case_null() {
         /** 3개의 인자중 하나라도 null 일 경우 리턴값은 null 이어야 함 */
 
-        JSONObject j1 = transformShuttleFormat(null, new JSONObject(), new JSONObject());
-        JSONObject j2 = transformShuttleFormat(new JSONObject(), null, new JSONObject());
-        JSONObject j3 = transformShuttleFormat(new JSONObject(), new JSONObject(), null);
+        JSONObject j1 = transformShuttle(null, new JSONObject(), new JSONObject());
+        JSONObject j2 = transformShuttle(new JSONObject(), null, new JSONObject());
+        JSONObject j3 = transformShuttle(new JSONObject(), new JSONObject(), null);
 
-        JSONObject j4 = transformShuttleFormat(new JSONObject(), null, null);
-        JSONObject j5 = transformShuttleFormat(null, new JSONObject(), null);
-        JSONObject j6 = transformShuttleFormat(null, null, new JSONObject());
+        JSONObject j4 = transformShuttle(new JSONObject(), null, null);
+        JSONObject j5 = transformShuttle(null, new JSONObject(), null);
+        JSONObject j6 = transformShuttle(null, null, new JSONObject());
 
-        JSONObject j7 = transformShuttleFormat(null, null, null);
+        JSONObject j7 = transformShuttle(null, null, null);
 
         assertThat(j1).isNull();
         assertThat(j2).isNull();
@@ -112,7 +112,7 @@ public class ShuttleProfilerSpec {
         RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
         JSONObject defaultProps = new JSONObject();
         JSONObject superProps   = new JSONObject();
-        JSONObject validShuttle = transformShuttleFormat(
+        JSONObject validShuttle = transformShuttle(
                 shuttle.toJSONObject(), superProps, defaultProps);
 
         // isTransformedShuttle 테스트와의 교차 검증을 위해 필드를 아래와 같이 직접 나열
@@ -129,7 +129,7 @@ public class ShuttleProfilerSpec {
         RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
         JSONObject defaultProps = new JSONObject();
         JSONObject superProps   = new JSONObject();
-        JSONObject transformed = transformShuttleFormat(
+        JSONObject transformed = transformShuttle(
                 shuttle.toJSONObject(), superProps, defaultProps);
 
         JSONObject invalid = new JSONObject();

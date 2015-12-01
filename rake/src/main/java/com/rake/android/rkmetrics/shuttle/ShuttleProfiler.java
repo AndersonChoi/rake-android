@@ -7,7 +7,9 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 public class ShuttleProfiler {
 
@@ -25,11 +27,51 @@ public class ShuttleProfiler {
     public static final String META_FIELD_NAME_PROJECT_ID        = "_$projectId";
 
     /** in properties */
-    public static final String PROPERTY_NAME_TOKEN      = "token";
-    public static final String PROPERTY_NAME_BASE_TIME  = "base_time";
-    public static final String PROPERTY_NAME_LOCAL_TIME = "local_time";
+    public static final String PROPERTY_NAME_TOKEN             = "token";
+    public static final String PROPERTY_NAME_BASE_TIME         = "base_time";
+    public static final String PROPERTY_NAME_LOCAL_TIME        = "local_time";
+    public static final String PROPERTY_NAME_RAKE_LIB          = "rake_lib";
+    public static final String PROPERTY_NAME_RAKE_LIB_VERSION  = "rake_lib_version";
+    public static final String PROPERTY_NAME_OS_NAME           = "os_name";
+    public static final String PROPERTY_NAME_OS_VERSION        = "os_version";
+    public static final String PROPERTY_NAME_MANUFACTURER      = "manufacturer";
+    public static final String PROPERTY_NAME_DEVICE_MODEL      = "device_model";
+    public static final String PROPERTY_NAME_DEVICE_ID         = "device_id";
+    public static final String PROPERTY_NAME_SCREEN_HEIGHT     = "screen_height";
+    public static final String PROPERTY_NAME_SCREEN_WIDTH      = "screen_width";
+    public static final String PROPERTY_NAME_SCREEN_RESOLUTION = "resolution";
+    public static final String PROPERTY_NAME_APP_VERSION       = "app_version";
+    public static final String PROPERTY_NAME_CARRIER_NAME      = "carrier_name";
+    public static final String PROPERTY_NAME_NETWORK_TYPE      = "network_type";
+    public static final String PROPERTY_NAME_LANGUAGE_CODE     = "language_code";
 
-    public static final String EMPTY_BODY_STRING = new JSONObject().toString();
+    public static final List<String> DEFAULT_PROPERTY_NAMES = Arrays.asList(
+            PROPERTY_NAME_TOKEN,
+            PROPERTY_NAME_BASE_TIME,
+            PROPERTY_NAME_LOCAL_TIME,
+            PROPERTY_NAME_RAKE_LIB,
+            PROPERTY_NAME_RAKE_LIB_VERSION,
+            PROPERTY_NAME_OS_NAME,
+            PROPERTY_NAME_OS_VERSION,
+            PROPERTY_NAME_MANUFACTURER,
+            PROPERTY_NAME_DEVICE_MODEL,
+            PROPERTY_NAME_DEVICE_ID,
+            PROPERTY_NAME_SCREEN_HEIGHT,
+            PROPERTY_NAME_SCREEN_WIDTH,
+            PROPERTY_NAME_SCREEN_RESOLUTION,
+            PROPERTY_NAME_APP_VERSION,
+            PROPERTY_NAME_CARRIER_NAME,
+            PROPERTY_NAME_NETWORK_TYPE,
+            PROPERTY_NAME_LANGUAGE_CODE
+    );
+
+    public static final String PROPERTY_VALUE_UNKNOWN               = "UNKNOWN";
+    public static final String PROPERTY_VALUE_OS_NAME               = "Android";
+    public static final String PROPERTY_VALUE_RAKE_LIB              = "android";
+    public static final String PROPERTY_VALUE_NETWORK_TYPE_WIFI     = "WIFI";
+    public static final String PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI = "NOT WIFI";
+
+    public static final String EMPTY_BODY_STRING  = new JSONObject().toString();
     public static final String EMPTY_HEADER_VALUE = "";
 
     public static boolean hasBodyValue(RakeClientMetricSentinelShuttle shuttle,
@@ -146,24 +188,36 @@ public class ShuttleProfiler {
         return isShuttle;
     }
 
-    public static boolean isTransformedShuttle(JSONObject shuttle) {
-        if (null == shuttle) return false;
+    public static boolean isTransformedShuttle(JSONObject transformed) {
+        if (null == transformed) return false;
 
         boolean isValid = true;
 
-        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
-        isValid &= hasKey(shuttle, FIELD_NAME_PROPERTIES, null);
-        isValid &= hasKey(shuttle, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY);
+        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(transformed, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(transformed, FIELD_NAME_PROPERTIES, null);
+        isValid &= hasKey(transformed, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY);
 
         return isValid;
     }
 
-    public static JSONObject transformShuttleFormat(JSONObject shuttle,
-                                                    JSONObject superProps,
-                                                    JSONObject defaultProps) {
+    public static boolean hasDefaultProps(JSONObject transformed) {
+        if (null == transformed) return false;
+
+        boolean isValid = true;
+
+        for (String name : DEFAULT_PROPERTY_NAMES) {
+           isValid &= transformed.has(name);
+        }
+
+        return isValid;
+    }
+
+    public static JSONObject transformShuttle(JSONObject shuttle,
+                                              JSONObject superProps,
+                                              JSONObject defaultProps) {
 
         if (null == shuttle || null == superProps || null == defaultProps) {
             Logger.e("Can't transform JSONObject with null args");

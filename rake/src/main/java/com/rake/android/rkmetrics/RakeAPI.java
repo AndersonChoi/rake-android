@@ -20,7 +20,7 @@ import org.json.JSONObject;
 
 import java.util.*;
 
-public /* TODO final */ class RakeAPI {
+public final class RakeAPI {
 
     public enum Logging {
         DISABLE("DISABLE"), ENABLE("ENABLE");
@@ -67,7 +67,6 @@ public /* TODO final */ class RakeAPI {
     private final String token;
 
     private final Context context;
-    private final SystemInformation sysInfo; // TODO: duplicated?
     private final MessageLoop messageLoop; /* singleton */
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
@@ -85,7 +84,6 @@ public /* TODO final */ class RakeAPI {
         this.endpoint = endpoint;
 
         this.messageLoop = MessageLoop.getInstance(appContext);
-        this.sysInfo = getSystemInformation();
         this.storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
 
         readSuperProperties();
@@ -187,13 +185,13 @@ public /* TODO final */ class RakeAPI {
 
         try {
             superProps = getSuperProperties();
-            defaultProps = getDefaultProps(token, now);
-        } catch (Exception e /* JSONException */) {
+            defaultProps = getDefaultProps(context, env, token, now);
+        } catch (Exception e) { /* might be JSONException */
             Logger.e(tag, "Failed to get superProps or defaultProps", e);
             return;
         }
 
-        JSONObject validShuttleFormat = transformShuttleFormat(shuttle, superProps, defaultProps);
+        JSONObject validShuttleFormat = transformShuttle(shuttle, superProps, defaultProps);
 
         if (null == validShuttleFormat) return;
 
@@ -325,44 +323,61 @@ public /* TODO final */ class RakeAPI {
         superProperties = new JSONObject();
     }
 
-    private JSONObject getDefaultProps(String token, Date now) throws JSONException {
+    public static JSONObject getDefaultProps(Context context,
+                                             Env env,
+                                             String token,
+                                             Date now) throws JSONException {
+
+        SystemInformation sys = SystemInformation.getInstance(context);
+
         JSONObject defaultProps = new JSONObject();
 
         defaultProps.put(PROPERTY_NAME_TOKEN, token);
         defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
         defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
-        defaultProps.put("rake_lib", "android");
-        defaultProps.put("rake_lib_version", RakeConfig.RAKE_LIB_VERSION);
-        defaultProps.put("os_name", "Android");
-        defaultProps.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
-        defaultProps.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);
-        defaultProps.put("device_model", Build.MODEL == null ? "UNKNOWN" : Build.MODEL);
-        defaultProps.put("device_id", sysInfo.getDeviceId());
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION);
+        defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
+        defaultProps.put(PROPERTY_NAME_OS_VERSION,
+                Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
+        defaultProps.put(PROPERTY_NAME_MANUFACTURER,
+                Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
+        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL,
+                Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
+        defaultProps.put(PROPERTY_NAME_DEVICE_ID, sys.getDeviceId());
 
-        DisplayMetrics displayMetrics = sysInfo.getDisplayMetrics();
+        DisplayMetrics displayMetrics = sys.getDisplayMetrics();
         int displayWidth = displayMetrics.widthPixels;
         int displayHeight = displayMetrics.heightPixels;
         StringBuilder resolutionBuilder = new StringBuilder();
 
-        // TODO
-        defaultProps.put("screen_height", displayWidth);
-        defaultProps.put("screen_width", displayHeight);
-        defaultProps.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
+        // TODO: is it correct?
+        defaultProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
+        defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
+        defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
-        // application versionName, buildDate(iff dev mode)
-        String appVersionName = sysInfo.getAppVersionName();
-        String appBuildDate = sysInfo.getAppBuildDate();
-        if (Env.DEV == env && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
-        defaultProps.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
+        /** application versionName, buildDate(iff dev mode) */
+        String appVersionName = sys.getAppVersionName();
+        String appBuildDate = sys.getAppBuildDate();
 
-        String carrier = sysInfo.getCurrentNetworkOperator();
-        defaultProps.put("carrier_name", (null != carrier && carrier.length() > 0) ? carrier : "UNKNOWN");
+        if (Env.DEV == env && null != appBuildDate)
+            appVersionName += "_" + sys.getAppBuildDate();
 
-        Boolean isWifi = sysInfo.isWifiConnected();
-        defaultProps.put("network_type", isWifi == null ? "UNKNOWN" : isWifi.booleanValue() == true ? "WIFI" : "NOT WIFI");
+        defaultProps.put(PROPERTY_NAME_APP_VERSION,
+                appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
 
-        defaultProps.put("language_code", context.getResources().getConfiguration().locale.getCountry());
+        String carrier = sys.getCurrentNetworkOperator();
+        defaultProps.put(PROPERTY_NAME_CARRIER_NAME,
+                (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
+
+        Boolean isWifi = sys.isWifiConnected();
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi == null) ?
+                PROPERTY_VALUE_UNKNOWN : (isWifi.booleanValue() == true) ?
+                PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI);
+
+        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE,
+                context.getResources().getConfiguration().locale.getCountry());
 
         return defaultProps;
     }
@@ -401,10 +416,6 @@ public /* TODO final */ class RakeAPI {
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
         prefsEditor.putString(prefKey, props);
         prefsEditor.commit();   // synchronous
-    }
-
-    private SystemInformation getSystemInformation() {
-        return new SystemInformation(context);
     }
 
     void clearPreferences() {

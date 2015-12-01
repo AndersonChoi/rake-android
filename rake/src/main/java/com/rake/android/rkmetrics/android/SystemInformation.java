@@ -1,5 +1,9 @@
 package com.rake.android.rkmetrics.android;
 
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+import com.rake.android.rkmetrics.util.Logger;
+
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -15,8 +19,6 @@ import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
 
-import com.rake.android.rkmetrics.util.Logger;
-
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -28,20 +30,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
- * Abstracts away possibly non-present system information classes,
- * and handles permission-dependent queries for default system information.
+ * Gather android system dependent information
  */
-final public class SystemInformation {
-    private Context context;
-    private Boolean hasNFC;
-    private Boolean hasTelephony;
-    private DisplayMetrics displayMetrics;
-    private String appVersionName;
-    private Integer appVersionCode;
-    private String deviceId;
-    private String appBuildDate; /* for dev environment */
+public final class SystemInformation { /** singleton */
 
-    public SystemInformation(Context context) {
+    /** constructors */
+
+    private SystemInformation() {}
+
+    private SystemInformation(Context context) {
         this.context = context;
 
         PackageManager pm = context.getPackageManager();
@@ -90,6 +87,29 @@ final public class SystemInformation {
         display.getMetrics(displayMetrics);
 
         deviceId = Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+
+        if (null == deviceId) deviceId = PROPERTY_VALUE_UNKNOWN;
+    }
+
+    /** instance members */
+
+    private Context context;
+    private Boolean hasNFC;
+    private Boolean hasTelephony;
+    private DisplayMetrics displayMetrics;
+    private String appVersionName;
+    private Integer appVersionCode;
+    private String deviceId;
+    private String appBuildDate; /* for dev environment */
+
+    /** static members */
+
+    private static SystemInformation instance;
+
+    public static synchronized SystemInformation getInstance(Context context) {
+        if (null == instance) instance = new SystemInformation(context.getApplicationContext());
+
+        return instance;
     }
 
     public String getAppBuildDate() {
