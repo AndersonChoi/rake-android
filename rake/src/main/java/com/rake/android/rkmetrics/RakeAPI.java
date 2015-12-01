@@ -4,7 +4,6 @@ package com.rake.android.rkmetrics;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
 
-
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
@@ -160,6 +159,19 @@ public /* TODO final */ class RakeAPI {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
 
+    public JSONObject getSuperProperties() throws JSONException {
+        JSONObject props = new JSONObject();
+
+        synchronized (superProperties) {
+            for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                props.put(key, superProperties.get(key));
+            }
+        }
+
+        return props;
+    }
+
     /**
      * Save JSONObject created using Shuttle.toJSONObject() into SQLite.
      * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
@@ -167,8 +179,8 @@ public /* TODO final */ class RakeAPI {
      * @param shuttle pass Shuttle.toJSONObject();
      */
     public void track(JSONObject shuttle) {
-        if (null == shuttle) {
-            Logger.e(tag, "should not pass null into RakeAPI.track()");
+        if (!isShuttle(shuttle)) {
+            Logger.e(tag, "Passed JSONObject is null or not the JSONObject created by Shuttle");
             return;
         }
 
@@ -176,15 +188,9 @@ public /* TODO final */ class RakeAPI {
 
         try {
             JSONObject dataObj = new JSONObject();
-            JSONObject propertiesObj = new JSONObject();
 
-            // 1. super properties
-            synchronized (superProperties) {
-                for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    propertiesObj.put(key, superProperties.get(key));
-                }
-            }
+            // 1. super properties TODO: remove
+            JSONObject props = getSuperProperties();
 
             JSONObject sentinel_meta;
             if (shuttle.has(FIELD_NAME_SENTINEL_META)) {
@@ -195,14 +201,14 @@ public /* TODO final */ class RakeAPI {
                 }
                 shuttle.remove(FIELD_NAME_SENTINEL_META);
             } else {
-                // no sentinel shuttle
+                // no sentinel com.rake.android.rkmetrics.shuttle
                 // need to do something here?
                 // get/make sentinel_meta for this project
             }
 
             JSONObject fieldOrder;
             try {
-                fieldOrder = (JSONObject) dataObj.get(FIELD_NAME_FIELD_ORDER);
+                fieldOrder = (JSONObject) dataObj.get(META_FIELD_NAME_FIELD_ORDER);
             } catch (JSONException e) {
                 fieldOrder = null;
             }
@@ -212,13 +218,13 @@ public /* TODO final */ class RakeAPI {
                 for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
                     String key = (String) keys.next();
                     if (fieldOrder != null && fieldOrder.has(key)) {    // field defined in schema
-                        if (propertiesObj.has(key) && shuttle.get(key).toString().length() == 0) {
+                        if (props.has(key) && shuttle.get(key).toString().length() == 0) {
                             // Do not overwrite super properties with empty string of properties.
                         } else {
-                            propertiesObj.put(key, shuttle.get(key));
+                            props.put(key, shuttle.get(key));
                         }
-                    } else if (fieldOrder == null) { // no fieldOrder (maybe no shuttle)
-                        propertiesObj.put(key, shuttle.get(key));
+                    } else if (fieldOrder == null) { // no fieldOrder (maybe not shuttle)
+                        props.put(key, shuttle.get(key));
                     }
                 }
             }
@@ -237,20 +243,20 @@ public /* TODO final */ class RakeAPI {
 
                     }
 
-                    if (addToProperties) { propertiesObj.put(key, defaultProperties.get(key)); }
+                    if (addToProperties) { props.put(key, defaultProperties.get(key)); }
                 }
             }
 
             // rake token
-            propertiesObj.put(PROPERTY_NAME_TOKEN, token);
+            props.put(PROPERTY_NAME_TOKEN, token);
 
             // time
             // TODO: thread-unsafe
-            propertiesObj.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-            propertiesObj.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+            props.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+            props.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
             // 4. put properties
-            dataObj.put(FIELD_NAME_PROPERTIES, propertiesObj);
+            dataObj.put(FIELD_NAME_PROPERTIES, props);
 
             Logger.d(tag, "track() called\n" + dataObj);
 
