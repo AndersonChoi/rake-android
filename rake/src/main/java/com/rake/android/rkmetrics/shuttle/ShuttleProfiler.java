@@ -34,15 +34,15 @@ public class ShuttleProfiler {
 
     public static boolean hasBodyValue(RakeClientMetricSentinelShuttle shuttle,
                                        String field,
-                                       Callback<Long, Boolean> comparator) {
+                                       Callback<Object, Boolean> comparator) {
 
         if (null == shuttle || null == field || null == comparator) return false;
 
-        Long value = null;
+        Object value = null;
 
         try {
             JSONObject _$body = shuttle.toJSONObject().getJSONObject(FIELD_NAME_BODY);
-            value = _$body.getLong(field);
+            value = _$body.get(field);
         } catch (Exception e) { /* JSONException, NullPointerException */
             return false;
         }
@@ -91,6 +91,27 @@ public class ShuttleProfiler {
         return true;
     }
 
+    public static boolean hasKey(JSONObject json, String depth1Key, String depth2Key) {
+        if (null == json || null == depth1Key) return false;
+
+        boolean hasKey = false;
+
+        try {
+            Object value = json.get(depth1Key);
+
+            if (null != depth2Key) {
+                JSONObject depth1 = json.getJSONObject(depth1Key);
+                Object depth2 = depth1.get(depth2Key);
+            }
+
+            hasKey = true;
+        } catch (JSONException e) {
+            return false;
+        }
+
+        return hasKey;
+    }
+
     /**
      * - null 이거나
      *
@@ -125,6 +146,21 @@ public class ShuttleProfiler {
         return isShuttle;
     }
 
+    public static boolean isTransformedShuttle(JSONObject shuttle) {
+        if (null == shuttle) return false;
+
+        boolean isValid = true;
+
+        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(shuttle, META_FIELD_NAME_FIELD_ORDER, null);
+        isValid &= hasKey(shuttle, FIELD_NAME_PROPERTIES, null);
+        isValid &= hasKey(shuttle, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY);
+
+        return isValid;
+    }
+
     public static JSONObject transformShuttleFormat(JSONObject shuttle,
                                                     JSONObject superProps,
                                                     JSONObject defaultProps) {
@@ -139,20 +175,20 @@ public class ShuttleProfiler {
             return null;
         }
 
-        JSONObject validShuttleFormat = new JSONObject();
+        JSONObject transformed = new JSONObject();
 
         try {
-            // 1. super properties TODO: remove
+            /** 1. extract META_FIELDS */
             JSONObject sentinel_meta = shuttle.getJSONObject(FIELD_NAME_SENTINEL_META);
             for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
                 String key = (String) iter.next();
-                validShuttleFormat.put(key, sentinel_meta.get(key));
+                transformed.put(key, sentinel_meta.get(key));
             }
             shuttle.remove(FIELD_NAME_SENTINEL_META);
 
-            JSONObject fieldOrder = validShuttleFormat.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+            JSONObject fieldOrder = transformed.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
 
-            // 2. Insert user-collected fields
+            /** 2. Insert user-collected fields */
             for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
                 Object value = shuttle.get(key);
@@ -162,7 +198,7 @@ public class ShuttleProfiler {
                 } else superProps.put(key, value);
             }
 
-            // 3. Insert auto-collected fields
+            /** 3. Insert auto-collected fields */
             for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
                 String key = (String) keys.next();
                 boolean addToProperties = true;
@@ -170,17 +206,18 @@ public class ShuttleProfiler {
                 if (fieldOrder.has(key)) addToProperties = true;
                 else addToProperties = false;
 
+                /** merge super props with default props */
                 if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
             }
 
-            // 4. put properties
-            validShuttleFormat.put(FIELD_NAME_PROPERTIES, superProps);
+            /** 4. put properties */
+            transformed.put(FIELD_NAME_PROPERTIES, superProps);
 
         } catch (Exception e) {
             Logger.e("Failed to track", e);
             return null;
         }
 
-        return validShuttleFormat;
+        return transformed;
     }
 }

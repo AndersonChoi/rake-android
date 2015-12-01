@@ -108,8 +108,64 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    public void transformShuttleFormat_negative_case_invalid_shuttle() {
+    public void transformShuttleFormat_positive_case() {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        JSONObject defaultProps = new JSONObject();
+        JSONObject superProps   = new JSONObject();
+        JSONObject validShuttle = transformShuttleFormat(
+                shuttle.toJSONObject(), superProps, defaultProps);
 
+        // isTransformedShuttle 테스트와의 교차 검증을 위해 필드를 아래와 같이 직접 나열
+        assertThat(hasKey(validShuttle, META_FIELD_NAME_ENCRYPTION_FIELDS, null)).isTrue();
+        assertThat(hasKey(validShuttle, META_FIELD_NAME_SCHEMA_ID, null)).isTrue();
+        assertThat(hasKey(validShuttle, META_FIELD_NAME_PROJECT_ID, null)).isTrue();
+        assertThat(hasKey(validShuttle, META_FIELD_NAME_FIELD_ORDER, null)).isTrue();
+        assertThat(hasKey(validShuttle, FIELD_NAME_PROPERTIES, null)).isTrue();
+        assertThat(hasKey(validShuttle, FIELD_NAME_PROPERTIES, FIELD_NAME_BODY)).isTrue();
+    }
+
+    @Test
+    public void test_isTransformedShuttle() {
+        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        JSONObject defaultProps = new JSONObject();
+        JSONObject superProps   = new JSONObject();
+        JSONObject transformed = transformShuttleFormat(
+                shuttle.toJSONObject(), superProps, defaultProps);
+
+        JSONObject invalid = new JSONObject();
+
+        assertThat(isTransformedShuttle(transformed)).isTrue();
+        assertThat(isTransformedShuttle(invalid)).isFalse();
+    }
+
+    @Test
+    public void test_hasKey() throws JSONException {
+        JSONObject depth1 = new JSONObject();
+        JSONObject depth2 = new JSONObject();
+
+        depth1.put("key1", 1);
+        depth1.put("key2", 2);
+        depth1.put("key3", JSONObject.NULL);
+        depth1.put("key4", null); /* remove key 4 */
+
+        depth2.put("nested_key1", 1);
+        depth2.put("nested_key2", 2);
+        depth2.put("nested_key3", JSONObject.NULL);
+        depth2.put("nested_key4", null); /* remove nested_key4 */
+
+        String depth2Key = "depth2";
+        depth1.put(depth2Key, depth2);
+
+        assertThat(hasKey(depth1, "key1", null)).isTrue();
+        assertThat(hasKey(depth1, "key2", null)).isTrue();
+        assertThat(hasKey(depth1, "key3", null)).isTrue();
+        assertThat(hasKey(depth1, "key4", null)).isFalse();
+        assertThat(hasKey(depth1, depth2Key, null)).isTrue();
+
+        assertThat(hasKey(depth2, "nested_key1", null)).isTrue();
+        assertThat(hasKey(depth2, "nested_key2", null)).isTrue();
+        assertThat(hasKey(depth2, "nested_key3", null)).isTrue();
+        assertThat(hasKey(depth2, "nested_key4", null)).isFalse();
     }
 
     private static JSONObject getShuttleWithMissingField(String depth1, String depth2)
