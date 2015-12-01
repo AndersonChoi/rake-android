@@ -160,11 +160,6 @@ public /* TODO final */ class RakeAPI {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
 
-    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
-        // black list
-        // usage: add("mdn");
-    }};
-
     /**
      * Save JSONObject created using Shuttle.toJSONObject() into SQLite.
      * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
@@ -240,8 +235,6 @@ public /* TODO final */ class RakeAPI {
                         if (fieldOrder.has(key)) { addToProperties = true; }
                         else { addToProperties = false; }
 
-                    } else if (defaultValueBlackList.contains(key)) {
-                        addToProperties = false;
                     }
 
                     if (addToProperties) { propertiesObj.put(key, defaultProperties.get(key)); }
