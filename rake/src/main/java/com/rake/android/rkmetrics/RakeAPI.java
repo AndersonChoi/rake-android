@@ -330,6 +330,10 @@ public /* TODO final */ class RakeAPI {
         }
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public void registerSuperProperties(JSONObject superProperties) {
         Logger.d(tag, "registerSuperProperties");
 
@@ -347,13 +351,20 @@ public /* TODO final */ class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public void unregisterSuperProperty(String superPropertyName) {
         Logger.d(tag, "unregisterSuperProperty");
         synchronized (superProperties) { superProperties.remove(superPropertyName); }
         storeSuperProperties();
     }
 
-
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
         Logger.d(tag, "registerSuperPropertiesOnce");
 
@@ -373,6 +384,10 @@ public /* TODO final */ class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public synchronized void clearSuperProperties() {
         Logger.d(tag, "clearSuperProperties");
         superProperties = new JSONObject();
@@ -416,8 +431,13 @@ public /* TODO final */ class RakeAPI {
         return ret;
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     private void readSuperProperties() {
-        String props = storedPreferences.getString("super_properties", "{}");
+        String prefKey = createSharedPrefPropertyKey(token);
+        String props = storedPreferences.getString(prefKey, "{}");
         Logger.d(tag, "Loading Super Properties " + props);
 
         try {
@@ -429,12 +449,21 @@ public /* TODO final */ class RakeAPI {
         }
     }
 
+    private static String createSharedPrefPropertyKey(String token) {
+       return "super_properties_for_" + token;
+    }
+
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     private void storeSuperProperties() {
+        String prefKey = createSharedPrefPropertyKey(token);
         String props = superProperties.toString();
 
         Logger.d(tag, "Storing Super Properties " + props);
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
-        prefsEditor.putString("super_properties", props);
+        prefsEditor.putString(prefKey, props);
         prefsEditor.commit();   // synchronous
     }
 
