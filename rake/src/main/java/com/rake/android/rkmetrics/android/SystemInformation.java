@@ -200,4 +200,20 @@ final public class SystemInformation {
         return ret;
     }
 
+    public static String getPackageName(Context context) {
+        String UNKNOWN_PACKAGE = "UNKNOWN";
+
+        if (null == context) return UNKNOWN_PACKAGE;
+
+        final PackageManager pm = context.getApplicationContext().getPackageManager();
+        ApplicationInfo ai = null;
+
+        try {
+            ai = pm.getApplicationInfo(context.getPackageName(), 0);
+        } catch (Exception e) { /* NameNotFoundException */
+            Logger.e("Can't find getApplicationInfo", e);
+        }
+
+        return (ai == null) ? UNKNOWN_PACKAGE : (String) pm.getApplicationLabel(ai);
+    }
 }

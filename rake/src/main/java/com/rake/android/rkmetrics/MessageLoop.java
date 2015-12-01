@@ -7,8 +7,15 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
+import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.MetricUtil;
+import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
+import com.rake.android.rkmetrics.metric.model.FlushType;
+import com.rake.android.rkmetrics.metric.model.Header;
+import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -21,6 +28,8 @@ import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
+import org.json.JSONObject;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,16 +40,14 @@ import java.util.concurrent.SynchronousQueue;
  */
 final class MessageLoop {
 
-    static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    /* package */ static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    /* package */ static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    /* package */ static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    /* package */ static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    /* package */ static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
+    /* package */ static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
-    static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
-    static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
-
-    static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
-    static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
-
-    enum Command {
+    /* package */ enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
         AUTO_FLUSH_BY_COUNT(3),
@@ -244,9 +251,11 @@ final class MessageLoop {
         /**
          * Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송
          */
-        private void flush() {
-            Long startAt = System.currentTimeMillis();
-            FlushMetric metric = new FlushMetric();
+        private void flush(FlushType flushType) {
+            if (null == flushType) {
+                Logger.e("Can't flush with an empty FlushType");
+                return;
+            }
 
             updateFlushFrequency();
 
@@ -255,38 +264,66 @@ final class MessageLoop {
             if (null == chunks || 0 == chunks.size()) return;
 
             for (LogChunk chunk : chunks) {
-                send(chunk);
+                FlushMetric metric = new FlushMetric();
+
+                Long startAt = System.currentTimeMillis();
+                send(chunk, metric);
+                Long endAt = System.currentTimeMillis();
+
+                Long operationTime = (endAt - startAt);
+
+                /** set metric */
+
+                metric.setFlushType(flushType)
+                        .setOperationTime(operationTime);
+
+                JSONObject json = metric.toJSONObject();
+
+                Log log = Log.create(
+                        MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, json);
+
+                // EMERG TODO: use RakeAPI static track
+                // logTableAdapter.addLog(log);
             }
-            Long endAt = System.currentTimeMillis();
-
-            Long operationTime = (endAt - startAt);
-
         }
 
         /**
          * HttpRequestSender 를 이용해서 데이터를 네트워크로 전송하고,
-         * 전송된 데이터를 삭제해도 되는지(SUCCESS), 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(FAILURE_UNRECOVERABLE) 를 판단하여
-         * 삭제할 로그의 키값인 LogDeleteKey 를 리턴
+         * - 전송된 데이터를 삭제해도 되는지(SUCCESS),
+         * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(FAILURE_UNRECOVERABLE)
+         * - 복구 가능한 예외인지 (FAILURE_RECOVERABLE)
+         * 판단하여 필요한 경우 로그를 삭제
          */
-        private void send(LogChunk chunk) {
+        private void send(LogChunk chunk, FlushMetric metric) {
 
-            if (null == chunk) {
-                Logger.e("Can't flush using Null args");
+            if (null == chunk || null == metric) {
+                Logger.e("Can't flush using null args");
                 return; // TODO: return FlushMetric
             }
 
-            TransmissionResult result =
+            ServerResponseMetric responseMetric =
                     HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
+
+            if (null == responseMetric) {
+                Logger.e("ServerResponseMetric can't be null");
+                return;
+            }
+
+            TransmissionResult result = responseMetric.getTransmissionResult();
+            Status status = null;
 
             switch (result) {
                 case SUCCESS:
                     logTableAdapter.removeLogChunk(chunk);
+                    status = Status.DONE;
                     break;
                 case FAILURE_UNRECOVERABLE:
                     logTableAdapter.removeLogChunk(chunk);
+                    status = Status.FAIL;
                     break;
                 case FAILURE_RECOVERABLE:
                     if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
+                    status = Status.RETRY;
                     break;
 
                 default:
@@ -298,6 +335,24 @@ final class MessageLoop {
                     chunk.getCount(), chunk.getUrl(), chunk.getToken());
 
             Logger.t(message);
+
+            /** write metric values */
+            Header header = new Header()
+                    .setAction(Action.FLUSH)
+                    .setStatus(status)
+                    .setAppPackage(SystemInformation.getPackageName(appContext))
+                    .setTransactionId(MetricUtil.TRANSACTION_ID)
+                    .setServiceToken(chunk.getToken());
+
+            metric.setHeader(header);
+            metric.setExceptionInfo(responseMetric.getExceptionInfo());
+            metric
+                    .setLogCount(Long.valueOf(chunk.getCount()))
+                    .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
+                    .setServerResponseBody(responseMetric.getResponseBody())
+                    .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
+                    .setServerResponseTime(responseMetric.getServerResponseTime());
+
         }
 
         /**
@@ -316,7 +371,14 @@ final class MessageLoop {
                 String message = String.format("Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                TransmissionResult result = HttpRequestSender.sendRequest(log, url);
+                ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
+
+                if (null == responseMetric) {
+                    Logger.e("ServerResponseMetric can't be null");
+                    return;
+                }
+
+                TransmissionResult result = responseMetric.getTransmissionResult();
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
                 if (TransmissionResult.SUCCESS == result) {
@@ -343,19 +405,19 @@ final class MessageLoop {
                     Logger.t("Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
-                        // TODO sendEmptyDelayed message
-                        flush();
+                        // TODO private function
+                        sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
                     }
 
                 } else if (command == FLUSH_EVENT_TABLE) {
                     flushEventTable();
                 } else if (command == MANUAL_FLUSH) {
-                    flush();
+                    flush(FlushType.MANUAL_FLUSH);
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
-                    flush();
+                    flush(FlushType.AUTO_FLUSH_BY_COUNT);
 
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    flush();
+                    flush(FlushType.AUTO_FLUSH_BY_TIMER);
 
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);

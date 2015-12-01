@@ -18,18 +18,27 @@ public final class FlushMetric extends Body {
 
     public FlushMetric() {}
 
-    public void setHeader(Header header) { this.header = header; }
-    public void setOperationTime(Long operationTime) { this.operation_time = operationTime; }
-    public void setLogSize(Long logSizeAsBytes) { this.log_size = logSizeAsBytes; }
-    public void setLogCount(Long logCount) { this.log_count = logCount; }
-    public void setFlushType(FlushType flushType) {
-        if (null == flushType) return;
+    public FlushMetric setHeader(Header header) {
+        this.header = header; return this; }
+    public FlushMetric setOperationTime(Long operationTime) {
+        this.operation_time = operationTime; return this; }
+    public FlushMetric setLogSize(Long logSizeAsBytes) {
+        this.log_size = logSizeAsBytes; return this; }
+    public FlushMetric setLogCount(Long logCount) {
+        this.log_count = logCount; return this; }
+    public FlushMetric setFlushType(FlushType flushType) {
+        if (null == flushType) return this;
 
         this.flush_type = flushType.getValue();
+        return this;
     }
-    public void setServerReponseBody(String responseBody) { this.server_response_body = responseBody; }
-    public void setServerResponseCode(Long responseCode) { this.server_response_code = responseCode; }
-    public void setServerResponseTime(Long responseTime) { this.server_response_time = responseTime; }
+
+    public FlushMetric setServerResponseBody(String responseBody) {
+        this.server_response_body = responseBody; return this; }
+    public FlushMetric setServerResponseCode(Long responseCode) {
+        this.server_response_code = responseCode; return this; }
+    public FlushMetric setServerResponseTime(Long responseTime) {
+        this.server_response_time = responseTime; return this;}
 
 
     @Override
@@ -51,21 +60,22 @@ public final class FlushMetric extends Body {
                     .transaction_id(header.getTransactionId())
                     .service_token((header.getServiceToken()));
 
-            /* common body */
-            shuttle
-                    .exception_type(getExceptionType())
-                    .stacktrace(getStacktrace()); // TODO getThreadInfo
-
-            /* specific body */
-            shuttle
-                    .operation_time(operation_time)
-                    .log_count(log_count)
-                    .log_size(log_size)
-                    .flush_type(flush_type)
-                    .server_response_body(server_response_body)
-                    .server_response_code(server_response_code)
-                    .server_response_time(server_response_time);
         }
+
+        /* common body */
+        shuttle
+                .exception_type(getExceptionType())
+                .stacktrace(getStacktrace()); // TODO getThreadInfo
+
+        /* specific body */
+        shuttle
+                .operation_time(operation_time)
+                .log_count(log_count)
+                .log_size(log_size)
+                .flush_type(flush_type)
+                .server_response_body(server_response_body)
+                .server_response_code(server_response_code)
+                .server_response_time(server_response_time);
 
         return shuttle.toJSONObject();
     }

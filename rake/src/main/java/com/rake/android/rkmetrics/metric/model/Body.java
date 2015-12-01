@@ -1,11 +1,9 @@
 package com.rake.android.rkmetrics.metric.model;
 
+import com.rake.android.rkmetrics.util.ExceptionUtil;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONObject;
-
-import java.io.PrintWriter;
-import java.io.StringWriter;
 
 public abstract class Body {
 
@@ -30,32 +28,16 @@ public abstract class Body {
     /** getter, setter */
     public String getExceptionType() { return exception_type; }
     public String getStacktrace() { return stacktrace; }
-    public void setExceptionInfo(Throwable e) {
-        if (null == e) return;
 
-        this.exception_type = createExceptionType(e);
-        this.stacktrace = createStacktrace(e);
-        // TODO thread info
+    public Body setExceptionInfo(Throwable e) {
+        if (null == e) return this;
+
+        this.exception_type = ExceptionUtil.createExceptionType(e);
+        this.stacktrace = ExceptionUtil.createStacktrace(e);
+        return this;
     }
 
     protected JSONObject threadInfo;
-
-    /** static methods */
-    public static String createExceptionType(Throwable e) {
-        if (null == e) return null;
-
-        return e.getClass().getSimpleName();
-    }
-
-    public static String createStacktrace(Throwable e) {
-        if (null == e) return null;
-
-        StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
-
-        return pw.toString();
-    }
 
     private static final ThreadLocal<RakeClientMetricSentinelShuttle> metricShuttles =
             new ThreadLocal<RakeClientMetricSentinelShuttle>() {

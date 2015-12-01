@@ -40,19 +40,4 @@ public class BodySpec {
         assertThat(hasBodyValue(shuttle, FIELD_NAME_STACKTRACE, "")).isFalse();
     }
 
-    @Test
-    public void 테스트_getExceptionType() {
-        Exception e = new IllegalArgumentException("e");
-
-        assertThat(createExceptionType(null)).isNull();
-        assertThat(createExceptionType(e)).isNotNull();
-    }
-
-    @Test
-    public void 테스트_getStackTraceString() {
-        Exception e = new InvalidClassException("e");
-
-        assertThat(createStacktrace(null)).isNull();
-        assertThat(createStacktrace(e)).isNotNull();
-    }
 }

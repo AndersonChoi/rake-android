@@ -1,6 +1,7 @@
 package com.rake.android.rkmetrics.network;
 
 import com.rake.android.rkmetrics.util.Base64Coder;
+import com.rake.android.rkmetrics.util.ExceptionUtil;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
 import com.rake.android.rkmetrics.util.StringUtil;
@@ -32,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.rake.android.rkmetrics.android.Compatibility.*;
+import static com.rake.android.rkmetrics.network.TransmissionResult.*;
 
 final public class HttpRequestSender {
     private static final String COMPRESS_FIELD_NAME = "compress";
@@ -44,7 +46,7 @@ final public class HttpRequestSender {
 
     private HttpRequestSender() {}
 
-    public static TransmissionResult sendRequest(String message, String url) {
+    public static ServerResponseMetric sendRequest(String message, String url) {
 
         String encodedData = Base64Coder.encodeString(message);
 
@@ -55,14 +57,19 @@ final public class HttpRequestSender {
         }
     }
 
-    private static TransmissionResult sendHttpUrlStreamRequest(String endPoint, String encodedData) {
+    private static ServerResponseMetric sendHttpUrlStreamRequest(String endPoint, String encodedData) {
 
         URL url;
         OutputStream os = null;
         BufferedWriter writer = null;
-        TransmissionResult result = TransmissionResult.FAILURE_UNRECOVERABLE;
         HttpURLConnection conn = null;
         StringBuilder builder = new StringBuilder();
+
+        int responseCode = 0;
+        String responseBody = null;
+        TransmissionResult result = TransmissionResult.FAILURE_UNRECOVERABLE;
+        long operationTime = 0L;
+        Throwable t = null;
 
         try {
             url = new URL(endPoint);
@@ -77,43 +84,52 @@ final public class HttpRequestSender {
             conn.setDoInput(true);
             conn.setDoOutput(true);
 
+            long startAt = System.currentTimeMillis();
+
             os = conn.getOutputStream();
             writer = new BufferedWriter(new OutputStreamWriter(os, CHAR_ENCODING));
             writer.write(requestBody);
             writer.flush();
 
+            long endAt = System.currentTimeMillis();
+            operationTime = (endAt - startAt);
+
             // TODO status code handling
-            int statusCode = conn.getResponseCode();
+            responseCode = conn.getResponseCode();
 
             BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
             String line;
 
             while ((line = br.readLine()) != null) builder.append(line);
 
-            String responseBody = builder.toString();
+            responseBody = builder.toString();
             result = interpretResponse(responseBody);
 
-            String message = String.format("Response code: %d, response body: %s", statusCode, responseBody);
-            Logger.d(message);
-
+            reportResponse(responseCode, responseBody);
         } catch (MalformedURLException e) {
             Logger.e("Invalid URL", e);
             result = TransmissionResult.FAILURE_RECOVERABLE;
+            t = e;
         } catch (UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
             result = TransmissionResult.FAILURE_UNRECOVERABLE;
+            t = e;
         } catch (ProtocolException e) {
             Logger.e("Invalid protocol", e);
             result = TransmissionResult.FAILURE_UNRECOVERABLE;
+            t = e;
         } catch (IOException e) {
             Logger.e("Invalid protocol", e);
             result = TransmissionResult.FAILURE_RECOVERABLE;
+            t = e;
         } catch (OutOfMemoryError e) {
             Logger.e("Memory insufficient", e);
             result = TransmissionResult.FAILURE_RECOVERABLE;
+            t = e;
         } catch (Exception e) {
             Logger.e("Invalid protocol", e);
             result = TransmissionResult.FAILURE_UNRECOVERABLE;
+            t = e;
         } finally {
             if (null != conn) conn.disconnect();
 
@@ -121,7 +137,12 @@ final public class HttpRequestSender {
             StreamUtil.closeQuietly(os);
         }
 
-        return result;
+        return ServerResponseMetric.create(t, result, responseBody, responseCode, operationTime);
+    }
+
+    private static void reportResponse(int responseCode, String responseBody) {
+        String message = String.format("Server returned code: %d, body: %s", responseCode, responseBody);
+        Logger.d(message);
     }
 
     private static String buildHttpUrlConnectionRequestBody(String encodedDate) throws UnsupportedEncodingException {
@@ -154,53 +175,65 @@ final public class HttpRequestSender {
         return new UrlEncodedFormEntity(nameValuePairs);
     }
 
-    private static TransmissionResult sendHttpClientRequest(String endPoint, String requestMessage) {
-        TransmissionResult result = TransmissionResult.FAILURE_UNRECOVERABLE;
+    private static ServerResponseMetric sendHttpClientRequest(String endPoint, String requestMessage) {
+        TransmissionResult result = FAILURE_UNRECOVERABLE;
+        String responseBody = null;
+        int responseCode = 0;
+        long operationTime = 0L;
+        Throwable t = null;
 
         try {
             HttpEntity requestEntity = buildHttpClientRequestBody(requestMessage);
             HttpPost httppost = new HttpPost(endPoint);
             httppost.setEntity(requestEntity);
             HttpClient client = createHttpsClient();
+
+            long startAt = System.currentTimeMillis();
             HttpResponse response = client.execute(httppost);
+            long endAt = System.currentTimeMillis();
+            operationTime = (endAt - startAt);
 
             if (null == response) {
                 Logger.d("HttpResponse is null. Retry later");
-                return TransmissionResult.FAILURE_RECOVERABLE;
+                return ServerResponseMetric.create(null, FAILURE_RECOVERABLE, null, 0, operationTime);
             }
 
             HttpEntity responseEntity = response.getEntity();
 
             if (null == responseEntity) {
                 Logger.d("HttpEntity is null. retry later");
-                return TransmissionResult.FAILURE_RECOVERABLE;
+                return ServerResponseMetric.create(null, FAILURE_RECOVERABLE, null, 0, operationTime);
             }
 
-            String responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
-            int statusCode = response.getStatusLine().getStatusCode();
-
-            String message = String.format("Response code: %d, Response body: %s", statusCode, responseBody);
-            Logger.d(message);
+            responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
+            responseCode = response.getStatusLine().getStatusCode();
 
             // TODO interpretResponseCode
             result = interpretResponse(responseBody);
 
+            reportResponse(responseCode, responseBody);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
             result = TransmissionResult.FAILURE_UNRECOVERABLE;
+            t = e;
         } catch (IOException e) {
             Logger.e("Cannot post message to Rake Servers (May Retry)", e);
             result = TransmissionResult.FAILURE_RECOVERABLE;
+            t = e;
         } catch (OutOfMemoryError e) {
             Logger.e("Cannot post message to Rake Servers, will not retry.", e);
             result = TransmissionResult.FAILURE_RECOVERABLE;
+            t = e;
         } catch (GeneralSecurityException e) {
             Logger.e("Cannot build SSL Client", e);
+            t = e;
         } catch (Exception e) {
             Logger.e("Uncaught exception", e);
+            t = e;
         }
 
-        return result;
+        return ServerResponseMetric.create(
+                t, result, responseBody, responseCode, operationTime);
     }
 
     private static TransmissionResult interpretResponseCode(int statusCode) {
@@ -217,7 +250,7 @@ final public class HttpRequestSender {
 
     private static TransmissionResult interpretResponse(String response) {
         if (null == response) {
-            Logger.e("Response body is empty. (Retry)");
+            Logger.e("ServerResponse body is empty. (Retry)");
             return TransmissionResult.FAILURE_RECOVERABLE;
         }
 

@@ -13,9 +13,9 @@ import java.io.InputStreamReader;
 /**
  * 소스 코드에 라이브 토큰을 노출하지 않기 위해서 BUILD_CONSTANT_BRANCH 값을 빌드타임에 build.gradle 에서
  * BUILD_CONSTANT_BRANCH 를 현재 브랜치와(`release`) 로 덮어쓰고, TOKEN 도 환경변수에서 읽어 덮어쓴다.
- * `build.gradle` 과 `MetricLoggerBuildConstantSpec.java` 를 참조할 것
+ * `build.gradle` 과 `MetricUtilBuildConstantSpec.java` 를 참조할 것
  */
-public class MetricLoggerBuildConstantSpec {
+public class MetricUtilBuildConstantSpec {
 
     /**
      * 아래의 환경변수 및 상수 이름들은 build.gradle 에 있는 이름과 동일해야 함
@@ -41,9 +41,9 @@ public class MetricLoggerBuildConstantSpec {
         String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
 
         if (releaseBranch == branch) {
-            assertThat(MetricLogger.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_LIVE));
+            assertThat(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_LIVE));
         } else { /* DEV */
-            assertThat(MetricLogger.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_DEV));
+            assertThat(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_DEV));
         }
     }
 
@@ -52,9 +52,9 @@ public class MetricLoggerBuildConstantSpec {
         String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
 
         if (releaseBranch == branch) { /* Env.LIVE */
-           assertThat(MetricLogger.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.LIVE);
+           assertThat(MetricUtil.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.LIVE);
         } else { /* Env.DEV */
-            assertThat(MetricLogger.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.DEV);
+            assertThat(MetricUtil.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.DEV);
         }
     }
 

@@ -45,7 +45,7 @@ def updateFile = { String path, Pattern regex, String replace ->
  */
 String RAKE_ROOT_PACKAGE = "src/main/java/com/rake/android/rkmetrics";
 String FILE_REPLACED_CONFIG = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/config/RakeConfig.java"
-String FILE_REPLACED_METRIC_LOGGER = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/metric/MetricLogger.java"
+String FILE_REPLACED_METRIC_LOGGER = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
 
 String RELEASE_BRANCH = "release"
 String VAR_BRANCH = "BUILD_CONSTANT_BRANCH";
@@ -130,7 +130,7 @@ task updateMetricToken(type: Copy) {
 
     def getMetricToken = {
         /**
-         * 아래의 환경변수 및 상수 이름들은 MetricLoggerTokenSpec.java 에 있는 이름과 동일해야 함
+         * 아래의 환경변수 및 상수 이름들은 MetricUtilTokenSpec.java 에 있는 이름과 동일해야 함
          */
         String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE";
         String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
@@ -165,7 +165,7 @@ task updateMetricToken(type: Copy) {
         String FILLED_METRIC_TOKEN = getFilledMetricToken()
         /**
          * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
-         * `build.gradle` 과 `MetricLoggerTokenSpec.java` 를 참조할 것
+         * `build.gradle` 과 `MetricUtilTokenSpec.java` 를 참조할 것
          *
          * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해
          * BUILD_CONSTANT_BRANCH 값을 이용한다.
@@ -176,8 +176,8 @@ task updateMetricToken(type: Copy) {
     }
 
     /**
-     * 환경변수 값을 이용해 MetricLogger.java 에 있는 Rake Client Metric 용 토큰을 빌드타임에 컴파일
-     * 자세한 내용은 MetricLogger.java, MetricLoggerTokenSpec.java 를 참조
+     * 환경변수 값을 이용해 MetricUtil.java 에 있는 Rake Client Metric 용 토큰을 빌드타임에 컴파일
+     * 자세한 내용은 MetricUtil.java, MetricUtilTokenSpec.java 를 참조
      */
 
      updateMetricToken();

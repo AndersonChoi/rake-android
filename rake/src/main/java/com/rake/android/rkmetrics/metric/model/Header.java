@@ -2,6 +2,8 @@ package com.rake.android.rkmetrics.metric.model;
 
 public class Header {
 
+    public Header() {}
+
     public static final String FIELD_NAME_ACTION = "action";
     public static final String FIELD_NAME_STATUS = "status";
     public static final String FIELD_NAME_APP_PACKAGE = "app_package";
@@ -19,7 +21,7 @@ public class Header {
     public String getAction() { if (null == action) return null; return action.getValue(); }
 
     public Header setStatus(Status status) { this.status = status; return this; }
-    public String getStatus() { if (null == action) return null; return action.getValue(); }
+    public String getStatus() { if (null == status) return null; return status.getValue(); }
 
     public Header setAppPackage(String app_package) { this.app_package = app_package; return this; }
     public String getAppPackage() { return app_package; }
