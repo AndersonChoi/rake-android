@@ -80,7 +80,7 @@ rakeDev.track(shuttle.toJSONObject());
 
 - ~~singleton handler ~~
 - ~~new constructor using enum~~
-- ~~flush interval static scope~~
+- ~~flushMetric interval static scope~~
 - ~~remove application context from RakeAPI~~
 - ~~IllegarArgumentException 주석~~
 
