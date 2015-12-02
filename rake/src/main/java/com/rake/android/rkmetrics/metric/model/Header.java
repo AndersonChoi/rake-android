@@ -1,5 +1,9 @@
 package com.rake.android.rkmetrics.metric.model;
 
+import android.content.Context;
+
+import com.rake.android.rkmetrics.android.SystemInformation;
+import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 public class Header {
@@ -41,5 +45,22 @@ public class Header {
                 .service_token(service_token);
 
         return true;
+    }
+
+    /**
+     * @return return NULL if action *and* status are null since we can't know which kind of metric
+     */
+    public static Header create(Context context, Action action, Status status, String serviceToken) {
+        if (null == action && null == status) return null;
+
+        Header header = new Header();
+        header
+                .setAction(action)
+                .setStatus(status)
+                .setAppPackage(SystemInformation.getPackageName(context))
+                .setTransactionId(MetricUtil.TRANSACTION_ID)
+                .setServiceToken(serviceToken);
+
+        return header;
     }
 }

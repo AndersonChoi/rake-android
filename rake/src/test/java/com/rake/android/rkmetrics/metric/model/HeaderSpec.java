@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.metric.model;
 
+import android.app.Application;
+
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import static com.rake.android.rkmetrics.metric.model.Header.*;
@@ -8,10 +10,15 @@ import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import org.robolectric.RobolectricTestRunner;
+import org.robolectric.RuntimeEnvironment;
+import org.robolectric.annotation.Config;
 
-@RunWith(JUnit4.class)
+@RunWith(RobolectricTestRunner.class)
+@Config(sdk = 19, manifest = Config.NONE)
 public class HeaderSpec {
+
+    Application app = RuntimeEnvironment.application;
 
     @Test
     public void fillHeader_should_return_false_given_shuttle_is_null() {
@@ -45,5 +52,10 @@ public class HeaderSpec {
         hasHeaderValue(shuttle, HEADER_NAME_APP_PACKAGE, appPackage);
         hasHeaderValue(shuttle, HEADER_NAME_TRANSACTION_ID, transactionId);
         hasHeaderValue(shuttle, HEADER_NAME_SERVICE_TOKEN, serviceToken);
+    }
+
+    @Test
+    public void create_should_return_null_if_both_action_and_status_are_null() {
+        assertThat(Header.create(app, null, null, "example service token")).isNull();
     }
 }

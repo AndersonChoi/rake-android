@@ -5,6 +5,8 @@ import android.content.Context;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
+import com.rake.android.rkmetrics.metric.model.Header;
+import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.util.ExceptionUtil;
 import com.rake.android.rkmetrics.util.Logger;
@@ -54,4 +56,5 @@ public final class MetricUtil {
 
         return sb.toString().replaceAll("-", "");
     }
+
 }

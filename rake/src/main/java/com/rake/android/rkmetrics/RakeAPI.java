@@ -123,6 +123,8 @@ public final class RakeAPI {
                 Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
+
+                // created
             }
 
             return rake;

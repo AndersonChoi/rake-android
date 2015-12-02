@@ -317,12 +317,7 @@ final class MessageLoop {
                 if (!chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) {
 
                     /** write metric values */
-                    Header header = new Header()
-                            .setAction(Action.FLUSH)
-                            .setStatus(status)
-                            .setAppPackage(SystemInformation.getPackageName(appContext))
-                            .setTransactionId(MetricUtil.TRANSACTION_ID)
-                            .setServiceToken(chunk.getToken());
+                    Header header = Header.create(appContext, Action.FLUSH, status, chunk.getToken());
 
                     metric.setFlushType(flushType)
                             .setOperationTime(operationTime);
@@ -396,7 +391,7 @@ final class MessageLoop {
         }
 
         /**
-         * Database Version 4 까지 사용하던 `event` 테이블을 플러시
+         * Database Version 4 까지 사용하던 `event` 테이블을 플러시, 0.4.0 초과 버전부터 삭제할 것
          */
         private void flushEventTable() {
             updateFlushFrequency();

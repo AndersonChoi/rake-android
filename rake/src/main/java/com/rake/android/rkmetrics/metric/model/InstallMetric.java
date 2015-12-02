@@ -34,7 +34,7 @@ public class InstallMetric extends Body {
         this.persisted_log_count = persisted_log_count; return this;
     }
 
-    public InstallMetric setExpieredLogCount(long expired_log_count) {
+    public InstallMetric setExpiredLogCount(long expired_log_count) {
         this.expired_log_count = expired_log_count; return this;
     }
 
