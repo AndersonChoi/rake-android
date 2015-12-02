@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics;
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
 import static com.rake.android.rkmetrics.metric.MetricUtil.*;
+import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
 
 import android.content.Context;
 import android.os.Handler;
@@ -13,11 +14,11 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
+import com.rake.android.rkmetrics.metric.model.FlushResult;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
-import com.rake.android.rkmetrics.network.TransmissionResult;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
@@ -283,16 +284,16 @@ final class MessageLoop {
                 ServerResponseMetric responseMetric = send(chunk);
 
                 Long endAt = System.currentTimeMillis();
-                Long operationTime = (endAt - startAt);
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be NULL");
                     return;
                 }
 
+                Long operationTime = (endAt - startAt);
                 Status status = null;
 
-                switch (responseMetric.getTransmissionResult()) {
+                switch (responseMetric.getFlushResult()) {
                     case SUCCESS:
                         logTableAdapter.removeLogChunk(chunk);
                         status = Status.DONE;
@@ -308,31 +309,35 @@ final class MessageLoop {
                         break;
 
                     default:
-                        Logger.e("Unknown TransmissionResult");
+                        Logger.e("Unknown FlushResult");
                         return;
                 }
 
-                /** write metric values */
-                Header header = new Header()
-                        .setAction(Action.FLUSH)
-                        .setStatus(status)
-                        .setAppPackage(SystemInformation.getPackageName(appContext))
-                        .setTransactionId(MetricUtil.TRANSACTION_ID)
-                        .setServiceToken(chunk.getToken());
+                /** 메트릭 자체에 대한 메트릭은 기록하지 않음, != 대신 equals 로 비교해야 함 */
+                if (!chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) {
 
-                metric.setFlushType(flushType)
-                        .setOperationTime(operationTime);
-                metric.setHeader(header);
-                metric.setExceptionInfo(responseMetric.getExceptionInfo());
-                metric
-                        .setLogCount(Long.valueOf(chunk.getCount()))
-                        .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
-                        .setServerResponseBody(responseMetric.getResponseBody())
-                        .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
-                        .setServerResponseTime(responseMetric.getServerResponseTime());
+                    /** write metric values */
+                    Header header = new Header()
+                            .setAction(Action.FLUSH)
+                            .setStatus(status)
+                            .setAppPackage(SystemInformation.getPackageName(appContext))
+                            .setTransactionId(MetricUtil.TRANSACTION_ID)
+                            .setServiceToken(chunk.getToken());
 
+                    metric.setFlushType(flushType)
+                            .setOperationTime(operationTime);
+                    metric.setHeader(header);
+                    metric.setExceptionInfo(responseMetric.getExceptionInfo());
+                    metric
+                            .setLogCount(Long.valueOf(chunk.getCount()))
+                            .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
+                            .setServerResponseBody(responseMetric.getResponseBody())
+                            .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
+                            .setServerResponseTime(responseMetric.getServerResponseTime());
 
-                persistFlushMetric(metric);
+                    persistFlushMetric(metric);
+                }
+
             }
         }
 
@@ -414,17 +419,17 @@ final class MessageLoop {
                     return;
                 }
 
-                TransmissionResult result = responseMetric.getTransmissionResult();
+                FlushResult flushResult = responseMetric.getFlushResult();
 
                 // TODO: remove from MessageLoop. -> HttpRequestSender
-                if (TransmissionResult.SUCCESS == result) {
+                if (SUCCESS == flushResult) {
                     eventTableAdapter.removeEventById(lastId);
-                } else if (TransmissionResult.FAILURE_RECOVERABLE == result) { // try again later
+                } else if (FAILURE_RECOVERABLE == flushResult) { // try again later
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
-                } else if (TransmissionResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
+                } else if (FAILURE_UNRECOVERABLE == flushResult){ // give up, we have an unrecoverable failure.
                     eventTableAdapter.removeEventById(lastId);
                 } else {
-                    Logger.e("Invalid TransmissionResult: " + result);
+                    Logger.e("Invalid TransmissionResult: " + flushResult);
                 }
             }
         }
