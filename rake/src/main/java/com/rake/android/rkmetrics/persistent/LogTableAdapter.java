@@ -55,7 +55,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
     /**
      * @param chunk should not be null
      */
-    public void removeLogChunk(final LogChunk chunk) {
+    public synchronized void removeLogChunk(final LogChunk chunk) {
         execute(new SQLiteCallback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
@@ -78,7 +78,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
         });
     }
 
-    public void removeLogByTime(final Long time) {
+    public synchronized void removeLogByTime(final Long time) {
        execute(new SQLiteCallback<Void>() {
            @Override
            public Void execute(SQLiteDatabase db) {
@@ -93,7 +93,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
        });
     }
 
-    public int addLog(final Log log) {
+    public synchronized int addLog(final Log log) {
         Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
@@ -118,7 +118,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return ((null == result) ? -1 : result);
     }
 
-    public List<LogChunk> getLogChunks(final int extractCount) {
+    public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
         List<LogChunk> chunks = executeAndReturnT(new SQLiteCallback<List<LogChunk>>() {
             @Override
@@ -165,7 +165,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return chunks;
     }
 
-    private Log createLog(Cursor c) {
+    private synchronized Log createLog(Cursor c) {
         Log l = null;
 
         try {

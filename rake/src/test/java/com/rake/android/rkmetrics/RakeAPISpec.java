@@ -37,6 +37,11 @@ public class RakeAPISpec {
             );
 
     @Test
+    public void getInstance_should_throw_IllegalArgumentException_given_null_arg() {
+        // TODO
+    }
+
+    @Test
     public void setFlushInterval() {
         long defaultInterval = MessageLoop.DEFAULT_FLUSH_INTERVAL;
         long newInterval = defaultInterval + 1000;

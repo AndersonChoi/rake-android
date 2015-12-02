@@ -1,5 +1,6 @@
 package com.rake.android.rkmetrics.metric.model;
 
+import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
@@ -9,8 +10,8 @@ public class InstallMetric extends Body {
 
     private Header header;
     private Long operation_time;
-    private String mode;
-    private String database_version;
+    private String env;
+    private Long database_version;
     private Long persisted_log_count;
     private Long expired_log_count;
 
@@ -22,11 +23,11 @@ public class InstallMetric extends Body {
         this.operation_time = operation_time; return this;
     }
 
-    public InstallMetric setMode(String mode) {
-        this.mode = mode; return this;
+    public InstallMetric setEnv(RakeAPI.Env env) {
+        if (null == env) this.env = env.name(); return this;
     }
 
-    public InstallMetric setDatabaseVersion(String database_version) {
+    public InstallMetric setDatabaseVersion(long database_version) {
         this.database_version = database_version; return this;
     }
 
@@ -36,6 +37,10 @@ public class InstallMetric extends Body {
 
     public InstallMetric setExpiredLogCount(long expired_log_count) {
         this.expired_log_count = expired_log_count; return this;
+    }
+
+    public InstallMetric setStatus(Status status) {
+        if (null != header) header.setStatus(status); return this;
     }
 
     @Override
@@ -54,7 +59,7 @@ public class InstallMetric extends Body {
         /* specific body */
         shuttle
                 .operation_time(operation_time)
-                .mode(mode)
+                .env(env)
                 .database_version(database_version)
                 .persisted_log_count(persisted_log_count)
                 .expired_log_count(expired_log_count);

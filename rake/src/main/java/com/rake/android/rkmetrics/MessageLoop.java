@@ -9,13 +9,14 @@ import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
-import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.metric.model.Body;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
+import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
@@ -59,6 +60,7 @@ final class MessageLoop {
         AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER (6),
         FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
+        RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
@@ -127,14 +129,30 @@ final class MessageLoop {
         Message m = Message.obtain();
         m.what = AUTO_FLUSH_BY_TIMER.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
 
-    private synchronized boolean isAutoFlushON() {
-        return ON == autoFlushOption;
+    private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
+
+    public void queueInstallMetric(long operationTime, String token, RakeAPI.Env env) {
+        Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
+        InstallMetric installMetric = new InstallMetric();
+
+        /** persisted_log_count, expired_log_count will be filled in MessageLoop */
+        installMetric
+                .setHeader(h)
+                .setOperationTime(operationTime)
+                .setEnv(env)
+                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION));
+
+        Message m = Message.obtain();
+        m.what = Command.RECORD_INSTALL_METRIC.code;
+        m.obj = installMetric;
+
+        queueMessage(m);
     }
 
-    public boolean track(Log log) {
+    public boolean queueTrackCommand(Log log) {
         if (null == log) {
             Logger.e("Can't track null `Log`");
             return false;
@@ -144,26 +162,26 @@ final class MessageLoop {
         m.what = Command.TRACK.code;
         m.obj = log;
 
-        runMessage(m);
+        queueMessage(m);
 
         return true;
     }
 
-    public void flush() {
+    public void queueFlushCommand() {
         Message m = Message.obtain();
         m.what = Command.MANUAL_FLUSH.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
 
     public void hardKill() {
         Message m = Message.obtain();
         m.what = Command.KILL_WORKER.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
 
-    private void runMessage(Message msg) {
+    private void queueMessage(Message msg) {
         if (isDead()) {
             // thread died under suspicious circumstances.
             // don't try to send any more events.
@@ -236,17 +254,15 @@ final class MessageLoop {
 
     private class MessageHandler extends Handler {
 
-        private final EventTableAdapter eventTableAdapter;
-        private final LogTableAdapter logTableAdapter;
-
         public MessageHandler() {
             super();
 
-            eventTableAdapter = EventTableAdapter.getInstance(appContext);
-            logTableAdapter = LogTableAdapter.getInstance(appContext);
+            EventTableAdapter.getInstance(appContext);
+            LogTableAdapter.getInstance(appContext);
 
             Logger.t("Remove expired logs (48 hours before)");
-            logTableAdapter.removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
+            LogTableAdapter.getInstance(appContext)
+                    .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             /* flush legacy table `events` */
             if (DatabaseAdapter.upgradedFrom4To5)
@@ -272,7 +288,8 @@ final class MessageLoop {
 
             updateFlushFrequency();
 
-            List<LogChunk> chunks = logTableAdapter.getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
+            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext)
+                    .getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
 
             if (null == chunks || 0 == chunks.size()) return;
 
@@ -288,7 +305,7 @@ final class MessageLoop {
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be NULL");
-                    logTableAdapter.removeLogChunk(chunk);
+                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
@@ -297,14 +314,14 @@ final class MessageLoop {
 
                 if (null == status) {
                     Logger.e("Status can't be NULL");
-                    logTableAdapter.removeLogChunk(chunk);
+                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
                 switch (status) {
                     case DONE:
                     case DROP:
-                        logTableAdapter.removeLogChunk(chunk);
+                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                         break;
                     case RETRY:
                         // TODO flush database, RAKE-383, RAKE-381
@@ -332,40 +349,27 @@ final class MessageLoop {
                             .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
                             .setServerResponseTime(responseMetric.getServerResponseTime());
 
-                    persistFlushMetric(metric);
+                    recordFlushMetric(metric);
                 }
             }
         }
 
-        public void persistFlushMetric(FlushMetric metric) {
-            JSONObject validShuttle = createValidShuttleForMetric(metric);
+        public void recordFlushMetric(FlushMetric metric) {
+            JSONObject validShuttle = createValidShuttleForMetric(metric, appContext);
 
             Log log = Log.create(
                     MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
-            logTableAdapter.addLog(log);
+            LogTableAdapter.getInstance(appContext).addLog(log);
         }
 
-        public JSONObject createValidShuttleForMetric(FlushMetric metric) {
-            if (null == metric) return null;
+        private void recordInstallMetric(InstallMetric metric) {
+            JSONObject validShuttle = createValidShuttleForMetric(metric, appContext);
 
-            JSONObject userProps = metric.toJSONObject();
-            JSONObject defaultProps = createDefaultPropsForMetric();
-            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
+            Log log = Log.create(
+                    MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
-            return validShuttle;
-        }
-
-        public JSONObject createDefaultPropsForMetric() {
-            JSONObject defaultProps = null;
-            try {
-                defaultProps = RakeAPI.getDefaultProps(
-                        appContext, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
-            } catch (JSONException e) {
-                Logger.e("Can't create defaultProps for metric");
-            }
-
-            return defaultProps;
+            LogTableAdapter.getInstance(appContext).addLog(log);
         }
 
         /**
@@ -397,7 +401,7 @@ final class MessageLoop {
          */
         private void flushEventTable() {
             updateFlushFrequency();
-            ExtractedEvent event = eventTableAdapter.getExtractEvent();
+            ExtractedEvent event = EventTableAdapter.getInstance(appContext).getExtractEvent();
 
             if (event != null) {
                 String lastId = event.getLastId();
@@ -419,7 +423,7 @@ final class MessageLoop {
 
                 if (DONE == status || DROP == status) {
                     // if DROP, we have an unrecoverable failure.
-                    eventTableAdapter.removeEventById(lastId);
+                    EventTableAdapter.getInstance(appContext).removeEventById(lastId);
                 } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
                 } else {
@@ -435,7 +439,7 @@ final class MessageLoop {
 
                 if (command == TRACK) {
                     Log log = (Log) msg.obj;
-                    int logQueueLength = logTableAdapter.addLog(log);
+                    int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
 
                     Logger.t("Total log count in SQLite: " + logQueueLength);
 
@@ -460,10 +464,20 @@ final class MessageLoop {
                 } else if (command == KILL_WORKER) {
                     Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
-                        eventTableAdapter.deleteDatabase();
+                        EventTableAdapter.getInstance(appContext).deleteDatabase();
                         handler = null;
                         android.os.Looper.myLooper().quit();
                     }
+
+
+                } else if (command == RECORD_INSTALL_METRIC) {
+                    // InstallMetric metric = (InstallMetric) msg.obj;
+
+                    // if null token, return
+
+                    // TODO LogTableAdapter.getInstance(appContext).getLogCount()
+
+                    // recordInstallMetric(metric);
 
                 } else { /* UNKNOWN COMMAND */
                     Logger.e("Unexpected message received by Rake worker: " + msg);
@@ -485,5 +499,6 @@ final class MessageLoop {
                 // TODO metric
             }
         }
+
     }
 }

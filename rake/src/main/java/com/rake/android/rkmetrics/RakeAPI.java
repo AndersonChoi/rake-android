@@ -107,10 +107,11 @@ public final class RakeAPI {
                                       String token,
                                       Env env,
                                       Logging loggingMode) {
-        
         if (null == context || null == token || null == env || null == loggingMode) {
             throw new IllegalArgumentException("Can't initialize RakeAPI using NULL args");
         }
+
+        long startAt = System.currentTimeMillis();
 
         setLogging(loggingMode);
 
@@ -130,8 +131,10 @@ public final class RakeAPI {
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
 
-                /** metric */
+                long endAt = System.currentTimeMillis();
 
+                /** record metric */
+                MessageLoop.getInstance(context).queueInstallMetric(endAt - startAt, token, env);
             } else {
                 Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
@@ -207,11 +210,11 @@ public final class RakeAPI {
         String uri = endpoint.getURI(env);
         Log log = Log.create(uri, token, validShuttle);
 
-        if (MessageLoop.getInstance(context).track(log)) {
+        if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
             Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
 
             if (Env.DEV == env) /* if Env.DEV, flush immediately */
-                MessageLoop.getInstance(context).flush();
+                MessageLoop.getInstance(context).queueFlushCommand();
         }
     }
 
@@ -265,7 +268,7 @@ public final class RakeAPI {
     public void flush() {
         Logger.d(tag, "Flush");
 
-        MessageLoop.getInstance(context).flush();
+        MessageLoop.getInstance(context).queueFlushCommand();
     }
 
     /**

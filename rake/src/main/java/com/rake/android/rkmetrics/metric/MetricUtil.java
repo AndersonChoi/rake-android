@@ -4,14 +4,21 @@ import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.metric.model.Body;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.ExceptionUtil;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.functional.Callback;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Date;
 
 
 /**
@@ -32,7 +39,6 @@ public final class MetricUtil {
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
     public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-383-metric";
-    // public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -57,4 +63,27 @@ public final class MetricUtil {
         return sb.toString().replaceAll("-", "");
     }
 
+
+
+    public static JSONObject createValidShuttleForMetric(Body metric, Context context) {
+        if (null == metric) return null;
+
+        JSONObject userProps = metric.toJSONObject();
+        JSONObject defaultProps = createDefaultPropsForMetric(context);
+        JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
+
+        return validShuttle;
+    }
+
+    public static JSONObject createDefaultPropsForMetric(Context context) {
+        JSONObject defaultProps = null;
+        try {
+            defaultProps = RakeAPI.getDefaultProps(
+                    context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+        } catch (JSONException e) {
+            Logger.e("Can't create defaultProps for metric");
+        }
+
+        return defaultProps;
+    }
 }
