@@ -3,7 +3,7 @@ package com.rake.android.rkmetrics;
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
 import static com.rake.android.rkmetrics.metric.MetricUtil.*;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
+import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 import android.content.Context;
 import android.os.Handler;
@@ -14,7 +14,6 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
-import com.rake.android.rkmetrics.metric.model.FlushResult;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.Status;
@@ -57,7 +56,7 @@ final class MessageLoop {
         MANUAL_FLUSH(2),
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
-        KILL_WORKER (5),
+        KILL_WORKER (6),
         FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
         UNKNOWN(-1);
 
@@ -291,29 +290,27 @@ final class MessageLoop {
                 }
 
                 Long operationTime = (endAt - startAt);
-                Status status = null;
+                Status status = responseMetric.getFlushStatus();
 
-                switch (responseMetric.getFlushResult()) {
-                    case SUCCESS:
+                if (null == status) {
+                    Logger.e("Status can't be NULL");
+                    return;
+                }
+
+                switch (status) {
+                    case DONE:
+                    case DROP:
                         logTableAdapter.removeLogChunk(chunk);
-                        status = Status.DONE;
                         break;
-                    case FAILURE_UNRECOVERABLE:
-                        logTableAdapter.removeLogChunk(chunk);
-                        status = Status.FAIL;
-                        break;
-                    case FAILURE_RECOVERABLE:
-                        // TODO flush retry.code
+                    case RETRY:
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                        status = Status.RETRY;
                         break;
-
                     default:
-                        Logger.e("Unknown FlushResult");
+                        Logger.e("Unknown FlushStatus");
                         return;
                 }
 
-                /** 메트릭 자체에 대한 메트릭은 기록하지 않음, != 대신 equals 로 비교해야 함 */
+                /** 메트릭 자체에 대한 메트릭은 기록하지 않음, != 대신 !equals 로 비교해야 함 */
                 if (!chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) {
 
                     /** write metric values */
@@ -419,17 +416,15 @@ final class MessageLoop {
                     return;
                 }
 
-                FlushResult flushResult = responseMetric.getFlushResult();
+                Status status = responseMetric.getFlushStatus();
 
-                // TODO: remove from MessageLoop. -> HttpRequestSender
-                if (SUCCESS == flushResult) {
+                if (DONE == status || DROP == status) {
+                    // if DROP, we have an unrecoverable failure.
                     eventTableAdapter.removeEventById(lastId);
-                } else if (FAILURE_RECOVERABLE == flushResult) { // try again later
+                } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
-                } else if (FAILURE_UNRECOVERABLE == flushResult){ // give up, we have an unrecoverable failure.
-                    eventTableAdapter.removeEventById(lastId);
                 } else {
-                    Logger.e("Invalid TransmissionResult: " + flushResult);
+                    Logger.e("Invalid TransmissionResult: " + status);
                 }
             }
         }
@@ -456,10 +451,10 @@ final class MessageLoop {
                     flush(FlushType.MANUAL_FLUSH);
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
                     flush(FlushType.AUTO_FLUSH_BY_COUNT);
-
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
                     flush(FlushType.AUTO_FLUSH_BY_TIMER);
 
+                    /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 FLUSH_INTERVAL 만큼 반복 */
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);
 

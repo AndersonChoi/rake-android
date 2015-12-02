@@ -1,6 +1,6 @@
 package com.rake.android.rkmetrics.network;
 
-import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
+import com.rake.android.rkmetrics.metric.model.Status;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -19,10 +19,10 @@ public class ServerResponseMetricSpec {
                 ServerResponseMetric.create(null, null, "body", 1, 0L);
 
         ServerResponseMetric s2 =
-                ServerResponseMetric.create(null, FAILURE_RECOVERABLE, null, 1, 0L);
+                ServerResponseMetric.create(null, Status.RETRY, null, 1, 0L);
 
         ServerResponseMetric s3 =
-                ServerResponseMetric.create(null, FAILURE_RECOVERABLE, "body", 1, 0L);
+                ServerResponseMetric.create(null, Status.RETRY, "body", 1, 0L);
 
         assertThat(s1).isNull();
 

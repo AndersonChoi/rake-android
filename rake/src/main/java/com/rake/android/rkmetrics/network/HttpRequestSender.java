@@ -1,6 +1,6 @@
 package com.rake.android.rkmetrics.network;
 
-import com.rake.android.rkmetrics.metric.model.FlushResult;
+import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
@@ -33,7 +33,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.rake.android.rkmetrics.android.Compatibility.*;
-import static com.rake.android.rkmetrics.metric.model.FlushResult.*;
+import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 final public class HttpRequestSender {
     private static final String COMPRESS_FIELD_NAME = "compress";
@@ -67,7 +67,7 @@ final public class HttpRequestSender {
 
         int responseCode = 0;
         String responseBody = null;
-        FlushResult flushResult = FAILURE_UNRECOVERABLE;
+        Status flushStatus = DROP;
         long operationTime = 0L;
         Throwable t = null;
 
@@ -103,32 +103,32 @@ final public class HttpRequestSender {
             while ((line = br.readLine()) != null) builder.append(line);
 
             responseBody = builder.toString();
-            flushResult = interpretResponse(responseBody);
+            flushStatus = interpretResponse(responseBody);
 
             reportResponse(responseCode, responseBody);
         } catch (MalformedURLException e) {
             Logger.e("Invalid URL", e);
-            flushResult = FAILURE_RECOVERABLE;
+            flushStatus = RETRY;
             t = e;
         } catch (UnsupportedEncodingException e) {
-            Logger.e("Invalid encoding", e);
-            flushResult = FAILURE_UNRECOVERABLE;
+            Logger.e("Unsupported encoding", e);
+            flushStatus = DROP;
             t = e;
         } catch (ProtocolException e) {
             Logger.e("Invalid protocol", e);
-            flushResult = FAILURE_UNRECOVERABLE;
+            flushStatus = DROP;
             t = e;
         } catch (IOException e) {
-            Logger.e("Invalid protocol", e);
-            flushResult = FAILURE_RECOVERABLE;
+            Logger.e("Network error", e);
+            flushStatus = RETRY;
             t = e;
         } catch (OutOfMemoryError e) {
             Logger.e("Memory insufficient", e);
-            flushResult = FAILURE_RECOVERABLE;
+            flushStatus = RETRY;
             t = e;
         } catch (Exception e) {
-            Logger.e("Invalid protocol", e);
-            flushResult = FAILURE_UNRECOVERABLE;
+            Logger.e("Uncaught exception", e);
+            flushStatus = DROP;
             t = e;
         } finally {
             if (null != conn) conn.disconnect();
@@ -137,7 +137,7 @@ final public class HttpRequestSender {
             StreamUtil.closeQuietly(os);
         }
 
-        return ServerResponseMetric.create(t, flushResult, responseBody, responseCode, operationTime);
+        return ServerResponseMetric.create(t, flushStatus, responseBody, responseCode, operationTime);
     }
 
     private static void reportResponse(int responseCode, String responseBody) {
@@ -176,7 +176,7 @@ final public class HttpRequestSender {
     }
 
     private static ServerResponseMetric sendHttpClientRequest(String endPoint, String requestMessage) {
-        FlushResult flushResult = FAILURE_UNRECOVERABLE;
+        Status flushStatus = DROP;
         String responseBody = null;
         int responseCode = 0;
         long operationTime = 0L;
@@ -195,34 +195,34 @@ final public class HttpRequestSender {
 
             if (null == response) {
                 Logger.d("HttpResponse is null. Retry later");
-                return ServerResponseMetric.create(null, FAILURE_RECOVERABLE, null, 0, operationTime);
+                return ServerResponseMetric.create(null, RETRY, null, 0, operationTime);
             }
 
             HttpEntity responseEntity = response.getEntity();
 
             if (null == responseEntity) {
                 Logger.d("HttpEntity is null. Retry later");
-                return ServerResponseMetric.create(null, FAILURE_RECOVERABLE, null, 0, operationTime);
+                return ServerResponseMetric.create(null, RETRY, null, 0, operationTime);
             }
 
             responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
             responseCode = response.getStatusLine().getStatusCode();
 
             // TODO interpretResponseCode
-            flushResult = interpretResponse(responseBody);
+            flushStatus = interpretResponse(responseBody);
 
             reportResponse(responseCode, responseBody);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
-            flushResult = FAILURE_UNRECOVERABLE;
+            flushStatus = DROP;
             t = e;
         } catch (IOException e) {
             Logger.e("Cannot post message to Rake Servers (May Retry)", e);
-            flushResult = FAILURE_RECOVERABLE;
+            flushStatus = RETRY;
             t = e;
         } catch (OutOfMemoryError e) {
             Logger.e("Cannot post message to Rake Servers, will not retry.", e);
-            flushResult = FAILURE_RECOVERABLE;
+            flushStatus = RETRY;
             t = e;
         } catch (GeneralSecurityException e) {
             Logger.e("Cannot build SSL Client", e);
@@ -233,31 +233,31 @@ final public class HttpRequestSender {
         }
 
         return ServerResponseMetric.create(
-                t, flushResult, responseBody, responseCode, operationTime);
+                t, flushStatus, responseBody, responseCode, operationTime);
     }
 
-    private static FlushResult interpretResponseCode(int statusCode) {
+    private static Status interpretResponseCode(int statusCode) {
         // TODO HttpsUrlConnection.HTTP_OK -> UrlConnection 과 HttpClient 의 상수가 다름 (값이 아니라 상수 이름)
-        if (HttpStatus.SC_OK == statusCode) return SUCCESS;
+        if (HttpStatus.SC_OK == statusCode) return DONE;
         else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == statusCode) {
             Logger.e("Internal Server Error. retry later");
-            return FAILURE_RECOVERABLE; /* retry */
+            return RETRY;
         }
 
         /* 20x (not 200), 3xx, 4xx */
-        return  FAILURE_UNRECOVERABLE; /* not retry */
+        return DROP; /* not retry */
     }
 
-    private static FlushResult interpretResponse(String response) {
+    private static Status interpretResponse(String response) {
         if (null == response) {
             Logger.e("ServerResponse body is empty. (Retry)");
-            return FAILURE_RECOVERABLE;
+            return RETRY;
         }
 
-        if (response.startsWith("1")) return SUCCESS;
+        if (response.startsWith("1")) return DONE;
 
         Logger.e("Server returned negative response. make sure that your token is valid");
-        return FAILURE_UNRECOVERABLE;
+        return DROP;
     }
 
     private static HttpClient createHttpsClient() throws GeneralSecurityException {
