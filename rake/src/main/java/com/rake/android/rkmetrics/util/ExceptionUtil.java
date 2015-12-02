@@ -15,9 +15,8 @@ public class ExceptionUtil {
         if (null == e) return null;
 
         StringWriter sw = new StringWriter();
-        PrintWriter pw = new PrintWriter(sw);
-        e.printStackTrace(pw);
+        e.printStackTrace(new PrintWriter(sw));
 
-        return pw.toString();
+        return sw.toString();
     }
 }
