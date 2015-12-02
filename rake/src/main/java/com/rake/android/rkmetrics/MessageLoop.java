@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics;
 
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
+import static com.rake.android.rkmetrics.metric.MetricUtil.*;
 
 import android.content.Context;
 import android.os.Handler;
@@ -24,12 +25,15 @@ import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -274,24 +278,93 @@ final class MessageLoop {
                 FlushMetric metric = new FlushMetric();
 
                 Long startAt = System.currentTimeMillis();
-                send(chunk, metric);
-                Long endAt = System.currentTimeMillis();
 
+                /** network operation */
+                ServerResponseMetric responseMetric = send(chunk);
+
+                Long endAt = System.currentTimeMillis();
                 Long operationTime = (endAt - startAt);
 
-                /** set metric */
+                if (null == responseMetric) {
+                    Logger.e("ServerResponseMetric can't be NULL");
+                    return;
+                }
+
+                Status status = null;
+
+                switch (responseMetric.getTransmissionResult()) {
+                    case SUCCESS:
+                        logTableAdapter.removeLogChunk(chunk);
+                        status = Status.DONE;
+                        break;
+                    case FAILURE_UNRECOVERABLE:
+                        logTableAdapter.removeLogChunk(chunk);
+                        status = Status.FAIL;
+                        break;
+                    case FAILURE_RECOVERABLE:
+                        // TODO flush retry.code
+                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
+                        status = Status.RETRY;
+                        break;
+
+                    default:
+                        Logger.e("Unknown TransmissionResult");
+                        return;
+                }
+
+                /** write metric values */
+                Header header = new Header()
+                        .setAction(Action.FLUSH)
+                        .setStatus(status)
+                        .setAppPackage(SystemInformation.getPackageName(appContext))
+                        .setTransactionId(MetricUtil.TRANSACTION_ID)
+                        .setServiceToken(chunk.getToken());
 
                 metric.setFlushType(flushType)
                         .setOperationTime(operationTime);
+                metric.setHeader(header);
+                metric.setExceptionInfo(responseMetric.getExceptionInfo());
+                metric
+                        .setLogCount(Long.valueOf(chunk.getCount()))
+                        .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
+                        .setServerResponseBody(responseMetric.getResponseBody())
+                        .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
+                        .setServerResponseTime(responseMetric.getServerResponseTime());
 
-                JSONObject json = metric.toJSONObject();
 
-                Log log = Log.create(
-                        MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, json);
-
-                // EMERG TODO: use RakeAPI static track
-                // logTableAdapter.addLog(log);
+                persistFlushMetric(metric);
             }
+        }
+
+        public void persistFlushMetric(FlushMetric metric) {
+            JSONObject validShuttle = createValidShuttleForMetric(metric);
+
+            Log log = Log.create(
+                    MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+
+            logTableAdapter.addLog(log);
+        }
+
+        public JSONObject createValidShuttleForMetric(FlushMetric metric) {
+            if (null == metric) return null;
+
+            JSONObject userProps = metric.toJSONObject();
+            JSONObject defaultProps = createDefaultPropsForMetric();
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
+
+            return validShuttle;
+        }
+
+        public JSONObject createDefaultPropsForMetric() {
+            JSONObject defaultProps = null;
+            try {
+                defaultProps = RakeAPI.getDefaultProps(
+                        appContext, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+            } catch (JSONException e) {
+                Logger.e("Can't create defaultProps for metric");
+            }
+
+            return defaultProps;
         }
 
         /**
@@ -301,65 +374,21 @@ final class MessageLoop {
          * - 복구 가능한 예외인지 (FAILURE_RECOVERABLE)
          * 판단하여 필요한 경우 로그를 삭제
          */
-        private void send(LogChunk chunk, FlushMetric metric) {
+        private ServerResponseMetric send(LogChunk chunk) {
 
-            if (null == chunk || null == metric) {
+            if (null == chunk) {
                 Logger.e("Can't flush using null args");
-                return; // TODO: return FlushMetric
-            }
-
-            ServerResponseMetric responseMetric =
-                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
-
-            if (null == responseMetric) {
-                Logger.e("ServerResponseMetric can't be null");
-                return;
-            }
-
-            TransmissionResult result = responseMetric.getTransmissionResult();
-            Status status = null;
-
-            switch (result) {
-                case SUCCESS:
-                    logTableAdapter.removeLogChunk(chunk);
-                    status = Status.DONE;
-                    break;
-                case FAILURE_UNRECOVERABLE:
-                    logTableAdapter.removeLogChunk(chunk);
-                    status = Status.FAIL;
-                    break;
-                case FAILURE_RECOVERABLE:
-                    if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                    status = Status.RETRY;
-                    break;
-
-                default:
-                    Logger.e("Unknown TransmissionResult");
-                    return;
+                return null;
             }
 
             String message = String.format("Sending %d log to %s with token %s",
                     chunk.getCount(), chunk.getUrl(), chunk.getToken());
-
             Logger.t(message);
 
-            /** write metric values */
-            Header header = new Header()
-                    .setAction(Action.FLUSH)
-                    .setStatus(status)
-                    .setAppPackage(SystemInformation.getPackageName(appContext))
-                    .setTransactionId(MetricUtil.TRANSACTION_ID)
-                    .setServiceToken(chunk.getToken());
+            ServerResponseMetric responseMetric =
+                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
 
-            metric.setHeader(header);
-            metric.setExceptionInfo(responseMetric.getExceptionInfo());
-            metric
-                    .setLogCount(Long.valueOf(chunk.getCount()))
-                    .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
-                    .setServerResponseBody(responseMetric.getResponseBody())
-                    .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
-                    .setServerResponseTime(responseMetric.getServerResponseTime());
-
+            return responseMetric;
         }
 
         /**

@@ -225,10 +225,9 @@ public class ShuttleProfilerSpec {
         JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject superProps = new JSONObject();
         JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, null /* null 일 수 있음 */, defaultProps);
 
         assertThat(hasKey(props, FIELD_NAME_BODY, null)).isTrue();
         assertThat(hasDefaultProps(props, null)).isTrue();

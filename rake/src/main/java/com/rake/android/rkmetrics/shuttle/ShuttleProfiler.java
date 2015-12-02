@@ -287,13 +287,16 @@ public class ShuttleProfiler {
 
     /**
      * 1. META 를 extract
+     * 2. fieldOrder 를 이용해 userProps, superProps, defaultProps 를 머지해 props 생성
+     * 3. props 에 META 를 추가하여 돌려줌
      */
     public static JSONObject createValidShuttle(JSONObject userProps,
                                                 JSONObject superProps,
                                                 JSONObject defaultProps) {
 
-        if (null == userProps || null == superProps || null == defaultProps) {
-            Logger.e("Can't create valid shuttle using null args");
+        /** superProps 는 null 일 경우 mergeProps() 내에서 빈 JSONObject 생성하여 실행하므로 검사하지 않음 */
+        if (null == userProps || null == defaultProps) {
+            Logger.e("Can't create valid shuttle using null userProps, defaultProps");
             return null;
         }
 
@@ -304,8 +307,10 @@ public class ShuttleProfiler {
             JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
             JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
-            meta.put(FIELD_NAME_PROPERTIES, props);
-            validShuttle = meta;
+            if (null != props) {
+                meta.put(FIELD_NAME_PROPERTIES, props);
+                validShuttle = meta;
+            }
         } catch (Exception e) { /* JSONException or NullPointerException */
             Logger.e("Failed to make valid shuttle", e);
         }
@@ -358,6 +363,8 @@ public class ShuttleProfiler {
                                         JSONObject superProps,
                                         JSONObject defaultProps)
             throws JSONException, NullPointerException {
+
+        if (null == superProps) superProps = new JSONObject();
 
         /** 1. Insert user-collected fields */
         for (Iterator<?> keys = userProps.keys(); keys.hasNext(); ) {
