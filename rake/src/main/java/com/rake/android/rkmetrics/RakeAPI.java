@@ -67,7 +67,6 @@ public final class RakeAPI {
     private final String token;
 
     private final Context context;
-    private final MessageLoop messageLoop; /* singleton */
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
@@ -83,7 +82,6 @@ public final class RakeAPI {
         this.env = env;
         this.endpoint = endpoint;
 
-        this.messageLoop = MessageLoop.getInstance(appContext);
         this.storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
 
         readSuperProperties();
@@ -198,12 +196,11 @@ public final class RakeAPI {
         String uri = endpoint.getURI(env);
         Log log = Log.create(uri, token, validShuttle);
 
-        synchronized (messageLoop) {
-            if (messageLoop.track(log))
-                Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
+        if (MessageLoop.getInstance(context).track(log)) {
+            Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
 
             if (Env.DEV == env) /* if Env.DEV, flush immediately */
-                messageLoop.flush();
+                MessageLoop.getInstance(context).flush();
         }
     }
 
@@ -257,9 +254,7 @@ public final class RakeAPI {
     public void flush() {
         Logger.d(tag, "Flush");
 
-        synchronized (messageLoop) {
-            messageLoop.flush();
-        }
+        MessageLoop.getInstance(context).flush();
     }
 
     /**

@@ -44,12 +44,13 @@ import java.util.concurrent.SynchronousQueue;
  */
 final class MessageLoop {
 
-    /* package */ static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
-    /* package */ static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
-    /* package */ static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    /* package */ static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
-    /* package */ static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
-    /* package */ static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
+    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+
+    private static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
+    private static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
     /* package */ enum Command {
         TRACK(1),
@@ -103,13 +104,13 @@ final class MessageLoop {
         return instance;
     }
 
-    /* package */ static synchronized void setFlushInterval(long millis) {
+    /* package */ static void setFlushInterval(long millis) {
         FLUSH_INTERVAL = millis;
     }
 
-    /* package */ static synchronized long getFlushInterval() { return FLUSH_INTERVAL; }
+    /* package */ static long getFlushInterval() { return FLUSH_INTERVAL; }
 
-    /* package */ static synchronized void setAutoFlushOption(AutoFlush option) {
+    /* package */ static void setAutoFlushOption(AutoFlush option) {
         MessageLoop.autoFlushOption = option;
 
         /* 인스턴스가 존재하면, AUTO_FLUSH_BY_TIMER 루프를 재시작 */
@@ -118,7 +119,7 @@ final class MessageLoop {
         }
     }
 
-    /* package */ static synchronized AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
+    /* package */ static AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
 
     /* Instance methods */
 
@@ -133,7 +134,7 @@ final class MessageLoop {
         return ON == autoFlushOption;
     }
 
-    boolean track(Log log) {
+    public boolean track(Log log) {
         if (null == log) {
             Logger.e("Can't track null `Log`");
             return false;
@@ -148,19 +149,20 @@ final class MessageLoop {
         return true;
     }
 
-    void flush() {
+    public void flush() {
         Message m = Message.obtain();
         m.what = Command.MANUAL_FLUSH.code;
 
         runMessage(m);
     }
 
-    void hardKill() {
+    public void hardKill() {
         Message m = Message.obtain();
         m.what = Command.KILL_WORKER.code;
 
         runMessage(m);
     }
+
     private void runMessage(Message msg) {
         if (isDead()) {
             // thread died under suspicious circumstances.
@@ -482,6 +484,6 @@ final class MessageLoop {
                 Logger.e("Caught unhandled exception. (ignored)", e);
                 // TODO metric
             }
-        } // handleMessage
+        }
     }
 }
