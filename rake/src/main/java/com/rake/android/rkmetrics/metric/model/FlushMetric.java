@@ -43,29 +43,15 @@ public final class FlushMetric extends Body {
 
     @Override
     public JSONObject toJSONObject() {
-        RakeClientMetricSentinelShuttle shuttle = getShuttle();
-        initializeShuttle(shuttle);
+        RakeClientMetricSentinelShuttle shuttle = getEmptyShuttle();
 
         if (null == shuttle) {
-            Logger.e("Null shuttle returned from getShuttle()");
+            Logger.e("NULL shuttle returned from getEmptyShuttle()");
             return null;
         }
 
-        if (null != header) {
-            /* header */
-            shuttle
-                    .action(header.getAction())
-                    .status(header.getStatus())
-                    .app_package(header.getAppPackage())
-                    .transaction_id(header.getTransactionId())
-                    .service_token((header.getServiceToken()));
-
-        }
-
-        /* common body */
-        shuttle
-                .exception_type(getExceptionType())
-                .stacktrace(getStacktrace()); // TODO getThreadInfo
+        if (null != header) header.fillShuttle(shuttle);
+        fillCommonBodyFields(shuttle);
 
         /* specific body */
         shuttle

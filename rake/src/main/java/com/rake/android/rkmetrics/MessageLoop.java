@@ -286,6 +286,7 @@ final class MessageLoop {
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be NULL");
+                    logTableAdapter.removeLogChunk(chunk);
                     return;
                 }
 
@@ -294,6 +295,7 @@ final class MessageLoop {
 
                 if (null == status) {
                     Logger.e("Status can't be NULL");
+                    logTableAdapter.removeLogChunk(chunk);
                     return;
                 }
 
@@ -303,6 +305,7 @@ final class MessageLoop {
                         logTableAdapter.removeLogChunk(chunk);
                         break;
                     case RETRY:
+                        // TODO flush database, RAKE-383, RAKE-381
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
                         break;
                     default:
@@ -334,7 +337,6 @@ final class MessageLoop {
 
                     persistFlushMetric(metric);
                 }
-
             }
         }
 

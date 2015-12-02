@@ -8,26 +8,13 @@ import org.json.JSONObject;
 public abstract class Body {
 
     /** common */
-    public static final String FIELD_NAME_EXCEPTION_TYPE = "exception_type";
-    public static final String FIELD_NAME_STACKTRACE = "stacktrace";
-    public static final String FIELD_NAME_THREAD_INFO = "thread_info";
-
-    /** for Action.FLUSH */
-    public static final String FIELD_NAME_OPERATION_TIME = "operation_time";
-
-    /** for Action.TRACK */
-    public static final String FIELD_NAME_TRACK_OPERATION_COUNT = "track_operation_count";
-    public static final String FIELD_NAME_TRACK_OPERATION_TIME_LIST = "track_operation_time_list";
-    public static final String FIELD_NAME_TRACKED_LOG_SIZE_LIST = "tracked_log_size_list";
-
+    public static final String BODY_NAME_EXCEPTION_TYPE = "exception_type";
+    public static final String BODY_NAME_STACKTRACE = "stacktrace";
+    public static final String BODY_NAME_THREAD_INFO = "thread_info";
 
     /** instance members */
     protected String exception_type;
     protected String stacktrace;
-
-    /** getter, setter */
-    public String getExceptionType() { return exception_type; }
-    public String getStacktrace() { return stacktrace; }
 
     public Body setExceptionInfo(Throwable e) {
         if (null == e) return this;
@@ -47,8 +34,26 @@ public abstract class Body {
                 }
             };
 
-    public static final RakeClientMetricSentinelShuttle getShuttle() {
-        return metricShuttles.get();
+    /**
+     * @return null if the provided shuttle is NULL
+     */
+    public final boolean fillCommonBodyFields(RakeClientMetricSentinelShuttle shuttle) {
+        if (null == shuttle) return false;
+
+        shuttle.exception_type(exception_type);
+        shuttle.stacktrace(stacktrace);
+        // TODO thread INFO
+
+        return true;
+    }
+
+    /** return initialized shuttle for this thread */
+    public static final RakeClientMetricSentinelShuttle getEmptyShuttle() {
+
+        RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
+        shuttle = initializeShuttle(shuttle);
+
+        return shuttle;
     }
 
     public static RakeClientMetricSentinelShuttle initializeShuttle(RakeClientMetricSentinelShuttle shuttle) {
