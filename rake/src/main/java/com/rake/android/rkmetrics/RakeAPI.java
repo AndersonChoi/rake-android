@@ -99,11 +99,19 @@ public final class RakeAPI {
      *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
      *
      * @param         loggingMode Logging.ENABLE or Logging.DISABLE
+     *
+     * @throws IllegalArgumentException if one of the parameters is NULL
+     *
      */
     public static RakeAPI getInstance(Context context,
                                       String token,
                                       Env env,
                                       Logging loggingMode) {
+        
+        if (null == context || null == token || null == env || null == loggingMode) {
+            throw new IllegalArgumentException("Can't initialize RakeAPI using NULL args");
+        }
+
         setLogging(loggingMode);
 
         synchronized (sInstanceMap) {
@@ -122,7 +130,10 @@ public final class RakeAPI {
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
 
-                // created
+                /** metric */
+
+            } else {
+                Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
 
             return rake;
