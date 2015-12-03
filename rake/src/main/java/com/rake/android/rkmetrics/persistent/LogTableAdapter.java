@@ -53,6 +53,35 @@ public final class LogTableAdapter extends DatabaseAdapter {
     }
 
     /**
+     * @param token
+     * @return -1, if exception occurred or token is NULL
+     */
+    public synchronized int getCount(final String token) {
+        if (null == token) return -1;
+
+        Integer count = executeAndReturnT(new SQLiteCallback<Integer>() {
+            @Override
+            public Integer execute(SQLiteDatabase db) {
+                Cursor c = db.rawQuery(getQuery(), null);
+                c.moveToFirst();
+
+                return c.getInt(0);
+            }
+
+            @Override
+            public String getQuery() {
+                /** starts with ` ` (space) */
+                String BEGIN_WHERE_CLAUSE_TOKEN = String.format(" WHERE %s = \"%s\"",
+                        LogContract.COLUMN_TOKEN, token);
+
+                return "SELECT COUNT(*) FROM " + LogContract.TABLE_NAME + BEGIN_WHERE_CLAUSE_TOKEN;
+            }
+        });
+
+        return (null == count) ? -1 : count;
+    }
+
+    /**
      * @param chunk should not be null
      */
     public synchronized void removeLogChunk(final LogChunk chunk) {
@@ -94,6 +123,11 @@ public final class LogTableAdapter extends DatabaseAdapter {
     }
 
     public synchronized int addLog(final Log log) {
+        if (null == log) {
+            Logger.e("Can't record NULL log");
+            return - 1;
+        }
+
         Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {

@@ -1,6 +1,7 @@
 package com.rake.android.rkmetrics.metric.model;
 
 import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
@@ -8,12 +9,20 @@ import org.json.JSONObject;
 
 public class InstallMetric extends Body {
 
+
     private Header header;
     private Long operation_time;
     private String env;
     private Long database_version;
     private Long persisted_log_count;
     private Long expired_log_count;
+    private String endpoint;
+
+    public String getServiceToken() {
+        if (null == header) return null;
+
+        return header.getServiceToken();
+    }
 
     public InstallMetric setHeader(Header header) {
         this.header = header; return this;
@@ -24,7 +33,11 @@ public class InstallMetric extends Body {
     }
 
     public InstallMetric setEnv(RakeAPI.Env env) {
-        if (null == env) this.env = env.name(); return this;
+        if (null != env) this.env = env.name(); return this;
+    }
+
+    public InstallMetric setEndpoint(String endpoint) {
+        if (null != endpoint) this.endpoint = endpoint; return this;
     }
 
     public InstallMetric setDatabaseVersion(long database_version) {
@@ -60,6 +73,7 @@ public class InstallMetric extends Body {
         shuttle
                 .operation_time(operation_time)
                 .env(env)
+                .endpoint(endpoint)
                 .database_version(database_version)
                 .persisted_log_count(persisted_log_count)
                 .expired_log_count(expired_log_count);

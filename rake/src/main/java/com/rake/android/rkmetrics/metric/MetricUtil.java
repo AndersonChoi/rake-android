@@ -5,15 +5,18 @@ import android.content.Context;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Body;
+import com.rake.android.rkmetrics.metric.model.FlushMetric;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
+import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
+import com.rake.android.rkmetrics.network.ServerResponseMetric;
+import com.rake.android.rkmetrics.persistent.Log;
+import com.rake.android.rkmetrics.persistent.LogChunk;
+import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
-import com.rake.android.rkmetrics.util.ExceptionUtil;
 import com.rake.android.rkmetrics.util.Logger;
-import com.rake.android.rkmetrics.util.functional.Callback;
-import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -63,7 +66,82 @@ public final class MetricUtil {
         return sb.toString().replaceAll("-", "");
     }
 
+    /**
+     * @return true if log was successfully persisted otherwise returns false
+     */
+    public static boolean recordInstallMetric(Context context,
+                                              InstallMetric metric) {
 
+        if (null == context || null == metric) {
+            Logger.e("Can't record InstallMetric using NULL args");
+            return false;
+        }
+
+        /** operationTime, env, endpoint, databaseVersion 값은 RakeAPI.getInstance 에서 이미 얻어왔으므로
+            persistedLogCount, expiredLogCount 값만 여기서 기록 */
+
+        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(metric.getServiceToken());
+        // TODO expieredLogCount
+
+        metric.setPersistedLogCount(persistedLogCount);
+        recordMetric(context, metric);
+
+        return true;
+    }
+
+    /**
+     * @return true if log was successfully persisted otherwise returns false
+     */
+    public static boolean recordFlushMetric(Context context,
+                                            Action action,
+                                            Status status,
+                                            FlushType flushType,
+                                            long operationTime,
+                                            LogChunk chunk,
+                                            ServerResponseMetric resMetric){
+
+        if (null == context || null == action || null == chunk || null == resMetric) {
+            Logger.e("Can't record FlushMetric using NULL args");
+            return false;
+        }
+
+        /** 메트릭 자체에 대한 메트릭은 기록하지 않음, == 대신 equals 로 비교해야 함 */
+        if (chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) return false;
+
+        FlushMetric metric = new FlushMetric();
+
+        Header header = Header.create(context, Action.FLUSH, status, chunk.getToken());
+
+        /** set HEADER */
+        metric.setHeader(header);
+
+        /** set COMMON BODY */
+        metric.setExceptionInfo(resMetric.getExceptionInfo());
+
+        metric.setFlushType(flushType)
+                .setOperationTime(operationTime)
+                .setLogCount(Long.valueOf(chunk.getCount()))
+                .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
+                .setServerResponseBody(resMetric.getResponseBody())
+                .setServerResponseCode(Long.valueOf(resMetric.getResponseCode()))
+                .setServerResponseTime(resMetric.getServerResponseTime());
+
+        return MetricUtil.recordMetric(context, metric);
+    }
+
+    /**
+     * @return true if log was successfully persisted otherwise returns false
+     */
+    public static boolean recordMetric(Context context, Body metric) {
+        JSONObject validShuttle = createValidShuttleForMetric(metric, context);
+
+        Log log = Log.create(
+                MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+
+        int count = LogTableAdapter.getInstance(context).addLog(log);
+
+        return (count == -1) ? false : true;
+    }
 
     public static JSONObject createValidShuttleForMetric(Body metric, Context context) {
         if (null == metric) return null;

@@ -16,19 +16,22 @@ public class Header {
     public static final String HEADER_NAME_TRANSACTION_ID = "transaction_id";
     public static final String HEADER_NAME_SERVICE_TOKEN = "service_token";
 
+    /** KEY */
     private String action;
     private String status;
 
+    /** HEADER */
     private String app_package;
     private String transaction_id;
     private String service_token;
+
+    public String getServiceToken() { return service_token; }
 
     public Header setAction(Action action) { this.action = (null == action) ? null : action.getValue(); return this; }
     public Header setStatus(Status status) { this.status = (null == status) ? null : status.getValue(); return this; }
     public Header setAppPackage(String app_package) { this.app_package = app_package; return this; }
     public Header setTransactionId(String transaction_id) { this.transaction_id = transaction_id; return this; }
     public Header setServiceToken(String service_token) { this.service_token = service_token; return this; }
-
 
     /**
      * @param shuttle

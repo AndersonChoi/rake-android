@@ -191,7 +191,7 @@ public final class SystemInformation { /** singleton */
             Logger.e("System information constructed with a context that apparently doesn't exist.");
         } catch(IOException e) {
             Logger.e("Can't create ZipFile Instance using given ApplicationInfo");
-        }
+        } // TODO IMPORTANT catch Exception e
 
         return buildDate;
     }

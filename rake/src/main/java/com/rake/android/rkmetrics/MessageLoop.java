@@ -12,8 +12,6 @@ import android.os.Message;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
-import com.rake.android.rkmetrics.metric.model.Body;
-import com.rake.android.rkmetrics.metric.model.FlushMetric;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.InstallMetric;
@@ -26,15 +24,10 @@ import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
-import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,15 +127,16 @@ final class MessageLoop {
 
     private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
 
-    public void queueInstallMetric(long operationTime, String token, RakeAPI.Env env) {
+    public void queueInstallMetric(long operationTime, String token, RakeAPI.Env env, String endpoint) {
         Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
         InstallMetric installMetric = new InstallMetric();
 
-        /** persisted_log_count, expired_log_count will be filled in MessageLoop */
+        /** persisted_log_count, expired_log_count will be filled in MessageLoop due to performance */
         installMetric
                 .setHeader(h)
                 .setOperationTime(operationTime)
                 .setEnv(env)
+                .setEndpoint(endpoint)
                 .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION));
 
         Message m = Message.obtain();
@@ -294,8 +288,6 @@ final class MessageLoop {
             if (null == chunks || 0 == chunks.size()) return;
 
             for (LogChunk chunk : chunks) {
-                FlushMetric metric = new FlushMetric();
-
                 Long startAt = System.currentTimeMillis();
 
                 /** network operation */
@@ -332,44 +324,10 @@ final class MessageLoop {
                         return;
                 }
 
-                /** 메트릭 자체에 대한 메트릭은 기록하지 않음, != 대신 !equals 로 비교해야 함 */
-                if (!chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) {
-
                     /** write metric values */
-                    Header header = Header.create(appContext, Action.FLUSH, status, chunk.getToken());
-
-                    metric.setFlushType(flushType)
-                            .setOperationTime(operationTime);
-                    metric.setHeader(header);
-                    metric.setExceptionInfo(responseMetric.getExceptionInfo());
-                    metric
-                            .setLogCount(Long.valueOf(chunk.getCount()))
-                            .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
-                            .setServerResponseBody(responseMetric.getResponseBody())
-                            .setServerResponseCode(Long.valueOf(responseMetric.getResponseCode()))
-                            .setServerResponseTime(responseMetric.getServerResponseTime());
-
-                    recordFlushMetric(metric);
-                }
+                    MetricUtil.recordFlushMetric(
+                            appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
             }
-        }
-
-        public void recordFlushMetric(FlushMetric metric) {
-            JSONObject validShuttle = createValidShuttleForMetric(metric, appContext);
-
-            Log log = Log.create(
-                    MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
-
-            LogTableAdapter.getInstance(appContext).addLog(log);
-        }
-
-        private void recordInstallMetric(InstallMetric metric) {
-            JSONObject validShuttle = createValidShuttleForMetric(metric, appContext);
-
-            Log log = Log.create(
-                    MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
-
-            LogTableAdapter.getInstance(appContext).addLog(log);
         }
 
         /**
@@ -469,16 +427,9 @@ final class MessageLoop {
                         android.os.Looper.myLooper().quit();
                     }
 
-
                 } else if (command == RECORD_INSTALL_METRIC) {
-                    // InstallMetric metric = (InstallMetric) msg.obj;
-
-                    // if null token, return
-
-                    // TODO LogTableAdapter.getInstance(appContext).getLogCount()
-
-                    // recordInstallMetric(metric);
-
+                    InstallMetric metric = (InstallMetric) msg.obj;
+                    recordInstallMetric(appContext, metric);
                 } else { /* UNKNOWN COMMAND */
                     Logger.e("Unexpected message received by Rake worker: " + msg);
                 }

@@ -134,7 +134,8 @@ public final class RakeAPI {
                 long endAt = System.currentTimeMillis();
 
                 /** record metric */
-                MessageLoop.getInstance(context).queueInstallMetric(endAt - startAt, token, env);
+                MessageLoop.getInstance(context)
+                        .queueInstallMetric(endAt - startAt, token, env, endpoint.getURI(env));
             } else {
                 Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
