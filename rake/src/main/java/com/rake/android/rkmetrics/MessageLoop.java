@@ -212,7 +212,7 @@ final class MessageLoop {
                 try {
                     android.os.Looper.loop();
                 } catch (RuntimeException e) {
-                    MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
+                    MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
                     Logger.e("Looper.loop() was not prepared", e);
                 }
             }
@@ -452,7 +452,7 @@ final class MessageLoop {
 
             } catch (OutOfMemoryError e) {
                 Logger.e("Caught OOM error. Rake will not send any more messages", e);
-                MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
+                MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
 
                 synchronized (handlerLock) {
                     handler = null;
@@ -463,7 +463,7 @@ final class MessageLoop {
                 }
             } catch (Exception e) {
                 Logger.e("Caught unhandled exception. (ignored)", e);
-                MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
+                MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
             }
         }
 

@@ -77,7 +77,7 @@ public final class MetricUtil {
     }
 
     /** @return true if log was successfully persisted otherwise returns false */
-    public static boolean recordErrorStatusMetric(Context context, Action action, String token, Throwable e) {
+    public static boolean recordErrorMetric(Context context, Action action, String token, Throwable e) {
         if (null == context) {
             Logger.e("Can't record ErrorStatusMetric using NULL args");
             return false;
@@ -86,6 +86,24 @@ public final class MetricUtil {
         EmptyMetric metric = new EmptyMetric();
         metric.setHeader(Header.create(context, action, Status.ERROR, token));
         metric.setExceptionInfo(e);
+
+        return recordMetric(context, metric);
+    }
+
+    public static boolean recordInstallErrorMetric(Context context, RakeAPI.Env env, String endpoint,
+                                                   String token, Throwable e) {
+        if (null == context) {
+            Logger.e("Can't record InstallErrorMetric using NULL context");
+            return false;
+        }
+
+        InstallMetric metric = new InstallMetric();
+
+        Header h = Header.create(context, Action.INSTALL, Status.ERROR, token);
+        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(metric.getServiceToken());
+
+        metric.setHeader(h).setExceptionInfo(e);
+        metric.setEnv(env).setEndpoint(endpoint).setPersistedLogCount(persistedLogCount);
 
         return recordMetric(context, metric);
     }

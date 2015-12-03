@@ -9,7 +9,7 @@ public abstract class Body {
 
     /** header */
     protected Header header;
-    public void setHeader(Header header) { this.header = header; }
+    public Body setHeader(Header header) { this.header = header; return this; }
 
     /** common */
     public static final String BODY_NAME_EXCEPTION_TYPE = "exception_type";

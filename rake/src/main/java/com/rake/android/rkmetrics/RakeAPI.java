@@ -116,8 +116,8 @@ public final class RakeAPI {
             return _getInstance(context, token, env, logging);
         } catch (Exception e) { /* should not be here */
             Logger.e("Failed to return RakeAPI instance");
-            MetricUtil.recordErrorStatusMetric(context, Action.INSTALL, token, e);
-            throw new IllegalStateException("Failed to return RakeAPI instance");
+            MetricUtil.recordInstallErrorMetric(context, env, Endpoint.DEFAULT.getURI(env), token, e);
+            throw new IllegalStateException("Failed to create RakeAPI instance");
         }
     }
 
@@ -231,10 +231,26 @@ public final class RakeAPI {
             }
         } catch (Exception e) { /* might be JSONException */
             Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
-            MetricUtil.recordErrorStatusMetric(context, Action.TRACK, token, e);
+            MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
             return;
         }
     }
+
+    /**
+     * Send log which persisted in SQLite to Rake server.
+     */
+    public void flush() {
+        Logger.d(tag, "Flush");
+
+        /* 최종 소비자 API 예외 처리 */
+        try {
+            MessageLoop.getInstance(context).queueFlushCommand();
+        } catch (Exception e) {
+            MetricUtil.recordErrorMetric(context, Action.FLUSH, token, e);
+            Logger.e(tag, "Failed to flush", e);
+        }
+    }
+
 
     /**
      * Change end point
@@ -278,21 +294,6 @@ public final class RakeAPI {
      */
     public static void setLogging(Logging loggingMode) {
         Logger.loggingMode = loggingMode;
-    }
-
-    /**
-     * Send log which persisted in SQLite to Rake server.
-     */
-    public void flush() {
-        Logger.d(tag, "Flush");
-
-        /* 최종 소비자 API 예외 처리 */
-        try {
-            MessageLoop.getInstance(context).queueFlushCommand();
-        } catch (Exception e) {
-            MetricUtil.recordErrorStatusMetric(context, Action.FLUSH, token, e);
-            Logger.e(tag, "Failed to flush", e);
-        }
     }
 
     /**
