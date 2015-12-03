@@ -5,6 +5,7 @@ import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -13,12 +14,17 @@ import android.widget.Button;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
+import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
+
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class MainActivity extends AppCompatActivity {
 
     private static RakeAPI devRake;
     private static RakeAPI liveRake;
+    private static AtomicLong counter = new AtomicLong();
+    private static final String TAG = "RAKE_TESTAPP";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,9 +119,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void track(RakeAPI.Env env) {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
+        RakeClientTestSentinelShuttle shuttle = new RakeClientTestSentinelShuttle();
         shuttle.action("flush");
+        Long group = counter.getAndIncrement();
+        String count = group.toString();
+
+        shuttle.ab_test_group(count);
         getRakeInstance(env).track(shuttle.toJSONObject());
+
+        Log.d(TAG, String.format("Counter: %s", count));
     }
 
     private void setFreeEndpoint(RakeAPI.Env env) {

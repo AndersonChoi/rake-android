@@ -1,31 +1,37 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.*;
 import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
-import static com.rake.android.rkmetrics.network.HttpRequestSender.RequestResult;
+import static com.rake.android.rkmetrics.metric.MetricUtil.*;
+import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.MetricUtil;
+import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.metric.model.FlushType;
+import com.rake.android.rkmetrics.metric.model.Header;
+import com.rake.android.rkmetrics.metric.model.InstallMetric;
+import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.RakeProtocolV1;
+import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
+import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
-import com.rake.android.rkmetrics.persistent.Transferable;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 
-import org.json.JSONArray;
-
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.SynchronousQueue;
 
 /**
@@ -33,22 +39,22 @@ import java.util.concurrent.SynchronousQueue;
  */
 final class MessageLoop {
 
-    static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
 
-    static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
-    static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    private static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
+    private static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
-    static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
-    static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
-
-    enum Command {
+    /* package */ enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
-        AUTO_FLUSH_CAPACITY(3),
-        AUTO_FLUSH_INTERVAL(4),
-        KILL_WORKER (5),
+        AUTO_FLUSH_BY_COUNT(3),
+        AUTO_FLUSH_BY_TIMER(4),
+        KILL_WORKER (6),
         FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
+        RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
@@ -94,62 +100,88 @@ final class MessageLoop {
         return instance;
     }
 
-    /* package */ static synchronized void setFlushInterval(long millis) {
+    /* package */ static void setFlushInterval(long millis) {
         FLUSH_INTERVAL = millis;
     }
 
-    /* package */ static synchronized long getFlushInterval() { return FLUSH_INTERVAL; }
+    /* package */ static long getFlushInterval() { return FLUSH_INTERVAL; }
 
-    /* package */ static synchronized void setAutoFlushOption(AutoFlush option) {
+    /* package */ static void setAutoFlushOption(AutoFlush option) {
         MessageLoop.autoFlushOption = option;
 
-        /* 인스턴스가 존재하면, AUTO_FLUSH_INTERVAL 루프를 재시작 */
+        /* 인스턴스가 존재하면, AUTO_FLUSH_BY_TIMER 루프를 재시작 */
         if (null != instance) {
             instance.activateAutoFlushInterval();
         }
     }
 
-    /* package */ static synchronized AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
+    /* package */ static AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
 
     /* Instance methods */
 
     private void activateAutoFlushInterval() {
         Message m = Message.obtain();
-        m.what = AUTO_FLUSH_INTERVAL.code;
+        m.what = AUTO_FLUSH_BY_TIMER.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
 
-    private synchronized boolean isAutoFlushON() {
-        return ON == autoFlushOption;
+    private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
+
+    public void queueInstallMetric(long operationTime, String token, RakeAPI.Env env, String endpoint) {
+        Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
+        InstallMetric installMetric = new InstallMetric();
+
+        /** persisted_log_count, expired_log_count will be filled in MessageLoop due to performance */
+
+        installMetric.setHeader(h);
+        installMetric
+                .setOperationTime(operationTime)
+                .setEnv(env)
+                .setEndpoint(endpoint)
+                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION));
+
+        Message m = Message.obtain();
+        m.what = Command.RECORD_INSTALL_METRIC.code;
+        m.obj = installMetric;
+
+        queueMessage(m);
     }
 
-    void track(Log log) {
+    public boolean queueTrackCommand(Log log) {
+        if (null == log) {
+            Logger.e("Can't track null `Log`");
+            return false;
+        }
+
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
         m.obj = log;
 
-        runMessage(m);
+        queueMessage(m);
+
+        return true;
     }
 
-    void flush() {
+    public void queueFlushCommand() {
         Message m = Message.obtain();
         m.what = Command.MANUAL_FLUSH.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
 
-    void hardKill() {
+    public void hardKill() {
         Message m = Message.obtain();
         m.what = Command.KILL_WORKER.code;
 
-        runMessage(m);
+        queueMessage(m);
     }
-    private void runMessage(Message msg) {
+
+    private void queueMessage(Message msg) {
         if (isDead()) {
             // thread died under suspicious circumstances.
             // don't try to send any more events.
-            RakeLogger.e(LOG_TAG_PREFIX, "Dead rake worker dropping a message: " + msg);
+            Logger.e("Dead rake worker dropping a message: " + msg);
         } else {
             synchronized (handlerLock) {
                 if (handler != null) handler.sendMessage(msg);
@@ -167,20 +199,21 @@ final class MessageLoop {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                RakeLogger.d(LOG_TAG_PREFIX, "Starting [Thread " + this.getId() + "]");
+                Logger.t("Starting");
 
                 android.os.Looper.prepare();
 
                 try {
                     handlerQueue.put(new MessageHandler());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
+                    throw new RuntimeException("Can't build", e);
                 }
 
                 try {
                     android.os.Looper.loop();
                 } catch (RuntimeException e) {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Rake Thread dying from RuntimeException", e);
+                    MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
+                    Logger.e("Looper.loop() was not prepared", e);
                 }
             }
         };
@@ -209,7 +242,7 @@ final class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            RakeLogger.t(LOG_TAG_PREFIX, "Avg flush frequency approximately " + seconds + " seconds.");
+            Logger.t("[METRIC] Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -218,78 +251,126 @@ final class MessageLoop {
 
     private class MessageHandler extends Handler {
 
-        private final EventTableAdapter eventTableAdapter;
-        private final LogTableAdapter logTableAdapter;
-
         public MessageHandler() {
             super();
 
-            eventTableAdapter = EventTableAdapter.getInstance(appContext);
-            logTableAdapter = LogTableAdapter.getInstance(appContext);
+            EventTableAdapter.getInstance(appContext);
+            LogTableAdapter.getInstance(appContext);
 
-            RakeLogger.t(LOG_TAG_PREFIX, "Remove expired logs (48 hours before)");
-            logTableAdapter.removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
+            Logger.t("Remove expired logs (48 hours before)");
+            LogTableAdapter.getInstance(appContext)
+                    .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             /* flush legacy table `events` */
             if (DatabaseAdapter.upgradedFrom4To5)
                 sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
 
-            sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, INITIAL_FLUSH_DELAY);
-        }
-
-        private void sendLogFromLogTable() {
-           updateFlushFrequency();
-
-            Transferable t = logTableAdapter.getTransferable(RakeConfig.TRACK_MAX_LOG_COUNT);
-
-            if (null == t) return; /* flushing empty table */
-
-            String lastId = t.getLastId();
-            Set<String> urls = t.getUrls();
-            Map<String, Map<String, JSONArray>> logMap = t.getLogMap();
-
-            if (null == lastId || null == urls || urls.isEmpty() || null == logMap || logMap.isEmpty()) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Invalid empty Transferable"); /* should not be here! */
-                return;
-            }
-
-            for(String url : logMap.keySet()) {
-                for (String token: logMap.get(url).keySet()) {
-
-                    JSONArray jsons = logMap.get(url).get(token);
-                    String message = String.format("Sending %d log to %s with token %s",
-                            jsons.length(), url, token);
-
-                    RakeLogger.t(LOG_TAG_PREFIX, message);
-
-                    String stringified = jsons.toString();
-                    RequestResult result = HttpRequestSender.sendRequest(stringified, url /* TODO + token */);
-
-                    if (RequestResult.SUCCESS == result)
-                        logTableAdapter.removeLogById(lastId);
-                    else if (RequestResult.FAILURE_RECOVERABLE == result) {
-                        // TODO metric logging
-                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                    } else if (RequestResult.FAILURE_UNRECOVERABLE == result) {
-                        // TODO metric logging
-                        logTableAdapter.removeLogById(lastId);
-                    } else {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
-                    }
-                }
-            }
+            sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
         private boolean hasFlushMessage() {
             return hasMessages(MANUAL_FLUSH.code)
-                    || hasMessages(AUTO_FLUSH_INTERVAL.code)
-                    || hasMessages(AUTO_FLUSH_CAPACITY.code);
+                    || hasMessages(AUTO_FLUSH_BY_TIMER.code)
+                    || hasMessages(AUTO_FLUSH_BY_COUNT.code);
         }
 
-        /* to support legacy table `Event` */
-        private void sendLogFromEventTable() {
+        /** Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송 */
+        private void flush(FlushType flushType) {
+            if (null == flushType) {
+                Logger.e("Can't flush with an empty FlushType");
+                return;
+            }
+
             updateFlushFrequency();
-            ExtractedEvent event = eventTableAdapter.getExtractEvent();
+
+            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext)
+                    .getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
+
+            if (null == chunks || 0 == chunks.size()) return;
+
+            for (LogChunk chunk : chunks) {
+                Long startAt = System.currentTimeMillis();
+
+                /** network operation */
+                ServerResponseMetric responseMetric = send(chunk);
+
+                Long endAt = System.currentTimeMillis();
+
+                if (null == responseMetric) {
+                    Logger.e("ServerResponseMetric can't be NULL");
+                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                    return;
+                }
+
+                /** Metric 이 아닌 경우에만 Network, Database 연산에 대해 report */
+                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
+                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
+                    Logger.t(message);
+
+                    RakeProtocolV1.reportResponse
+                            (responseMetric.getResponseBody(), responseMetric.getResponseCode());
+                }
+
+                Long operationTime = (endAt - startAt);
+                Status status = responseMetric.getFlushStatus();
+
+                if (null == status) {
+                    Logger.e("Status can't be NULL");
+                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                    return;
+                }
+
+                /**
+                 * - 전송된 데이터를 삭제해도 되는지(DONE),
+                 * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
+                 * - 복구 가능한 예외인지 (RETRY) 판단 후 실행
+                 */
+                switch (status) {
+                    case DONE:
+                    case DROP:
+                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                        break;
+                    case RETRY:
+                        // TODO flush database, RAKE-383, RAKE-381
+                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
+                        break;
+                    default:
+                        Logger.e("Unknown FlushStatus");
+                        return;
+                }
+
+                /** write metric values */
+                MetricUtil.recordFlushMetric(
+                        appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
+            }
+        }
+        private ServerResponseMetric send(LogChunk chunk) {
+
+            if (null == chunk) {
+                Logger.e("Can't flush using null args");
+                return null;
+            }
+
+            /** Metric Token 일 경우 로깅을 하지 않음 */
+            if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                String message = String.format("[NETWORK] Sending %d log to %s where token = %s",
+                        chunk.getCount(), chunk.getUrl(), chunk.getToken());
+                Logger.t(message);
+            }
+
+            ServerResponseMetric responseMetric =
+                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
+
+            return responseMetric;
+        }
+
+        /**
+         * Database Version 4 까지 사용하던 `event` 테이블을 플러시, 0.4.0 초과 버전부터 삭제할 것
+         */
+        private void flushEventTable() {
+            updateFlushFrequency();
+            ExtractedEvent event = EventTableAdapter.getInstance(appContext).getExtractEvent();
 
             if (event != null) {
                 String lastId = event.getLastId();
@@ -297,20 +378,29 @@ final class MessageLoop {
                 String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
-                String message = String.format("Sending %d events to %s", event.getLogCount(), url);
-                RakeLogger.t(LOG_TAG_PREFIX, message);
+                String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
+                Logger.t(message);
 
-                RequestResult result = HttpRequestSender.sendRequest(log, url);
+                ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
 
-                // TODO: remove from MessageLoop. -> HttpRequestSender
-                if (RequestResult.SUCCESS == result) {
-                    eventTableAdapter.removeEventById(lastId);
-                } else if (RequestResult.FAILURE_RECOVERABLE == result) { // try again later
+
+                if (null == responseMetric) {
+                    Logger.e("ServerResponseMetric can't be null");
+                    return;
+                }
+
+                Status status = responseMetric.getFlushStatus();
+
+                RakeProtocolV1.reportResponse
+                        (responseMetric.getResponseBody(), responseMetric.getResponseCode());
+
+                if (DONE == status || DROP == status) {
+                    // if DROP, we have an unrecoverable failure.
+                    EventTableAdapter.getInstance(appContext).removeEventById(lastId);
+                } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
-                } else if (RequestResult.FAILURE_UNRECOVERABLE == result){ // give up, we have an unrecoverable failure.
-                    eventTableAdapter.removeEventById(lastId);
                 } else {
-                    RakeLogger.e(LOG_TAG_PREFIX, "Invalid RequestResult: " + result);
+                    Logger.e("Invalid TransmissionResult: " + status);
                 }
             }
         }
@@ -322,54 +412,60 @@ final class MessageLoop {
 
                 if (command == TRACK) {
                     Log log = (Log) msg.obj;
-                    int logQueueLength = logTableAdapter.addLog(log);
+                    int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
 
-                    RakeLogger.t(LOG_TAG_PREFIX, "Total log count in SQLite: " + logQueueLength);
+                    /** Metric 이 아닐 경우에만, 로깅 */
+                    if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN))
+                        Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
 
-                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON())
-                        sendLogFromLogTable();
+                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
+                        sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
+                    }
 
                 } else if (command == FLUSH_EVENT_TABLE) {
-                    sendLogFromEventTable();
+                    flushEventTable();
                 } else if (command == MANUAL_FLUSH) {
-                    sendLogFromLogTable();
+                    flush(FlushType.MANUAL_FLUSH);
+                } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
+                    flush(FlushType.AUTO_FLUSH_BY_COUNT);
+                } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
+                    flush(FlushType.AUTO_FLUSH_BY_TIMER);
 
-                } else if (command == AUTO_FLUSH_CAPACITY && isAutoFlushON()) {
-                    sendLogFromLogTable();
-
-                } else if (command == AUTO_FLUSH_INTERVAL && isAutoFlushON()) {
-                    sendLogFromLogTable();
-
-                    if (!hasMessages(AUTO_FLUSH_INTERVAL.code) && isAutoFlushON())
-                        sendEmptyMessageDelayed(AUTO_FLUSH_INTERVAL.code, FLUSH_INTERVAL);
+                    /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 FLUSH_INTERVAL 만큼 반복 */
+                    if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
+                        sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);
 
                 } else if (command == KILL_WORKER) {
-                    RakeLogger.w(LOG_TAG_PREFIX, "Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                    Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
-                        eventTableAdapter.deleteDatabase();
+                        EventTableAdapter.getInstance(appContext).deleteDatabase();
                         handler = null;
                         android.os.Looper.myLooper().quit();
                     }
 
+                } else if (command == RECORD_INSTALL_METRIC) {
+                    InstallMetric metric = (InstallMetric) msg.obj;
+                    recordInstallMetric(appContext, metric);
                 } else { /* UNKNOWN COMMAND */
-                    RakeLogger.e(LOG_TAG_PREFIX, "Unexpected message received by Rake worker: " + msg);
+                    Logger.e("Unexpected message received by Rake worker: " + msg);
                 }
 
             } catch (OutOfMemoryError e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Caught OOM error. Rake will not send any more messages", e);
-                // TODO metric
+                Logger.e("Caught OOM error. Rake will not send any more messages", e);
+                MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
 
                 synchronized (handlerLock) {
                     handler = null;
                     try { android.os.Looper.myLooper().quit(); }
                     catch (Exception tooLate) {
-                        RakeLogger.e(LOG_TAG_PREFIX, "Can't halt looper", tooLate);
+                        Logger.e("Can't halt looper", tooLate);
                     }
                 }
             } catch (Exception e) {
-                RakeLogger.e(LOG_TAG_PREFIX, "Caught unhandled exception. (ignored)", e);
-                // TODO metric
+                Logger.e("Caught unhandled exception. (ignored)", e);
+                MetricUtil.recordErrorMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
             }
-        } // handleMessage
+        }
+
     }
 }

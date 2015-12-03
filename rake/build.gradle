@@ -1,3 +1,8 @@
+import org.slf4j.Logger
+import org.slf4j.LoggerFactory
+
+import java.util.regex.Pattern
+
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'idea'
@@ -5,6 +10,59 @@ apply plugin: 'idea'
 version = '0.4.0-SNAPSHOT'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
+
+/* constant */
+def currentProjectDir = "${rootProject.projectDir}/rake"
+def tempJar = "${archivesBaseName}-${version}-withoutShuttle.jar"
+def completeJar = "${archivesBaseName}-${version}.jar"
+def docsDir = "${rootProject.projectDir}/docs/"
+def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
+def releaseDir = "${rootProject.projectDir}/release"
+def releaseJarDir = "$releaseDir/jar"
+String DIR_AAR = "$currentProjectDir/build/outputs/aar"
+String DEBUG_AAR = "rake-debug.aar"
+String PATH_DEBUG_AAR = "$DIR_AAR/$DEBUG_AAR"
+String DIR_TEST_APP_LIBS = "${rootProject.projectDir}/testApp/libs"
+def includedDir = "${currentProjectDir}/libs/included";
+def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+def logger = { String message -> println("[RAKE BUILDER] $message") }
+def updateFile = { String path, Pattern regex, String replace ->
+    def encoding = "UTF-8"
+    def f = new File(path)
+
+    String content = f.getText(encoding)
+    def old = content.find(regex)
+    content = content.replaceAll(regex, replace)
+
+    assert(content.find(regex) == replace)
+    f.write(content, encoding)
+
+    logger "Replaced: \n$old -> $replace \n($path)"
+}
+
+/**
+ * 빌드타임에 변수 또는 상수가 치환(replace) 되는 파일들
+ */
+String RAKE_ROOT_PACKAGE = "src/main/java/com/rake/android/rkmetrics";
+String FILE_REPLACED_CONFIG = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/config/RakeConfig.java"
+String FILE_REPLACED_METRIC_LOGGER = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
+
+String RELEASE_BRANCH = "release"
+String VAR_BRANCH = "BUILD_CONSTANT_BRANCH";
+Pattern REGEX_BRANCH = ~/String $VAR_BRANCH = "(.)*"/
+String FILLED_BRANCH = "String $VAR_BRANCH = \"$branchName\""
+
+String VAR_METRIC_TOKEN = "BUILD_CONSTANT_METRIC_TOKEN"
+Pattern REGEX_METRIC_TOKEN_FILLED = ~/String $VAR_METRIC_TOKEN = "(.)*"/
+String FILLED_METRIC_TOKEN_DEV = null
+
+String VAR_RAKE_ENV = "BUILD_CONSTANT_ENV"
+Pattern REGEX_RAKE_ENV = ~/RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env(.)*;/
+String FILLED_RAKE_ENV = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
+
+/**
+ * 빌드스크립트 시작
+ */
 
 android {
     compileSdkVersion 19
@@ -29,8 +87,11 @@ android {
 }
 
 dependencies {
-    // compile 'com.android.support:appcompat-v7:23.0.0'
+    // provided fileTree(dir: 'libs/provided', include ['*.jar'])
+    compile fileTree(dir: 'libs/included', include: ['*.jar'])
+
     testCompile 'junit:junit:4.12'
+    testCompile 'org.assertj:assertj-core:1.7.1'
     testCompile 'org.apache.httpcomponents:httpclient:4.4.1'
     testCompile 'com.github.tomakehurst:wiremock:1.55'
     testCompile 'ch.qos.logback:logback-core:1.1.3'
@@ -47,45 +108,98 @@ uploadArchives {
     }
 }
 
-/* contants */
-
-def currentProjectDir = "${rootProject.projectDir}/rake"
-def jarName = "${archivesBaseName}-${version}.jar"
-def docsDir = "${rootProject.projectDir}/docs/"
-def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
-def releaseDir = "${rootProject.projectDir}/release"
-def releaseJarDir = "$releaseDir/jar"
-def aarDir = "$currentProjectDir/build/outputs/aar"
-def defaultDebugAARName = "rake-debug.aar"
-def defaultDebugAARPath = "$aarDir/$defaultDebugAARName"
-def testAppLibDir = "${rootProject.projectDir}/testApp/libs"
-
-def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
-def updateFile = { String path, String pattern, String replace ->
-    def encoding = "UTF-8"
-    def regex = ~/$pattern/
-    def f = new File(path)
-
-    String content = f.getText(encoding)
-    def old = content.find(regex)
-    content = content.replaceAll(regex, replace)
-
-    assert(content.find(regex) == replace)
-    f.write(content, encoding)
-
-    println "[INFO] version $old in RakeAPI.java was replaced with $replace"
-}
-
-gradle.projectsEvaluated { /* update version before compiling */
-    if (branchName.startsWith("release")) {
+task updateVersionInSource(type: Copy) {
+    def updateVersionInConfigFile = {
 
         String v = version.tokenize('-')[0]
-        def pattern = "\"r0.5.0_c(.)*\""
-        def replace = "\"r0.5.0_c${v}\""
-        def path = ("${currentProjectDir}/src/main/java/com/rake/android/rkmetrics/config/RakeConfig.java")
+        Pattern pattern = ~/"r0.5.0_c(.)*"/
+        String  replace = "\"r0.5.0_c${v}\""
+        String  path = FILE_REPLACED_CONFIG
 
         updateFile(path, pattern, replace)
     }
+
+    /**
+     * build.gradle 에 있는 버전을 이용해, RakeConfig.java 파일 내에 있는 버전을 매 빌드마다 변경
+     */
+    updateVersionInConfigFile();
+
+}
+
+task updateMetricToken(type: Copy) {
+
+    def getMetricToken = {
+        /**
+         * 아래의 환경변수 및 상수 이름들은 MetricUtilTokenSpec.java 에 있는 이름과 동일해야 함
+         */
+        String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE";
+        String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
+
+        /* 환경변수 검증 */
+        String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE)
+        String METRIC_TOKEN_DEV  = System.getenv(ENV_METRIC_TOKEN_DEV)
+
+        if (null == METRIC_TOKEN_LIVE) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_LIVE required");
+        if (null == METRIC_TOKEN_DEV)  throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_DEV required");
+
+        /* TOKEN 값 설정 */
+        FILLED_METRIC_TOKEN_DEV = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN_DEV\""
+        String METRIC_TOKEN = null
+
+        if (RELEASE_BRANCH.equals(branchName)) METRIC_TOKEN = METRIC_TOKEN_LIVE
+        else METRIC_TOKEN = METRIC_TOKEN_DEV
+
+        return METRIC_TOKEN
+    }
+
+
+    def getFilledMetricToken = {
+        String METRIC_TOKEN = getMetricToken()
+
+        String FILLED_METRIC_TOKEN = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN\""
+
+        return FILLED_METRIC_TOKEN
+    }
+
+    def updateMetricToken =  {
+        String FILLED_METRIC_TOKEN = getFilledMetricToken()
+        /**
+         * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
+         * `build.gradle` 과 `MetricUtilTokenSpec.java` 를 참조할 것
+         *
+         * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해
+         * BUILD_CONSTANT_BRANCH 값을 이용한다.
+         */
+
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_BRANCH, FILLED_BRANCH) /* BUILD_CONSTANT_BRANCH 업데이트 */
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN) /* BUILD_CONSTANT_METRIC_TOKEN 업데이트 */
+    }
+
+    /**
+     * 환경변수 값을 이용해 MetricUtil.java 에 있는 Rake Client Metric 용 토큰을 빌드타임에 컴파일
+     * 자세한 내용은 MetricUtil.java, MetricUtilTokenSpec.java 를 참조
+     */
+
+     updateMetricToken();
+}
+
+task updateRakeEnv(type: Copy) {
+    def getRakeEnv = {
+
+        String ENV_LIVE = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.LIVE;"
+        String ENV_DEV  = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
+
+        if (RELEASE_BRANCH.equals(branchName)) return ENV_LIVE
+        else return ENV_DEV
+    }
+
+    updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_RAKE_ENV, getRakeEnv())
+}
+
+gradle.projectsEvaluated { /* do something before compile */
+    updateVersionInSource.execute()
+    updateMetricToken.execute()
+
 }
 
 task createJavadoc(type: Javadoc) {
@@ -97,29 +211,82 @@ task createJavadoc(type: Javadoc) {
 
 tasks.build.doLast {
 
-    copy { /* extract jar from AAR */
-        from zipTree(file(defaultDebugAARPath))
-        into aarDir
-        rename "classes.jar", jarName
+/* extract jar from AAR and create rake.jar without shuttle */
+    task extractJarFromAar(type: Copy) {
+
+        logger "Extracting ${tempJar} from ${PATH_DEBUG_AAR}"
+
+        from zipTree(file(PATH_DEBUG_AAR))
+        into DIR_AAR
+        rename "classes.jar", tempJar
         exclude "R.txt", "assets", "aidl", "aapt/**/*", "res/**/*", "AndroidManifest.xml",
                 "libs/**/*"
         includeEmptyDirs = false
     }
 
-    copy { /* copy jar to testApp/libs */
-        from aarDir
-        include jarName
-        into testAppLibDir
+/* zip rake-android.jar with shuttle.jar */
+    task zipWithShuttle(type: Zip) {
+
+        /* constants */
+        String shuttleJarNamePrefix = "rakemetricSentinelShuttle"
+        def shuttleJarNames = []
+
+        /* logic */
+        new File("${includedDir}").eachFile { file ->
+            if (file.path.contains(shuttleJarNamePrefix))
+                shuttleJarNames << file.path
+        }
+
+        if (shuttleJarNames.size > 1)
+            throw new IllegalStateException("Multiple shuttle jar exists in ${includedDir}")
+        else if (shuttleJarNames.size == 0)
+            throw new IllegalStateException("Can not find shuttle jar in ${includedDir}")
+
+        String shuttleJarName = shuttleJarNames[0]
+        logger "Provided shuttle: ${shuttleJarName}"
+
+        // merge crash-logger.jar with shuttle.jar
+        from zipTree(file("${shuttleJarName}"))
+        from zipTree(file("${DIR_AAR}/${tempJar}"))
+        exclude ".gitkeep", "META-INF/", "${shuttleJarNamePrefix}.java"
+        include "**/*"
+        extension "jar"
+        destinationDir file("${DIR_AAR}")
     }
 
-    copy { /* copy jar to release/jar */
-        from aarDir
-        include jarName
+    task copyCompleteJarToTestApp(type: Copy) {
+
+        logger "Copying $DIR_AAR/$completeJar to ${DIR_TEST_APP_LIBS}/"
+
+        from DIR_AAR
+        include completeJar
+        into DIR_TEST_APP_LIBS
+    }
+
+    task copyCompleteJarToReleaseDir(type: Copy) {
+
+        logger "Copying $DIR_AAR/$completeJar to ${releaseJarDir}/"
+
+        from DIR_AAR
+        include completeJar
         into releaseJarDir
     }
 
-    if (branchName.startsWith("release"))
-        createJavadoc.execute()
-}
+    task initializeBuildConstant(type: Copy) {
+        logger "initialize BUILD_CONSTANT"
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN_DEV)
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_RAKE_ENV, FILLED_RAKE_ENV)
+    }
 
+    extractJarFromAar.execute();
+    zipWithShuttle.execute();
+    copyCompleteJarToTestApp.execute();
+
+    if (branchName.startsWith("release")) {
+        createJavadoc.execute()
+        copyCompleteJarToReleaseDir.execute();
+    }
+
+    initializeBuildConstant.execute();
+}
 

@@ -12,9 +12,25 @@
 
 ## Build
 
+빌드시 터미널에 `METRIC_TOKEN_LIVE` 값과 `METRIC_TOKEN_DEV` 값을 입력
+
 ```gradle
-> gradle clean build
+> METRIC_TOKEN_LIVE= METRIC_TOKEN_DEV= gradle clean build
 ```
+
+### Android Studio on OSX
+
+Android Studio 사용시, gradle 이 환경변수를 읽지 못하므로 다음과 같이 터미널에 세팅
+ 
+```
+> launchctl setenv METRIC_TOKEN_LIVE {TOKEN}  
+> launchctl setenv METRIC_TOKEN_DEV $METRIC_TOKEN_DEV {TOKEN} 
+```
+
+추가적으로 테스트 실행을 위해 Android Studio 에서 `run configuration` 환경변수에 다음을 등록
+
+- `METRIC_TOKEN_LIVE`
+- `METRIC_TOKEN_ENV`
 
 # License
 

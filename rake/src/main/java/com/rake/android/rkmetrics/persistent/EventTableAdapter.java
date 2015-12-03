@@ -1,16 +1,13 @@
 package com.rake.android.rkmetrics.persistent;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteException;
 import android.provider.BaseColumns;
 
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -55,7 +52,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * @param json     the JSON to record
      * @return the number of rows in the table, or -1 on failure
      */
-    public int addEvent(final JSONObject json) {
+    public synchronized int addEvent(final JSONObject json) {
         final String table = Table.EVENTS.getName();
 
         Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
@@ -87,7 +84,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      *
      * @param lastId the last id to delete
      */
-    public void removeEventById(final String lastId) {
+    public synchronized void removeEventById(final String lastId) {
         final String table = Table.EVENTS.getName();
 
         execute(new SQLiteCallback<Void>() {
@@ -109,7 +106,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      *
      * @param time  the unix epoch in milliseconds to remove events before
      */
-    public void removeEventByTime(final long time) {
+    public synchronized void removeEventByTime(final long time) {
         final String table = Table.EVENTS.getName();
 
         execute(new SQLiteCallback<Void>() {
@@ -133,7 +130,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * @return String array containing the maximum ID and the data string
      * representing the events, or null if none could be successfully retrieved.
      */
-    public ExtractedEvent getExtractEvent() {
+    public synchronized ExtractedEvent getExtractEvent() {
         ExtractedEvent event = executeAndReturnT(new SQLiteCallback<ExtractedEvent>() {
             @Override
             public ExtractedEvent execute(SQLiteDatabase db) {
@@ -151,7 +148,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                         String log = getStringFromCursor(c, EventContract.COLUMN_DATA);
 
                         try { jsonArr.put(new JSONObject(log)); } /* if an exception occurred, ignore it */
-                        catch (JSONException e) { RakeLogger.t(LOG_TAG_PREFIX, "Failed to convert String to JsonObject", e); }
+                        catch (JSONException e) { Logger.t("Failed to convert String to JsonObject", e); }
                     }
 
                 /* if JSONException occurred, just throw out eventually returning null. */
@@ -161,9 +158,9 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);
 
                 if (null != e) {
-                    String message = String.format("Extracting %d rows from the [%s] table",
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table",
                             jsonArr.length(), EventContract.TABLE_NAME);
-                    RakeLogger.d(LOG_TAG_PREFIX, message);
+                    Logger.d(message);
                 }
 
                 return e;
