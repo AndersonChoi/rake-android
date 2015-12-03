@@ -7,7 +7,6 @@ import org.json.JSONObject;
 
 public final class FlushMetric extends Body {
 
-    private Header header;
     private String endpoint;
     private Long operation_time;
     private Long log_count;
@@ -19,8 +18,6 @@ public final class FlushMetric extends Body {
 
     public FlushMetric() {}
 
-    public FlushMetric setHeader(Header header) {
-        this.header = header; return this; }
     public FlushMetric setOperationTime(Long operationTime) {
         this.operation_time = operationTime; return this; }
     public FlushMetric setLogSize(Long logSizeAsBytes) {
@@ -28,8 +25,7 @@ public final class FlushMetric extends Body {
     public FlushMetric setLogCount(Long logCount) {
         this.log_count = logCount; return this; }
     public FlushMetric setFlushType(FlushType flushType) {
-        if (null == flushType) return this;
-        this.flush_type = flushType.getValue(); return this;
+        if (null != flushType) this.flush_type = flushType.getValue(); return this;
     }
     public FlushMetric setEndpoint(String endpoint) {
         if (null != endpoint) this.endpoint = endpoint; return this;
@@ -68,5 +64,10 @@ public final class FlushMetric extends Body {
         return shuttle.toJSONObject();
     }
 
-    @Override public String getMetricType() { return "FLUSH"; }
+    @Override public String getMetricType() {
+        String status = null;
+        if (null != header) status = header.getStatus();
+
+        return "FLUSH:" + status;
+    }
 }

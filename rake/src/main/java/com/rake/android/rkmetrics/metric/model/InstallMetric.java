@@ -9,7 +9,6 @@ import org.json.JSONObject;
 
 public final class InstallMetric extends Body {
 
-    private Header header;
     private Long operation_time;
     private String env;
     private Long database_version;
@@ -21,10 +20,6 @@ public final class InstallMetric extends Body {
         if (null == header) return null;
 
         return header.getServiceToken();
-    }
-
-    public InstallMetric setHeader(Header header) {
-        this.header = header; return this;
     }
 
     public InstallMetric setOperationTime(Long operation_time) {
@@ -81,5 +76,10 @@ public final class InstallMetric extends Body {
     }
 
     @Override
-    public String getMetricType() { return "INSTALL"; }
+    public String getMetricType() {
+        String status = null;
+        if (null != header) status = header.getStatus();
+
+        return "INSTALL:" + status;
+    }
 }

@@ -5,6 +5,7 @@ import android.content.Context;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Body;
+import com.rake.android.rkmetrics.metric.model.EmptyMetric;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
@@ -47,6 +48,7 @@ public final class MetricUtil {
 
 
     public static final String TRANSACTION_ID = createTransactionId();
+    public static final String EMPTY_TOKEN = null;
 
     public static String getURI() {
         return Endpoint.CHARGED.getURI(BUILD_CONSTANT_ENV);
@@ -74,12 +76,22 @@ public final class MetricUtil {
         return BUILD_CONSTANT_METRIC_TOKEN.equals(token);
     }
 
-    /**
-     * @return true if log was successfully persisted otherwise returns false
-     */
-    public static boolean recordInstallMetric(Context context,
-                                              InstallMetric metric) {
+    /** @return true if log was successfully persisted otherwise returns false */
+    public static boolean recordErrorStatusMetric(Context context, Action action, String token, Throwable e) {
+        if (null == context) {
+            Logger.e("Can't record ErrorStatusMetric using NULL args");
+            return false;
+        }
 
+        EmptyMetric metric = new EmptyMetric();
+        metric.setHeader(Header.create(context, action, Status.ERROR, token));
+        metric.setExceptionInfo(e);
+
+        return recordMetric(context, metric);
+    }
+
+    /** @return true if log was successfully persisted otherwise returns false */
+    public static boolean recordInstallMetric(Context context, InstallMetric metric) {
         if (null == context || null == metric) {
             Logger.e("Can't record InstallMetric using NULL args");
             return false;
@@ -89,17 +101,13 @@ public final class MetricUtil {
             persistedLogCount, expiredLogCount 값만 여기서 기록 */
 
         int persistedLogCount = LogTableAdapter.getInstance(context).getCount(metric.getServiceToken());
-        // TODO expieredLogCount
+        // TODO expiredLogCount?
 
         metric.setPersistedLogCount(persistedLogCount);
-        recordMetric(context, metric);
-
-        return true;
+        return recordMetric(context, metric);
     }
 
-    /**
-     * @return true if log was successfully persisted otherwise returns false
-     */
+    /** @return true if log was successfully persisted otherwise returns false */
     public static boolean recordFlushMetric(Context context,
                                             Action action,
                                             Status status,
@@ -135,7 +143,7 @@ public final class MetricUtil {
                 .setServerResponseCode(Long.valueOf(resMetric.getResponseCode()))
                 .setServerResponseTime(resMetric.getServerResponseTime());
 
-        return MetricUtil.recordMetric(context, metric);
+        return recordMetric(context, metric);
     }
 
     /**

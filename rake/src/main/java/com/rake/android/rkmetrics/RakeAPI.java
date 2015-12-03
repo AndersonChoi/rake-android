@@ -10,6 +10,8 @@ import android.os.Build;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.MetricUtil;
+import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.Logger;
@@ -98,22 +100,35 @@ public final class RakeAPI {
      *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#LIVE} used,
      *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
      *
-     * @param         loggingMode Logging.ENABLE or Logging.DISABLE
+     * @param logging Logging.ENABLE or Logging.DISABLE
      *
      * @throws IllegalArgumentException if one of the parameters is NULL
-     *
+     * @throws IllegalStateException if uncaught exception occurred while initializing
      */
-    public static RakeAPI getInstance(Context context,
-                                      String token,
-                                      Env env,
-                                      Logging loggingMode) {
-        if (null == context || null == token || null == env || null == loggingMode) {
+
+    public static RakeAPI getInstance(Context context, String token, Env env, Logging logging) {
+        if (null == context || null == token || null == env || null == logging) {
             throw new IllegalArgumentException("Can't initialize RakeAPI using NULL args");
         }
 
+        /* 예외 기록을 위한 try-catch */
+        try {
+            return _getInstance(context, token, env, logging);
+        } catch (Exception e) { /* should not be here */
+            Logger.e("Failed to return RakeAPI instance");
+            MetricUtil.recordErrorStatusMetric(context, Action.INSTALL, token, e);
+            throw new IllegalStateException("Failed to return RakeAPI instance");
+        }
+    }
+
+    private static RakeAPI _getInstance(Context context,
+                                      String token,
+                                      Env env,
+                                      Logging logging) {
+
         long startAt = System.currentTimeMillis();
 
-        setLogging(loggingMode);
+        setLogging(logging);
 
         synchronized (sInstanceMap) {
             Context appContext = context.getApplicationContext();
@@ -198,24 +213,26 @@ public final class RakeAPI {
         JSONObject superProps = null;
         JSONObject defaultProps = null;
 
+        /* 최종 소비자 API 예외 처리 */
         try {
             superProps = getSuperProperties();
             defaultProps = getDefaultProps(context, env, token, now);
+
+            JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
+
+            String uri = endpoint.getURI(env);
+            Log log = Log.create(uri, token, validShuttle);
+
+            if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
+                Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
+
+                if (Env.DEV == env) /* if Env.DEV, flush immediately */
+                    MessageLoop.getInstance(context).queueFlushCommand();
+            }
         } catch (Exception e) { /* might be JSONException */
-            Logger.e(tag, "Failed to get superProps or defaultProps", e);
+            Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
+            MetricUtil.recordErrorStatusMetric(context, Action.TRACK, token, e);
             return;
-        }
-
-        JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
-
-        String uri = endpoint.getURI(env);
-        Log log = Log.create(uri, token, validShuttle);
-
-        if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
-            Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
-
-            if (Env.DEV == env) /* if Env.DEV, flush immediately */
-                MessageLoop.getInstance(context).queueFlushCommand();
         }
     }
 
@@ -269,7 +286,13 @@ public final class RakeAPI {
     public void flush() {
         Logger.d(tag, "Flush");
 
-        MessageLoop.getInstance(context).queueFlushCommand();
+        /* 최종 소비자 API 예외 처리 */
+        try {
+            MessageLoop.getInstance(context).queueFlushCommand();
+        } catch (Exception e) {
+            MetricUtil.recordErrorStatusMetric(context, Action.FLUSH, token, e);
+            Logger.e(tag, "Failed to flush", e);
+        }
     }
 
     /**
@@ -399,17 +422,16 @@ public final class RakeAPI {
      */
     @Deprecated
     private void readSuperProperties() {
-        String prefKey = createSharedPrefPropertyKey(token);
-        String props = storedPreferences.getString(prefKey, "{}");
-        Logger.d(tag, "Loading Super Properties " + props);
-
         try {
+            String prefKey = createSharedPrefPropertyKey(token);
+            String props = storedPreferences.getString(prefKey, "{}");
+            Logger.d(tag, "Loading Super Properties " + props);
             superProperties = new JSONObject(props);
         } catch (JSONException e) {
             Logger.e(tag, "Cannot parse stored superProperties");
             superProperties = new JSONObject();
             storeSuperProperties();
-        }
+        } // TODO exception and drop
     }
 
     private static String createSharedPrefPropertyKey(String token) {

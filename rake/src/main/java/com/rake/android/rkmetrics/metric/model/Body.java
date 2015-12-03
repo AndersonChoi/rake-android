@@ -7,6 +7,10 @@ import org.json.JSONObject;
 
 public abstract class Body {
 
+    /** header */
+    protected Header header;
+    public void setHeader(Header header) { this.header = header; }
+
     /** common */
     public static final String BODY_NAME_EXCEPTION_TYPE = "exception_type";
     public static final String BODY_NAME_STACKTRACE = "stacktrace";

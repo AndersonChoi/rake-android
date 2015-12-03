@@ -133,8 +133,9 @@ final class MessageLoop {
         InstallMetric installMetric = new InstallMetric();
 
         /** persisted_log_count, expired_log_count will be filled in MessageLoop due to performance */
+
+        installMetric.setHeader(h);
         installMetric
-                .setHeader(h)
                 .setOperationTime(operationTime)
                 .setEnv(env)
                 .setEndpoint(endpoint)
@@ -198,20 +199,21 @@ final class MessageLoop {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                Logger.d("Starting [Thread " + this.getId() + "]");
+                Logger.t("Starting");
 
                 android.os.Looper.prepare();
 
                 try {
                     handlerQueue.put(new MessageHandler());
                 } catch (InterruptedException e) {
-                    throw new RuntimeException("Couldn't build worker thread for Analytics Messages", e);
+                    throw new RuntimeException("Can't build", e);
                 }
 
                 try {
                     android.os.Looper.loop();
                 } catch (RuntimeException e) {
-                    Logger.e("Rake Thread dying from RuntimeException", e);
+                    MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
+                    Logger.e("Looper.loop() was not prepared", e);
                 }
             }
         };
@@ -272,9 +274,7 @@ final class MessageLoop {
                     || hasMessages(AUTO_FLUSH_BY_COUNT.code);
         }
 
-        /**
-         * Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송
-         */
+        /** Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송 */
         private void flush(FlushType flushType) {
             if (null == flushType) {
                 Logger.e("Can't flush with an empty FlushType");
@@ -321,6 +321,11 @@ final class MessageLoop {
                     return;
                 }
 
+                /**
+                 * - 전송된 데이터를 삭제해도 되는지(DONE),
+                 * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
+                 * - 복구 가능한 예외인지 (RETRY) 판단 후 실행
+                 */
                 switch (status) {
                     case DONE:
                     case DROP:
@@ -340,14 +345,6 @@ final class MessageLoop {
                         appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
             }
         }
-
-        /**
-         * HttpRequestSender 를 이용해서 데이터를 네트워크로 전송하고,
-         * - 전송된 데이터를 삭제해도 되는지(SUCCESS),
-         * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(FAILURE_UNRECOVERABLE)
-         * - 복구 가능한 예외인지 (FAILURE_RECOVERABLE)
-         * 판단하여 필요한 경우 로그를 삭제
-         */
         private ServerResponseMetric send(LogChunk chunk) {
 
             if (null == chunk) {
@@ -422,7 +419,6 @@ final class MessageLoop {
                         Logger.t("Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
-                        // TODO private function
                         sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
                     }
 
@@ -456,7 +452,7 @@ final class MessageLoop {
 
             } catch (OutOfMemoryError e) {
                 Logger.e("Caught OOM error. Rake will not send any more messages", e);
-                // TODO metric
+                MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
 
                 synchronized (handlerLock) {
                     handler = null;
@@ -467,7 +463,7 @@ final class MessageLoop {
                 }
             } catch (Exception e) {
                 Logger.e("Caught unhandled exception. (ignored)", e);
-                // TODO metric
+                MetricUtil.recordErrorStatusMetric(appContext, Action.EMPTY, EMPTY_TOKEN, e);
             }
         }
 
