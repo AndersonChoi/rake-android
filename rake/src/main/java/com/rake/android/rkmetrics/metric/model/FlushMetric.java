@@ -67,4 +67,6 @@ public final class FlushMetric extends Body {
 
         return shuttle.toJSONObject();
     }
+
+    @Override public String getMetricType() { return "FLUSH"; }
 }

@@ -66,6 +66,14 @@ public final class MetricUtil {
         return sb.toString().replaceAll("-", "");
     }
 
+    public static boolean isNotMetricToken(String token) {
+        return !isMetricToken(token);
+    }
+
+    public static boolean isMetricToken(String token) {
+        return BUILD_CONSTANT_METRIC_TOKEN.equals(token);
+    }
+
     /**
      * @return true if log was successfully persisted otherwise returns false
      */
@@ -105,8 +113,8 @@ public final class MetricUtil {
             return false;
         }
 
-        /** 메트릭 자체에 대한 메트릭은 기록하지 않음, == 대신 equals 로 비교해야 함 */
-        if (chunk.getToken().equals(BUILD_CONSTANT_METRIC_TOKEN)) return false;
+        /** 메트릭 자체에 대한 메트릭은 기록하지 않음 */
+        if (MetricUtil.isMetricToken(chunk.getToken())) return false;
 
         FlushMetric metric = new FlushMetric();
 
@@ -141,7 +149,12 @@ public final class MetricUtil {
 
         int count = LogTableAdapter.getInstance(context).addLog(log);
 
-        return (count == -1) ? false : true;
+        boolean recorded = (count == -1) ? false : true;
+
+        if (recorded && null != metric)
+            Logger.t(String.format("Metric [%s] recorded", metric.getMetricType()));
+
+        return recorded;
     }
 
     public static JSONObject createValidShuttleForMetric(Body metric, Context context) {

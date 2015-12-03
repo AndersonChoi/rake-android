@@ -93,8 +93,6 @@ final public class HttpRequestSender {
 
             long endAt = System.currentTimeMillis();
             operationTime = (endAt - startAt);
-
-            // TODO status code handling
             responseCode = conn.getResponseCode();
 
             BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
@@ -103,9 +101,8 @@ final public class HttpRequestSender {
             while ((line = br.readLine()) != null) builder.append(line);
 
             responseBody = builder.toString();
-            flushStatus = interpretResponse(responseBody);
+            flushStatus = RakeProtocolV1.interpretResponse(responseBody, responseCode);
 
-            reportResponse(responseCode, responseBody);
         } catch (MalformedURLException e) {
             Logger.e("Invalid URL", e);
             flushStatus = RETRY;
@@ -138,11 +135,6 @@ final public class HttpRequestSender {
         }
 
         return ServerResponseMetric.create(t, flushStatus, responseBody, responseCode, operationTime);
-    }
-
-    private static void reportResponse(int responseCode, String responseBody) {
-        String message = String.format("Server returned code: %d, body: %s", responseCode, responseBody);
-        Logger.d(message);
     }
 
     private static String buildHttpUrlConnectionRequestBody(String encodedDate) throws UnsupportedEncodingException {
@@ -193,25 +185,17 @@ final public class HttpRequestSender {
             long endAt = System.currentTimeMillis();
             operationTime = (endAt - startAt);
 
-            if (null == response) {
-                Logger.d("HttpResponse is null. Retry later");
+            if (null == response || null == response.getEntity()) {
+                Logger.d("HttpResponse or HttpEntity is null. Retry later");
                 return ServerResponseMetric.create(null, RETRY, null, 0, operationTime);
             }
 
             HttpEntity responseEntity = response.getEntity();
-
-            if (null == responseEntity) {
-                Logger.d("HttpEntity is null. Retry later");
-                return ServerResponseMetric.create(null, RETRY, null, 0, operationTime);
-            }
-
             responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
             responseCode = response.getStatusLine().getStatusCode();
 
-            // TODO interpretResponseCode
-            flushStatus = interpretResponse(responseBody);
+            flushStatus = RakeProtocolV1.interpretResponse(responseBody, responseCode);
 
-            reportResponse(responseCode, responseBody);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
             flushStatus = DROP;
@@ -234,30 +218,6 @@ final public class HttpRequestSender {
 
         return ServerResponseMetric.create(
                 t, flushStatus, responseBody, responseCode, operationTime);
-    }
-
-    private static Status interpretResponseCode(int statusCode) {
-        // TODO HttpsUrlConnection.HTTP_OK -> UrlConnection 과 HttpClient 의 상수가 다름 (값이 아니라 상수 이름)
-        if (HttpStatus.SC_OK == statusCode) return DONE;
-        else if (HttpStatus.SC_INTERNAL_SERVER_ERROR == statusCode) {
-            Logger.e("Internal Server Error. retry later");
-            return RETRY;
-        }
-
-        /* 20x (not 200), 3xx, 4xx */
-        return DROP; /* not retry */
-    }
-
-    private static Status interpretResponse(String response) {
-        if (null == response) {
-            Logger.e("ServerResponse body is empty. (Retry)");
-            return RETRY;
-        }
-
-        if (response.startsWith("1")) return DONE;
-
-        Logger.e("Server returned negative response. make sure that your token is valid");
-        return DROP;
     }
 
     private static HttpClient createHttpsClient() throws GeneralSecurityException {

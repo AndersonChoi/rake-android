@@ -7,8 +7,7 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONObject;
 
-public class InstallMetric extends Body {
-
+public final class InstallMetric extends Body {
 
     private Header header;
     private Long operation_time;
@@ -80,4 +79,7 @@ public class InstallMetric extends Body {
 
         return shuttle.toJSONObject();
     }
+
+    @Override
+    public String getMetricType() { return "INSTALL"; }
 }

@@ -68,5 +68,6 @@ public abstract class Body {
 
     /** abstract methods */
     public abstract JSONObject toJSONObject();
+    public abstract String getMetricType();
 
 }

@@ -67,6 +67,11 @@ public class BodySpec {
             public JSONObject toJSONObject() {
                 return null;
             }
+
+            @Override
+            public String getMetricType() {
+                return "EMPTY BODY";
+            }
         };
 
     }

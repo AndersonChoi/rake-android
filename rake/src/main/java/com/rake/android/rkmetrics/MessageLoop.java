@@ -16,6 +16,7 @@ import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.RakeProtocolV1;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -301,6 +302,12 @@ final class MessageLoop {
                     return;
                 }
 
+                /** Metric 이 아닌 경우에만 Network 연산에 대해 report */
+                if (MetricUtil.isNotMetricToken(chunk.getToken()))
+                    RakeProtocolV1.reportResponse
+                            (responseMetric.getResponseBody(), responseMetric.getResponseCode());
+
+
                 Long operationTime = (endAt - startAt);
                 Status status = responseMetric.getFlushStatus();
 
@@ -324,9 +331,9 @@ final class MessageLoop {
                         return;
                 }
 
-                    /** write metric values */
-                    MetricUtil.recordFlushMetric(
-                            appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
+                /** write metric values */
+                MetricUtil.recordFlushMetric(
+                        appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
             }
         }
 
@@ -344,9 +351,12 @@ final class MessageLoop {
                 return null;
             }
 
-            String message = String.format("Sending %d log to %s with token %s",
-                    chunk.getCount(), chunk.getUrl(), chunk.getToken());
-            Logger.t(message);
+            /** Metric Token 일 경우 로깅을 하지 않음 */
+            if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                String message = String.format("Sending %d log to %s with token %s",
+                        chunk.getCount(), chunk.getUrl(), chunk.getToken());
+                Logger.t(message);
+            }
 
             ServerResponseMetric responseMetric =
                     HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
@@ -372,12 +382,16 @@ final class MessageLoop {
 
                 ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
 
+
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be null");
                     return;
                 }
 
                 Status status = responseMetric.getFlushStatus();
+
+                RakeProtocolV1.reportResponse
+                        (responseMetric.getResponseBody(), responseMetric.getResponseCode());
 
                 if (DONE == status || DROP == status) {
                     // if DROP, we have an unrecoverable failure.
@@ -399,7 +413,9 @@ final class MessageLoop {
                     Log log = (Log) msg.obj;
                     int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
 
-                    Logger.t("Total log count in SQLite: " + logQueueLength);
+                    /** Metric 이 아닐 경우에만, 로깅 */
+                    if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN))
+                        Logger.t("Total log count in SQLite: " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
                         // TODO private function

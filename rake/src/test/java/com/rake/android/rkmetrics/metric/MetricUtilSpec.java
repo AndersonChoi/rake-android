@@ -16,7 +16,6 @@ import org.robolectric.shadows.ShadowLog;
 @Config(manifest = Config.NONE)
 public class MetricUtilSpec {
 
-    MetricUtil logger;
     Application app = RuntimeEnvironment.application;
 
     @Before
@@ -38,5 +37,17 @@ public class MetricUtilSpec {
     @Test
     public void getEndpoint() {
         assertThat(MetricUtil.getURI()).isNotNull();
+    }
+
+    @Test
+    public void isMetricToken_negative_case() {
+        assertThat(MetricUtil.isMetricToken("")).isFalse();
+        assertThat(MetricUtil.isMetricToken(null)).isFalse();
+        assertThat(MetricUtil.isMetricToken("invalid token")).isFalse();
+    }
+
+    @Test
+    public void isMetricToken_should_return_true_given_token_is_equal_to_metric_token() {
+        assertThat(MetricUtil.isMetricToken(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)).isTrue();
     }
 }
