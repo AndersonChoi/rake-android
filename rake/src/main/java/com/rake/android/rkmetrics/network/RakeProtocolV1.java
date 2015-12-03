@@ -38,9 +38,8 @@ public final class RakeProtocolV1 {
         return DROP;
     }
 
-
     public static void reportResponse(String responseBody, int responseCode) {
         String message = String.format("Server returned code: %d, body: %s", responseCode, responseBody);
-        Logger.d(message);
+        Logger.t(message);
     }
 }

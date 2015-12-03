@@ -302,11 +302,15 @@ final class MessageLoop {
                     return;
                 }
 
-                /** Metric 이 아닌 경우에만 Network 연산에 대해 report */
-                if (MetricUtil.isNotMetricToken(chunk.getToken()))
+                /** Metric 이 아닌 경우에만 Network, Database 연산에 대해 report */
+                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                    String message = String.format("Extracting %d rows from the [%s] table where token = %s",
+                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
+                    Logger.t(message);
+
                     RakeProtocolV1.reportResponse
                             (responseMetric.getResponseBody(), responseMetric.getResponseCode());
-
+                }
 
                 Long operationTime = (endAt - startAt);
                 Status status = responseMetric.getFlushStatus();
@@ -353,7 +357,7 @@ final class MessageLoop {
 
             /** Metric Token 일 경우 로깅을 하지 않음 */
             if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                String message = String.format("Sending %d log to %s with token %s",
+                String message = String.format("Sending %d log to %s where token = %s",
                         chunk.getCount(), chunk.getUrl(), chunk.getToken());
                 Logger.t(message);
             }

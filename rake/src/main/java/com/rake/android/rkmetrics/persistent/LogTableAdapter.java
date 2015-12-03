@@ -152,6 +152,12 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return ((null == result) ? -1 : result);
     }
 
+    /**
+     * 개별 토큰마다 flush 하지 않고 아래 처럼 모든 토큰을 flush 하는 이유는,
+     *
+     * - 단말 내에 Rake 를 사용한 복수개의 SDK 가 있을 수 있음
+     * - 개별 SDK 는 자신을 Flush 하지 않을 수 있음
+     */
     public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
         List<LogChunk> chunks = executeAndReturnT(new SQLiteCallback<List<LogChunk>>() {
@@ -174,13 +180,6 @@ public final class LogTableAdapter extends DatabaseAdapter {
                 } finally { if (null != c) c.close(); }
 
                 List<LogChunk> chunks = LogChunk.create(lastId, logList);
-
-                if (null != chunks) {
-                    String message = String.format("Extracting %d rows from the [%s] table",
-                            logList.size(), LogContract.TABLE_NAME);
-
-                    Logger.d(message);
-                }
 
                 return chunks;
             }
