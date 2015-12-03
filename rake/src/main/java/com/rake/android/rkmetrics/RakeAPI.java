@@ -115,8 +115,8 @@ public final class RakeAPI {
         try {
             return _getInstance(context, token, env, logging);
         } catch (Exception e) { /* should not be here */
-            Logger.e("Failed to return RakeAPI instance");
             MetricUtil.recordInstallErrorMetric(context, env, Endpoint.DEFAULT.getURI(env), token, e);
+            Logger.e("Failed to return RakeAPI instance");
             throw new IllegalStateException("Failed to create RakeAPI instance");
         }
     }
@@ -230,8 +230,8 @@ public final class RakeAPI {
                     MessageLoop.getInstance(context).queueFlushCommand();
             }
         } catch (Exception e) { /* might be JSONException */
-            Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
             MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
+            Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
             return;
         }
     }
@@ -428,7 +428,7 @@ public final class RakeAPI {
             String props = storedPreferences.getString(prefKey, "{}");
             Logger.d(tag, "Loading Super Properties " + props);
             superProperties = new JSONObject(props);
-        } catch (JSONException e) {
+        } catch (Exception e) {
             Logger.e(tag, "Cannot parse stored superProperties");
             superProperties = new JSONObject();
             storeSuperProperties();
