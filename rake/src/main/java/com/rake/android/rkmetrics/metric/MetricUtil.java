@@ -119,6 +119,7 @@ public final class MetricUtil {
         metric.setExceptionInfo(resMetric.getExceptionInfo());
 
         metric.setFlushType(flushType)
+                .setEndpoint(chunk.getUrl())
                 .setOperationTime(operationTime)
                 .setLogCount(Long.valueOf(chunk.getCount()))
                 .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))

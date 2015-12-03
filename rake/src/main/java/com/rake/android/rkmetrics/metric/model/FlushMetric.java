@@ -8,6 +8,7 @@ import org.json.JSONObject;
 public final class FlushMetric extends Body {
 
     private Header header;
+    private String endpoint;
     private Long operation_time;
     private Long log_count;
     private Long log_size;
@@ -28,11 +29,11 @@ public final class FlushMetric extends Body {
         this.log_count = logCount; return this; }
     public FlushMetric setFlushType(FlushType flushType) {
         if (null == flushType) return this;
-
-        this.flush_type = flushType.getValue();
-        return this;
+        this.flush_type = flushType.getValue(); return this;
     }
-
+    public FlushMetric setEndpoint(String endpoint) {
+        if (null != endpoint) this.endpoint = endpoint; return this;
+    }
     public FlushMetric setServerResponseBody(String responseBody) {
         this.server_response_body = responseBody; return this; }
     public FlushMetric setServerResponseCode(Long responseCode) {
@@ -59,6 +60,7 @@ public final class FlushMetric extends Body {
                 .log_count(log_count)
                 .log_size(log_size)
                 .flush_type(flush_type)
+                .endpoint(endpoint)
                 .server_response_body(server_response_body)
                 .server_response_code(server_response_code)
                 .server_response_time(server_response_time);
