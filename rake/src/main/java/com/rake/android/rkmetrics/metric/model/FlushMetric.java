@@ -68,6 +68,8 @@ public final class FlushMetric extends Body {
         String status = null;
         if (null != header) status = header.getStatus();
 
-        return "FLUSH:" + status;
+        status = (null == status) ? Status.UNKNOWN.getValue() : status;
+
+        return Action.FLUSH.getValue() + ":" + status;
     }
 }

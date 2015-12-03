@@ -25,6 +25,7 @@ public class Header {
     private String transaction_id;
     private String service_token;
 
+    public String getAction() { return action; }
     public String getStatus() { return status; }
     public String getServiceToken() { return service_token; }
 

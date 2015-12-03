@@ -30,10 +30,16 @@ public class EmptyMetric extends Body {
     @Override
     public String getMetricType() {
         String status = null;
-        if (null != header) status = header.getStatus();
+        String action = null;
 
-        return ":" + status;
+        if (null != header) {
+            status = header.getStatus();
+            action = header.getAction();
+        }
+
+        status = (null == status) ? Status.UNKNOWN.getValue() : status;
+        action = (null == action) ? Action.EMPTY.getValue() : action;
+
+        return action + ":" + status;
     }
-
-
 }

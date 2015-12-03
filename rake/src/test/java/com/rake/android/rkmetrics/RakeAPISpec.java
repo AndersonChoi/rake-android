@@ -6,7 +6,6 @@ import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
 
-
 import android.app.Application;
 
 import com.rake.android.rkmetrics.network.Endpoint;

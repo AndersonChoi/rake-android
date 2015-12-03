@@ -80,6 +80,8 @@ public final class InstallMetric extends Body {
         String status = null;
         if (null != header) status = header.getStatus();
 
-        return "INSTALL:" + status;
+        status = (null == status) ? Status.UNKNOWN.getValue() : status;
+
+        return Action.INSTALL.getValue() + ":" + status;
     }
 }
