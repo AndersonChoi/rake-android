@@ -178,7 +178,7 @@ public final class MetricUtil {
         boolean recorded = (count == -1) ? false : true;
 
         if (recorded && null != metric)
-            Logger.t(String.format("Record METRIC for ACTION [%s]", metric.getMetricType()));
+            Logger.t(String.format("[METRIC] Record ACTION:STATUS [%s]", metric.getMetricType()));
 
         return recorded;
     }

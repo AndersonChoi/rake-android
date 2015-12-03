@@ -39,7 +39,7 @@ public final class RakeProtocolV1 {
     }
 
     public static void reportResponse(String responseBody, int responseCode) {
-        String message = String.format("Server returned code: %d, body: %s", responseCode, responseBody);
+        String message = String.format("[NETWORK] Server returned code: %d, body: %s", responseCode, responseBody);
         Logger.t(message);
     }
 }

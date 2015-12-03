@@ -158,7 +158,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);
 
                 if (null != e) {
-                    String message = String.format("Extracting %d rows from the [%s] table",
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table",
                             jsonArr.length(), EventContract.TABLE_NAME);
                     Logger.d(message);
                 }

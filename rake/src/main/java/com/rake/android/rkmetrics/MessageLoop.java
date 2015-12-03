@@ -242,7 +242,7 @@ final class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            Logger.t("Avg flush frequency approximately " + seconds + " seconds.");
+            Logger.t("[METRIC] Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -304,7 +304,7 @@ final class MessageLoop {
 
                 /** Metric 이 아닌 경우에만 Network, Database 연산에 대해 report */
                 if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                    String message = String.format("Extracting %d rows from the [%s] table where token = %s",
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
                             chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
                     Logger.t(message);
 
@@ -354,7 +354,7 @@ final class MessageLoop {
 
             /** Metric Token 일 경우 로깅을 하지 않음 */
             if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                String message = String.format("Sending %d log to %s where token = %s",
+                String message = String.format("[NETWORK] Sending %d log to %s where token = %s",
                         chunk.getCount(), chunk.getUrl(), chunk.getToken());
                 Logger.t(message);
             }
@@ -378,7 +378,7 @@ final class MessageLoop {
                 String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
-                String message = String.format("Sending %d events to %s", event.getLogCount(), url);
+                String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
                 ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
@@ -416,7 +416,7 @@ final class MessageLoop {
 
                     /** Metric 이 아닐 경우에만, 로깅 */
                     if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN))
-                        Logger.t("Total log count in SQLite: " + logQueueLength);
+                        Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
 
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
                         sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
