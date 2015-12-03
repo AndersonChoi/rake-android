@@ -8,7 +8,7 @@
 - remove nested map
 - Thread unsafe TimeUtil
 - Shuttle Metric
-- `-keep class com.skplanet.pdp.sentinel.shuttle.** { *; }` 난독화해제 반드시 하도록 할 것
+- `-keep class com.skplanet.pdp.sentinel.com.rake.android.rkmetrics.shuttle.** { *; }` 난독화해제 반드시 하도록 할 것
 
 # 0.4.0 
 
@@ -57,9 +57,9 @@ GetInstance(TOKEN, LoggingMode)
 rakeLive = RakeAPI.getInstance(this, "a" /*올바른 라이브 토큰*/, false);
 rakeDev = RakeAPI.getInstance(this, "b", /*잘못된 라이브 토큰*/false);
 
-rakeLive.track(shuttle.toJSONObject());
-rakeLive.track(shuttle.toJSONObject());
-rakeDev.track(shuttle.toJSONObject());
+rakeLive.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
+rakeLive.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
+rakeDev.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
 ```
 
 장기적으로는 SQLite 구분자에 token, url 이 들어가야 할듯
