@@ -1,6 +1,8 @@
 package com.rake.android.rkmetrics.android;
 
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 
 
@@ -51,7 +53,7 @@ public final class SystemInformation { /** singleton */
             PackageInfo info = getPackageInfo(pm, name);
             appVersionName = info.versionName;
             appVersionCode = info.versionCode;
-        } catch (NameNotFoundException e) {
+        } catch (Exception e) {
             Logger.e("Can't get versionName, versionCode from PackageInfo");
         }
 
@@ -59,24 +61,19 @@ public final class SystemInformation { /** singleton */
         // run on old devices. Thus, the reflection fandango below...
         Class<? extends PackageManager> packageManagerClass = pm.getClass();
 
-        Method hasSystemFeatureMethod = null;
-        try {
-            hasSystemFeatureMethod = packageManagerClass.getMethod("hasSystemFeature", String.class);
-        } catch (NoSuchMethodException e) {
-            // Nothing, this is an expected outcome
-        }
-
         Boolean foundNFC = null;
         Boolean foundTelephony = null;
-        if (null != hasSystemFeatureMethod) {
-            try {
+
+        try {
+            Method hasSystemFeatureMethod = null;
+            hasSystemFeatureMethod = packageManagerClass.getMethod("hasSystemFeature", String.class);
+
+            if (null != hasSystemFeatureMethod) {
                 foundNFC = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.nfc");
                 foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.telephony");
-            } catch (InvocationTargetException e) {
-                Logger.w("System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
-            } catch (IllegalAccessException e) {
-                Logger.w("System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             }
+        } catch (Exception e) {
+            Logger.e("Can't get NFC, Telephony information"); /* trivial, DO NOT print stacktrace */
         }
 
         hasNFC = foundNFC;
@@ -172,7 +169,7 @@ public final class SystemInformation { /** singleton */
     }
 
     public String configAppBuildDate(PackageManager manager, String packageName) {
-        String buildDate = null;
+        String buildDate = ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
         try {
             ApplicationInfo ai = manager.getApplicationInfo(packageName, 0);
@@ -187,11 +184,9 @@ public final class SystemInformation { /** singleton */
             buildDate = formatter.format(new Date(time));
 
             zf.close();
-        } catch(NameNotFoundException e) {
-            Logger.e("System information constructed with a context that apparently doesn't exist.");
-        } catch(IOException e) {
-            Logger.e("Can't create ZipFile Instance using given ApplicationInfo");
-        } // TODO IMPORTANT catch Exception e
+        } catch(Exception e) {
+            Logger.e("Can't get Build Date from classes.dex"); /* trivial, DO NOT print stacktrace */
+        }
 
         return buildDate;
     }
@@ -221,19 +216,21 @@ public final class SystemInformation { /** singleton */
     }
 
     public static String getPackageName(Context context) {
-        String UNKNOWN_PACKAGE = "UNKNOWN";
 
-        if (null == context) return UNKNOWN_PACKAGE;
+        if (null == context) return ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
         final PackageManager pm = context.getApplicationContext().getPackageManager();
         ApplicationInfo ai = null;
 
+        String packageName = ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
+
         try {
             ai = pm.getApplicationInfo(context.getPackageName(), 0);
-        } catch (Exception e) { /* NameNotFoundException */
-            Logger.e("Can't find getApplicationInfo", e);
+            packageName = pm.getApplicationLabel(ai).toString();
+        } catch (Exception e) {
+            Logger.e("Can't get ApplicationLabel"); /* trivial, DO NOT print stacktrace */
         }
 
-        return (ai == null) ? UNKNOWN_PACKAGE : (String) pm.getApplicationLabel(ai);
+        return packageName;
     }
 }
