@@ -1,5 +1,5 @@
 package com.rake.android.rkmetrics.util.functional;
 
-public interface Callback<T, R> {
+public interface Function1<T, R> {
     R execute(T arg);
 }

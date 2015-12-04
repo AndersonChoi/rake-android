@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.shuttle;
 
 import com.rake.android.rkmetrics.util.Logger;
-import com.rake.android.rkmetrics.util.functional.Callback;
+import com.rake.android.rkmetrics.util.functional.Function1;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONException;
@@ -83,7 +83,7 @@ public class ShuttleProfiler {
 
     public static boolean hasBodyValue(RakeClientMetricSentinelShuttle shuttle,
                                        String field,
-                                       Callback<Object, Boolean> comparator) {
+                                       Function1<Object, Boolean> comparator) {
 
         if (null == shuttle || null == field || null == comparator) return false;
 

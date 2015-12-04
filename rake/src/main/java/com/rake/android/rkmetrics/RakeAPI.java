@@ -111,6 +111,10 @@ public final class RakeAPI {
             throw new IllegalArgumentException("Can't initialize RakeAPI using NULL args");
         }
 
+        if ("".equals(token)) {
+            throw new IllegalArgumentException("Can't initialize RakeAPI using an empty token (\"\")");
+        }
+
         /* 예외 기록을 위한 try-catch */
         try {
             return _getInstance(context, token, env, logging);
