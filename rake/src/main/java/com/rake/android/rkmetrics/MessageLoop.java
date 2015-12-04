@@ -429,12 +429,11 @@ final class MessageLoop {
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
                     flush(FlushType.AUTO_FLUSH_BY_COUNT);
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    flush(FlushType.AUTO_FLUSH_BY_TIMER);
-
                     /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 FLUSH_INTERVAL 만큼 반복 */
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);
 
+                    flush(FlushType.AUTO_FLUSH_BY_TIMER);
                 } else if (command == KILL_WORKER) {
                     Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {
