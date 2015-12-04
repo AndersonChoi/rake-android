@@ -4,6 +4,10 @@ android:
   compoenents:
     - build-tools-19.1.0
     - android-19
+    - sysimg-19
+    - extra-android-support
+  licenses:
+    - android-sdk-license-5be876d5
 
 script:
 - gradle :rake:build
@@ -13,3 +17,4 @@ after_success:
 
 notifications:
   slack: skp-di:c0VSovqSCgaZd8qT7cClh799
+
