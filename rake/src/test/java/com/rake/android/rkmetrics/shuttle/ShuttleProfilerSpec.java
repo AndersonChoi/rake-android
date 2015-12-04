@@ -192,7 +192,7 @@ public class ShuttleProfilerSpec {
         hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
-    @Test
+    @Test /** IMPORTANT TEST */
     public void mergeProps_should_preserve_defaultProps() throws JSONException {
         /**
          * 사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
@@ -214,7 +214,7 @@ public class ShuttleProfilerSpec {
         hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
     }
 
-    @Test
+    @Test /** IMPORTANT TEST */
     public void mergeProps_should_return_props_which_has_body_and_defaultProps() throws JSONException {
         /**
          * mergeProps() 의 결과는,
@@ -231,6 +231,48 @@ public class ShuttleProfilerSpec {
 
         assertThat(hasKey(props, FIELD_NAME_BODY, null)).isTrue();
         assertThat(hasDefaultProps(props, null)).isTrue();
+    }
+
+    @Test /** IMPORTANT TEST */
+    public void mergeProps_should_not_merge_super_props_if_fieldOrder_does_not_have_it() throws JSONException {
+        JSONObject superProps = new JSONObject();
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
+        try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
+            fieldOrder.get(invalidPropName+ "_invalid"); /* not existing prop name */
+            failBecauseExceptionWasNotThrown(JSONException.class);
+        } catch (JSONException e) { /* ignore, success case */ }
+
+        superProps.put(invalidPropName, "value");
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        assertThat(props.has(invalidPropName)).isFalse();
+    }
+
+    @Test /** IMPORTANT TEST */
+    public void mergeProps_should_not_merge_default_props_if_fieldOrder_does_not_have_it() throws JSONException {
+        JSONObject superProps = new JSONObject();
+        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
+        try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
+            fieldOrder.get(invalidPropName+ "_invalid"); /* not existing prop name */
+            failBecauseExceptionWasNotThrown(JSONException.class);
+        } catch (JSONException e) { /* ignore, success case */ }
+
+        defaultProps.put(invalidPropName, "value");
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        assertThat(props.has(invalidPropName)).isFalse();
     }
 
     @Test

@@ -330,18 +330,18 @@ public class ShuttleProfiler {
             return null;
         }
 
-        JSONObject transformed = new JSONObject();
+        JSONObject meta = new JSONObject();
 
         /** extract META_FIELDS and remove `sentinel_meta` FIELD */
         JSONObject sentinel_meta = userProps.getJSONObject(FIELD_NAME_SENTINEL_META);
         for (Iterator<?> iter = sentinel_meta.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
-            transformed.put(key, sentinel_meta.get(key));
+            meta.put(key, sentinel_meta.get(key));
         }
 
         userProps.remove(FIELD_NAME_SENTINEL_META);
 
-        return transformed;
+        return meta;
     }
 
 
@@ -364,30 +364,40 @@ public class ShuttleProfiler {
                                         JSONObject defaultProps)
             throws JSONException, NullPointerException {
 
-        if (null == superProps) superProps = new JSONObject();
+        JSONObject props = new JSONObject();
+
+        /** 0. Insert super-props */
+        if (null != superProps) {
+            for (Iterator<?> keys = superProps.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+                Object value = superProps.get(key);
+
+                if (fieldOrder.has(key)) props.put(key, value);
+            }
+        }
 
         /** 1. Insert user-collected fields */
         for (Iterator<?> keys = userProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
             Object value = userProps.get(key);
 
-            if (superProps.has(key) && value.toString().length() == 0) {
-                // DO NOT overwrite superProps if user inserted nothing
-            } else superProps.put(key, value);
+            // TODO: JSON.null SEN-268, SEN-269
+            /** iff userProps is not an empty string and it is in fieldOrder */
+            if (!(value.toString().length() == 0) && fieldOrder.has(key))
+                props.put(key, value);
         }
 
         /** 2. Insert auto-collected fields */
         for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
-            boolean addToProperties = true;
+            boolean addToProperties = false;
 
             if (fieldOrder.has(key)) addToProperties = true;
-            else addToProperties = false;
 
             /** merge super props with default props */
-            if (addToProperties) { superProps.put(key, defaultProps.get(key)); }
+            if (addToProperties) props.put(key, defaultProps.get(key));
         }
 
-        return superProps;
+        return props;
     }
 }
