@@ -1,11 +1,12 @@
-language: java
+language: android
 
-jdk:
-- oraclejdk8
-- oraclejdk7
+android:
+  compoenents:
+    - build-tools-19.1.0
+    - android-19
 
 script:
-- gradle build check
+- gradle :rake:build
 
 after_success:
 - gradle cobertura coveralls
