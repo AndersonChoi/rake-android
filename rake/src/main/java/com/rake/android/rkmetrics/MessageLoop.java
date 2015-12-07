@@ -42,6 +42,7 @@ final class MessageLoop {
     public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
     public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
     public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    public static final long INITIAL_EVENT_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
 
     private static long autoFlushInterval = DEFAULT_FLUSH_INTERVAL;
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
@@ -272,7 +273,7 @@ final class MessageLoop {
 
             /* flush legacy table `events` */
             if (DatabaseAdapter.upgradedFrom4To5)
-                sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_FLUSH_DELAY);
+                sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_EVENT_FLUSH_DELAY);
 
             sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
