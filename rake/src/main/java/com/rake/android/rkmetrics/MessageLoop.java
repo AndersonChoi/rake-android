@@ -47,17 +47,18 @@ final class MessageLoop {
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
     private static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
-    /* package */ enum Command {
+    public enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
-        KILL_WORKER (6),
+        KILL_WORKER (5),
         FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
         RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
+        public int getCode() { return code; }
         Command(int code) { this.code = code; }
 
         private static final Map<Integer, Command> messagesByCode = new HashMap<Integer, Command>();
