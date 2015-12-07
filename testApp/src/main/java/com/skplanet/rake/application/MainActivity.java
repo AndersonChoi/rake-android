@@ -48,59 +48,96 @@ public class MainActivity extends AppCompatActivity {
 
     private void initialize() {
         Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
-        btnInstallDevRake.setOnClickListener((View v) -> {
-            install(RakeAPI.Env.DEV);
+        btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                install(RakeAPI.Env.DEV);
+            }
+        });
+
+        btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                install(RakeAPI.Env.DEV);
+            }
         });
 
         Button btnTrackDevRake = (Button) findViewById(R.id.btnTrackDevRake);
-        btnTrackDevRake.setOnClickListener((View v) -> {
-           track(RakeAPI.Env.DEV);
+        btnTrackDevRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                track(RakeAPI.Env.DEV);
+            }
         });
 
         Button btnFlushDevRake = (Button) findViewById(R.id.btnFlushDevRake);
-        btnFlushDevRake.setOnClickListener((View v) -> {
-            flush(RakeAPI.Env.DEV);
+        btnFlushDevRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                flush(RakeAPI.Env.DEV);
+            }
         });
 
         Button btnSetFreeEndpointDevRake =
                 (Button) findViewById(R.id.btnSetFreeEndpointDevRake);
-        btnSetFreeEndpointDevRake.setOnClickListener((View v) -> {
-            setFreeEndpoint(RakeAPI.Env.DEV);
+        btnSetFreeEndpointDevRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setFreeEndpoint(RakeAPI.Env.DEV);
+            }
         });
 
         /** LIVE */
         Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
-        btnInstallLiveRake.setOnClickListener((View v) -> {
-            install(RakeAPI.Env.LIVE);
+        btnInstallLiveRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                install(RakeAPI.Env.LIVE);
+            }
         });
 
         Button btnTrackLiveRake = (Button) findViewById(R.id.btnTrackLiveRake);
-        btnTrackLiveRake.setOnClickListener((View v) -> {
-            track(RakeAPI.Env.LIVE);
+        btnTrackLiveRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                track(RakeAPI.Env.LIVE);
+            }
         });
 
         Button btnFlushLiveRake = (Button) findViewById(R.id.btnFlushLiveRake);
-        btnFlushLiveRake.setOnClickListener((View v) -> {
-            flush(RakeAPI.Env.LIVE);
-        });
+        btnFlushLiveRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                flush(RakeAPI.Env.LIVE);
+            }});
 
         Button btnSetFreeEndpointLiveRake =
                 (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
-        btnSetFreeEndpointLiveRake.setOnClickListener((View v) -> {
-            setFreeEndpoint(RakeAPI.Env.LIVE);
+        btnSetFreeEndpointLiveRake.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                setFreeEndpoint(RakeAPI.Env.LIVE);
+            }
         });
 
         /** GLOBAL */
         Button btnSetAutoFlushON =
                 (Button) findViewById(R.id.btnSetAutoFlushON);
-        btnSetAutoFlushON.setOnClickListener((View v) -> {
-            RakeAPI.setAutoFlush(AutoFlush.ON);
+        btnSetAutoFlushON.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RakeAPI.setAutoFlush(AutoFlush.ON);
+            }
         });
 
         Button btnSetAutoFlushOFF =
                 (Button) findViewById(R.id.btnSetAutoFlushOFF);
-        btnSetAutoFlushOFF.setOnClickListener((View v) -> {
-            RakeAPI.setAutoFlush(AutoFlush.OFF);
+        btnSetAutoFlushOFF.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                RakeAPI.setAutoFlush(AutoFlush.OFF);
+            }
         });
     }
 
