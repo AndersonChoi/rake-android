@@ -7,7 +7,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'idea'
 
-version = '0.4.0-SNAPSHOT'
+version = '0.4.0'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -48,6 +48,7 @@ String FILE_REPLACED_CONFIG = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/config/Ra
 String FILE_REPLACED_METRIC_LOGGER = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
 
 String RELEASE_BRANCH = "release"
+def isReleaseBranch = branchName.startsWith(RELEASE_BRANCH)
 String VAR_BRANCH = "BUILD_CONSTANT_BRANCH";
 Pattern REGEX_BRANCH = ~/String $VAR_BRANCH = "(.)*"/
 String FILLED_BRANCH = "String $VAR_BRANCH = \"$branchName\""
@@ -146,7 +147,7 @@ task updateMetricToken(type: Copy) {
         FILLED_METRIC_TOKEN_DEV = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN_DEV\""
         String METRIC_TOKEN = null
 
-        if (RELEASE_BRANCH.equals(branchName)) METRIC_TOKEN = METRIC_TOKEN_LIVE
+        if (isReleaseBranch) METRIC_TOKEN = METRIC_TOKEN_LIVE
         else METRIC_TOKEN = METRIC_TOKEN_DEV
 
         return METRIC_TOKEN
@@ -189,7 +190,7 @@ task updateRakeEnv(type: Copy) {
         String ENV_LIVE = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.LIVE;"
         String ENV_DEV  = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
 
-        if (RELEASE_BRANCH.equals(branchName)) return ENV_LIVE
+        if (isReleaseBranch) return ENV_LIVE
         else return ENV_DEV
     }
 

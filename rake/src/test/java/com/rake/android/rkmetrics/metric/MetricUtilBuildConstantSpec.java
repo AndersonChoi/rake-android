@@ -43,7 +43,7 @@ public class MetricUtilBuildConstantSpec {
     public void 현재_Git_브랜치가_release_면_TOKEN_LIVE_를_리턴() throws IOException {
         String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
 
-        if (releaseBranch == branch) {
+        if (branch.startsWith(releaseBranch)) {
             assertThat(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_LIVE));
         } else { /* DEV */
             assertThat(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN).isEqualTo(System.getenv(ENV_METRIC_TOKEN_DEV));
@@ -54,7 +54,7 @@ public class MetricUtilBuildConstantSpec {
     public void 현재_Git_브랜치가_release_면_Env_LIVE_를_리턴() throws IOException {
         String branch = executeCommand(GIT_CURRENT_BRANCH_CMD);
 
-        if (releaseBranch == branch) { /* Env.LIVE */
+        if (branch.startsWith(releaseBranch)) { /* Env.LIVE */
            assertThat(MetricUtil.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.LIVE);
         } else { /* Env.DEV */
             assertThat(MetricUtil.BUILD_CONSTANT_ENV).isEqualTo(RakeAPI.Env.DEV);
