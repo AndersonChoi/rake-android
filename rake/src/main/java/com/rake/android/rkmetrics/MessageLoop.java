@@ -43,7 +43,7 @@ final class MessageLoop {
     public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
     public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
 
-    private static long FLUSH_INTERVAL = DEFAULT_FLUSH_INTERVAL;
+    private static long autoFlushInterval = DEFAULT_FLUSH_INTERVAL;
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
     private static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
@@ -101,11 +101,11 @@ final class MessageLoop {
         return instance;
     }
 
-    /* package */ static void setFlushInterval(long millis) {
-        FLUSH_INTERVAL = millis;
+    /* package */ static void setAutoFlushInterval(long millis) {
+        autoFlushInterval = millis;
     }
 
-    /* package */ static long getFlushInterval() { return FLUSH_INTERVAL; }
+    /* package */ static long getAutoFlushInterval() { return autoFlushInterval; }
 
     /* package */ static void setAutoFlushOption(AutoFlush option) {
         MessageLoop.autoFlushOption = option;
@@ -129,7 +129,11 @@ final class MessageLoop {
 
     private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
 
-    public void queueInstallMetric(long operationTime, String token, RakeAPI.Env env, String endpoint) {
+    public void queueInstallMetric(long operationTime,
+                                   String token,
+                                   RakeAPI.Env env,
+                                   String endpoint,
+                                   RakeAPI.Logging logging) {
         Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
         InstallMetric installMetric = new InstallMetric();
 
@@ -138,9 +142,13 @@ final class MessageLoop {
         installMetric.setHeader(h);
         installMetric
                 .setOperationTime(operationTime)
-                .setEnv(env)
                 .setEndpoint(endpoint)
-                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION));
+                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION))
+                .setEnv(env)
+                .setLogging(logging)
+                .setMaxTrackCount(Long.valueOf(RakeConfig.TRACK_MAX_LOG_COUNT))
+                .setAutoFlushOnOff(autoFlushOption)
+                .setAutoFlushInterval(autoFlushInterval);
 
         Message m = Message.obtain();
         m.what = Command.RECORD_INSTALL_METRIC.code;
@@ -399,7 +407,7 @@ final class MessageLoop {
                     // if DROP, we have an unrecoverable failure.
                     EventTableAdapter.getInstance(appContext).removeEventById(lastId);
                 } else if (RETRY == status) {
-                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, FLUSH_INTERVAL);
+                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, autoFlushInterval);
                 } else {
                     Logger.e("Invalid TransmissionResult: " + status);
                 }
@@ -430,9 +438,9 @@ final class MessageLoop {
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
                     flush(FlushType.AUTO_FLUSH_BY_COUNT);
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 FLUSH_INTERVAL 만큼 반복 */
+                    /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 autoFlushInterval 만큼 반복 */
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
-                        sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, FLUSH_INTERVAL);
+                        sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
 
                     flush(FlushType.AUTO_FLUSH_BY_TIMER);
                 } else if (command == KILL_WORKER) {

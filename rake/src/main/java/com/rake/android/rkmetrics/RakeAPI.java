@@ -154,7 +154,7 @@ public final class RakeAPI {
 
                 /** record metric */
                 MessageLoop.getInstance(context)
-                        .queueInstallMetric(endAt - startAt, token, env, endpoint.getURI(env));
+                        .queueInstallMetric(endAt - startAt, token, env, endpoint.getURI(env), logging);
             } else {
                 Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
@@ -170,11 +170,11 @@ public final class RakeAPI {
      */
     public static void setFlushInterval(long milliseconds) {
         Logger.i("Set flush interval to " + milliseconds);
-        MessageLoop.setFlushInterval(milliseconds);
+        MessageLoop.setAutoFlushInterval(milliseconds);
     }
 
     public static long getFlushInterval() {
-        return MessageLoop.getFlushInterval();
+        return MessageLoop.getAutoFlushInterval();
     }
 
     public static void setAutoFlush(AutoFlush autoFlush) {
