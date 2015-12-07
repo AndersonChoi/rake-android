@@ -351,7 +351,7 @@ final class MessageLoop {
 
                 /** write metric values */
                 MetricUtil.recordFlushMetric(
-                        appContext, Action.FLUSH, status, flushType, operationTime, chunk, responseMetric);
+                        appContext, status, flushType, operationTime, chunk, responseMetric);
             }
         }
         private ServerResponseMetric send(LogChunk chunk) {

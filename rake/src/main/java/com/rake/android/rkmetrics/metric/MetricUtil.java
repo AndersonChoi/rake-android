@@ -127,20 +127,21 @@ public final class MetricUtil {
 
     /** @return true if log was successfully persisted otherwise returns false */
     public static boolean recordFlushMetric(Context context,
-                                            Action action,
                                             Status status,
                                             FlushType flushType,
                                             long operationTime,
                                             LogChunk chunk,
                                             ServerResponseMetric resMetric){
 
-        if (null == context || null == action || null == chunk || null == resMetric) {
+        if (null == context || null == chunk || null == resMetric || null == status) {
             Logger.e("Can't record FlushMetric using NULL args");
             return false;
         }
 
-        /** 메트릭 자체에 대한 메트릭은 기록하지 않음 */
-        if (MetricUtil.isMetricToken(chunk.getToken())) return false;
+        /** 메트릭 자체에 대한 flush:DONE 메트릭은 기록하지 않음, flush:DROP, flush:RETRY 등은 오류 파악을 위해 기록 */
+        if (MetricUtil.isMetricToken(chunk.getToken())
+                && Status.DONE == status)
+            return false;
 
         FlushMetric metric = new FlushMetric();
 
