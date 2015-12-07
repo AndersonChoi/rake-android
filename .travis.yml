@@ -1,14 +1,23 @@
-language: java
+language: android
 
-jdk:
-- oraclejdk8
-- oraclejdk7
+android:
+  components:
+    - build-tools-19.1.0
+    - build-tools-23.0.0
+    - sysimg-19
+    - sysimg-23
+    - android-19
+    - android-23
+    - extra-android-support
+  licenses:
+    - android-sdk-license-5be876d5
 
 script:
-- gradle build check
+- gradle :rake:build
 
 after_success:
 - gradle cobertura coveralls
 
 notifications:
   slack: skp-di:c0VSovqSCgaZd8qT7cClh799
+

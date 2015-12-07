@@ -18,5 +18,5 @@ public final class RakeConfig {
     // version number will be replaced automatically before compiling.
     public static final String RAKE_LIB_VERSION = "r0.5.0_c0.4.0";
 
-    public static final String LOG_TAG_PREFIX = "Rake";
+    public static final String LOG_TAG_PREFIX = "RAKE";
 }

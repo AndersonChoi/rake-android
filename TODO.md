@@ -1,14 +1,20 @@
-# 0.3.21
+# 0.5.0
 
-- remove nested map
+- Builder pattern
 - Token URL
 
-# 0.3.20
+# 0.4.1 
+
+- remove nested map
+- Thread unsafe TimeUtil
+- Shuttle Metric
+- `-keep class com.skplanet.pdp.sentinel.com.rake.android.rkmetrics.shuttle.** { *; }` 난독화해제 반드시 하도록 할 것
+
+# 0.4.0 
 
 - ~~git rev-parse current branch and replace TOKENs in Token.java~~
-- mUlti INstance
-- Builder pattern (+ autoflush disable option)
-- Shuttle Metric
+- Multi Instance
+- autoflush disable option)
 
 ## API 변경
 
@@ -51,9 +57,9 @@ GetInstance(TOKEN, LoggingMode)
 rakeLive = RakeAPI.getInstance(this, "a" /*올바른 라이브 토큰*/, false);
 rakeDev = RakeAPI.getInstance(this, "b", /*잘못된 라이브 토큰*/false);
 
-rakeLive.track(shuttle.toJSONObject());
-rakeLive.track(shuttle.toJSONObject());
-rakeDev.track(shuttle.toJSONObject());
+rakeLive.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
+rakeLive.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
+rakeDev.track(com.rake.android.rkmetrics.shuttle.toJSONObject());
 ```
 
 장기적으로는 SQLite 구분자에 token, url 이 들어가야 할듯
@@ -74,7 +80,7 @@ rakeDev.track(shuttle.toJSONObject());
 
 - ~~singleton handler ~~
 - ~~new constructor using enum~~
-- ~~flush interval static scope~~
+- ~~flushMetric interval static scope~~
 - ~~remove application context from RakeAPI~~
 - ~~IllegarArgumentException 주석~~
 

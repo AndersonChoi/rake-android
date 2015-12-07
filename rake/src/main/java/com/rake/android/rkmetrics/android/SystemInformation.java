@@ -1,5 +1,11 @@
 package com.rake.android.rkmetrics.android;
 
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
+import com.rake.android.rkmetrics.util.Logger;
+
+
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -14,7 +20,6 @@ import android.telephony.TelephonyManager;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
-import com.rake.android.rkmetrics.util.RakeLogger;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -26,23 +31,16 @@ import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 /**
- * Abstracts away possibly non-present system information classes,
- * and handles permission-dependent queries for default system information.
+ * Gather android system dependent information
  */
-final public class SystemInformation {
-    private Context context;
-    private Boolean hasNFC;
-    private Boolean hasTelephony;
-    private DisplayMetrics displayMetrics;
-    private String appVersionName;
-    private Integer appVersionCode;
-    private String deviceId;
-    private String appBuildDate; /* for dev environment */
+public final class SystemInformation { /** singleton */
 
-    public SystemInformation(Context context) {
+    /** constructors */
+
+    private SystemInformation() {}
+
+    private SystemInformation(Context context) {
         this.context = context;
 
         PackageManager pm = context.getPackageManager();
@@ -55,32 +53,27 @@ final public class SystemInformation {
             PackageInfo info = getPackageInfo(pm, name);
             appVersionName = info.versionName;
             appVersionCode = info.versionCode;
-        } catch (NameNotFoundException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't get versionName, versionCode from PackageInfo");
+        } catch (Exception e) {
+            Logger.e("Can't get versionName, versionCode from PackageInfo");
         }
 
         // We can't count on these features being available, since we need to
         // run on old devices. Thus, the reflection fandango below...
         Class<? extends PackageManager> packageManagerClass = pm.getClass();
 
-        Method hasSystemFeatureMethod = null;
-        try {
-            hasSystemFeatureMethod = packageManagerClass.getMethod("hasSystemFeature", String.class);
-        } catch (NoSuchMethodException e) {
-            // Nothing, this is an expected outcome
-        }
-
         Boolean foundNFC = null;
         Boolean foundTelephony = null;
-        if (null != hasSystemFeatureMethod) {
-            try {
+
+        try {
+            Method hasSystemFeatureMethod = null;
+            hasSystemFeatureMethod = packageManagerClass.getMethod("hasSystemFeature", String.class);
+
+            if (null != hasSystemFeatureMethod) {
                 foundNFC = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.nfc");
                 foundTelephony = (Boolean) hasSystemFeatureMethod.invoke(pm, "android.hardware.telephony");
-            } catch (InvocationTargetException e) {
-                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
-            } catch (IllegalAccessException e) {
-                RakeLogger.w(LOG_TAG_PREFIX, "System version appeared to support PackageManager.hasSystemFeature, but we were unable to call it.");
             }
+        } catch (Exception e) {
+            Logger.e("Can't get NFC, Telephony information"); /* trivial, DO NOT print stacktrace */
         }
 
         hasNFC = foundNFC;
@@ -91,6 +84,29 @@ final public class SystemInformation {
         display.getMetrics(displayMetrics);
 
         deviceId = Secure.getString(context.getContentResolver(), Settings.Secure.ANDROID_ID);
+
+        if (null == deviceId) deviceId = PROPERTY_VALUE_UNKNOWN;
+    }
+
+    /** instance members */
+
+    private Context context;
+    private Boolean hasNFC;
+    private Boolean hasTelephony;
+    private DisplayMetrics displayMetrics;
+    private String appVersionName;
+    private Integer appVersionCode;
+    private String deviceId;
+    private String appBuildDate; /* for dev environment */
+
+    /** static members */
+
+    private static SystemInformation instance;
+
+    public static synchronized SystemInformation getInstance(Context context) {
+        if (null == instance) instance = new SystemInformation(context.getApplicationContext());
+
+        return instance;
     }
 
     public String getAppBuildDate() {
@@ -153,7 +169,7 @@ final public class SystemInformation {
     }
 
     public String configAppBuildDate(PackageManager manager, String packageName) {
-        String buildDate = null;
+        String buildDate = ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
         try {
             ApplicationInfo ai = manager.getApplicationInfo(packageName, 0);
@@ -168,10 +184,8 @@ final public class SystemInformation {
             buildDate = formatter.format(new Date(time));
 
             zf.close();
-        } catch(NameNotFoundException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "System information constructed with a context that apparently doesn't exist.");
-        } catch(IOException e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Can't create ZipFile Instance using given ApplicationInfo");
+        } catch(Exception e) {
+            Logger.e("Can't get Build Date from classes.dex"); /* trivial, DO NOT print stacktrace */
         }
 
         return buildDate;
@@ -201,4 +215,22 @@ final public class SystemInformation {
         return ret;
     }
 
+    public static String getPackageName(Context context) {
+
+        if (null == context) return ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
+
+        final PackageManager pm = context.getApplicationContext().getPackageManager();
+        ApplicationInfo ai = null;
+
+        String packageName = ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
+
+        try {
+            ai = pm.getApplicationInfo(context.getPackageName(), 0);
+            packageName = pm.getApplicationLabel(ai).toString();
+        } catch (Exception e) {
+            Logger.e("Can't get ApplicationLabel"); /* trivial, DO NOT print stacktrace */
+        }
+
+        return packageName;
+    }
 }

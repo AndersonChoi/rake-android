@@ -1,13 +1,12 @@
 package com.rake.android.rkmetrics.persistent;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
-import com.rake.android.rkmetrics.util.RakeLogger;
+
+import com.rake.android.rkmetrics.util.Logger;
 
 import java.io.File;
 
@@ -15,7 +14,7 @@ import java.io.File;
  * Not thread-safe.
  * Instances of this class should only be used by a single thread.
  */
-abstract class DatabaseAdapter {
+public abstract class DatabaseAdapter {
     public enum Table {
         EVENTS("events"),
         LOG("log");
@@ -32,8 +31,10 @@ abstract class DatabaseAdapter {
     protected static final String STRING_TYPE_NOT_NULL = " STRING NOT NULL";
     protected static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
     protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
+    protected static final String AND = " AND ";
 
-    private static final int DATABASE_VERSION = 5;
+    public static final int DATABASE_VERSION = 5;
+    public static boolean upgradedFrom4To5 = false;
 
     protected static final String COMMA_SEP = ", ";
     protected static final String QUERY_END = ");";
@@ -62,13 +63,13 @@ abstract class DatabaseAdapter {
 
         @Override
         public void onCreate(SQLiteDatabase db) {
-            RakeLogger.d(LOG_TAG_PREFIX, "Create database: " + DATABASE_NAME);
+            Logger.d("Create database: " + DATABASE_NAME);
 
             String createTableQuery = LogTableAdapter.LogContract.QUERY_CREATE_TABLE;
             String createIndexQuery = LogTableAdapter.LogContract.QUERY_CREATE_INDEX;
 
-            RakeLogger.d(LOG_TAG_PREFIX, "Create table with query: \n" + createTableQuery);
-            RakeLogger.d(LOG_TAG_PREFIX, "Create index with query: \n" + createIndexQuery);
+            Logger.d("Create table with query: \n" + createTableQuery);
+            Logger.d("Create index with query: \n" + createIndexQuery);
 
             db.execSQL(createTableQuery);
             db.execSQL(createIndexQuery);
@@ -79,7 +80,7 @@ abstract class DatabaseAdapter {
             String message = String.format("Upgrade Database [%s] from version %d to %d",
                     DATABASE_NAME, oldVersion, newVersion);
 
-            RakeLogger.d(LOG_TAG_PREFIX, message);
+            Logger.d(message);
 
             if (oldVersion < 4) { /* DO NOT SUPPORT */
                 db.execSQL(EventTableAdapter.EventContract.QUERY_DROP_TABLE);
@@ -94,6 +95,12 @@ abstract class DatabaseAdapter {
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
             }
+
+            /** Event 테이블을 바로 Log 테이블로 옮길 수 없기 때문에 라이브 로그라 가정하고
+             * Event 테이블 플러시를 위한 Flag 값을 설정
+             */
+            if (4 == oldVersion && 5 == newVersion)
+                upgradedFrom4To5 = true;
         }
     }
 
@@ -107,14 +114,14 @@ abstract class DatabaseAdapter {
             callback.execute(db);
         } catch (SQLiteException e) {
             String message = String.format("execute failed with query: %s", callback.getQuery());
-            RakeLogger.e(LOG_TAG_PREFIX, message, e);
+            Logger.e(message, e);
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
             // than to leave it junked up (and maybe filling up the disk.)
             dbHelper.dropDatabase();
         } catch (Exception e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            Logger.e("Uncaught exception", e);
         } finally {
             dbHelper.close();
         }
@@ -131,7 +138,7 @@ abstract class DatabaseAdapter {
             return callback.execute(db);
         } catch (SQLiteException e) {
             String message = String.format("executeAndReturnT failed with query: %s", callback.getQuery());
-            RakeLogger.e(LOG_TAG_PREFIX, message, e);
+            Logger.e(message, e);
             // We assume that in general, the results of a SQL exception are
             // unrecoverable, and could be associated with an oversized or
             // otherwise unusable DB. Better to bomb it and get back on track
@@ -139,7 +146,7 @@ abstract class DatabaseAdapter {
             dbHelper.dropDatabase();
             return null;
         } catch (Exception e) {
-            RakeLogger.e(LOG_TAG_PREFIX, "Uncaught exception", e);
+            Logger.e("Uncaught exception", e);
             return null;
         } finally {
             dbHelper.close();

@@ -1,0 +1,10 @@
+com.rake.android.rkmetrics
+com.rake.android.rkmetrics.android
+com.rake.android.rkmetrics.config
+com.rake.android.rkmetrics.metric
+com.rake.android.rkmetrics.metric.model
+com.rake.android.rkmetrics.network
+com.rake.android.rkmetrics.persistent
+com.rake.android.rkmetrics.shuttle
+com.rake.android.rkmetrics.util
+com.rake.android.rkmetrics.util.functional

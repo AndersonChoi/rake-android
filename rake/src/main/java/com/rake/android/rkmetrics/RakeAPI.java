@@ -1,15 +1,20 @@
 package com.rake.android.rkmetrics;
 
+
+import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
-import android.os.Message;
 import android.util.DisplayMetrics;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.metric.MetricUtil;
+import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
 import org.json.JSONException;
@@ -17,9 +22,7 @@ import org.json.JSONObject;
 
 import java.util.*;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
-public class RakeAPI {
+public final class RakeAPI {
 
     public enum Logging {
         DISABLE("DISABLE"), ENABLE("ENABLE");
@@ -29,6 +32,10 @@ public class RakeAPI {
         @Override public String toString() { return mode; }
     }
 
+    /**
+     * 공개 API 의 일부이며 빌드스크립트에서 사용되는 ENUM 이므로 이름 또는 내부 값 변경시
+     * rake-android/rake/build.gradle 도 변경할 것
+     */
     public enum Env {
         LIVE("LIVE"),
         DEV("DEV");
@@ -62,8 +69,6 @@ public class RakeAPI {
     private final String token;
 
     private final Context context;
-    private final SystemInformation sysInfo; // TODO: duplicated?
-    private final MessageLoop messageLoop; /* singleton */
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
@@ -71,7 +76,7 @@ public class RakeAPI {
 
         this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint);
 
-        RakeLogger.d(tag, "Creating instance");
+        Logger.d(tag, "Creating instance");
 
         this.context = appContext;
 
@@ -79,8 +84,6 @@ public class RakeAPI {
         this.env = env;
         this.endpoint = endpoint;
 
-        this.messageLoop = MessageLoop.getInstance(appContext);
-        this.sysInfo = getSystemInformation();
         this.storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
 
         readSuperProperties();
@@ -97,11 +100,39 @@ public class RakeAPI {
      *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#LIVE} used,
      *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
      *
-     * @throws IllegalArgumentException if RakeAPI called multiple times with different {@code RakeAPI.Env}.
-     * @param         loggingMode Logging.ENABLE or Logging.DISABLE
+     * @param logging Logging.ENABLE or Logging.DISABLE
+     *
+     * @throws IllegalArgumentException if one of the parameters is NULL
+     * @throws IllegalStateException if uncaught exception occurred while initializing
      */
-    public static RakeAPI getInstance(Context context, String token, Env env, Logging loggingMode) {
-        setLogging(loggingMode);
+
+    public static RakeAPI getInstance(Context context, String token, Env env, Logging logging) {
+        if (null == context || null == token || null == env || null == logging) {
+            throw new IllegalArgumentException("Can't initialize RakeAPI using NULL args");
+        }
+
+        if ("".equals(token)) {
+            throw new IllegalArgumentException("Can't initialize RakeAPI using an empty token (\"\")");
+        }
+
+        /* 예외 기록을 위한 try-catch */
+        try {
+            return _getInstance(context, token, env, logging);
+        } catch (Exception e) { /* should not be here */
+            MetricUtil.recordInstallErrorMetric(context, env, Endpoint.DEFAULT.getURI(env), token, e);
+            Logger.e("Failed to return RakeAPI instance");
+            throw new IllegalStateException("Failed to create RakeAPI instance");
+        }
+    }
+
+    private static RakeAPI _getInstance(Context context,
+                                      String token,
+                                      Env env,
+                                      Logging logging) {
+
+        long startAt = System.currentTimeMillis();
+
+        setLogging(logging);
 
         synchronized (sInstanceMap) {
             Context appContext = context.getApplicationContext();
@@ -115,18 +146,22 @@ public class RakeAPI {
             RakeAPI rake = instances.get(appContext);
 
             if (rake == null) {
-                // url should be set before initializing rake instance
                 Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
+
+                long endAt = System.currentTimeMillis();
+
+                /** record metric */
+                MessageLoop.getInstance(context)
+                        .queueInstallMetric(endAt - startAt, token, env, endpoint.getURI(env), logging);
+            } else {
+                Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
 
             return rake;
         }
     }
-
-
-    /* Class methods */
 
     /**
      * Set flush interval
@@ -134,18 +169,18 @@ public class RakeAPI {
      * @param milliseconds flush interval (milliseconds)
      */
     public static void setFlushInterval(long milliseconds) {
-        RakeLogger.i(LOG_TAG_PREFIX, "Set flush interval to " + milliseconds);
-        MessageLoop.setFlushInterval(milliseconds);
+        Logger.i("Set flush interval to " + milliseconds);
+        MessageLoop.setAutoFlushInterval(milliseconds);
     }
 
     public static long getFlushInterval() {
-        return MessageLoop.getFlushInterval();
+        return MessageLoop.getAutoFlushInterval();
     }
 
     public static void setAutoFlush(AutoFlush autoFlush) {
         AutoFlush old = MessageLoop.getAutoFlushOption();
         String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
-        RakeLogger.i(LOG_TAG_PREFIX, message);
+        Logger.i(message);
 
         MessageLoop.setAutoFlushOption(autoFlush);
     }
@@ -156,125 +191,70 @@ public class RakeAPI {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
 
-    private final static ArrayList<String> defaultValueBlackList = new ArrayList<String>() {{
-        // black list
-        // usage: add("mdn");
-    }};
+    public JSONObject getSuperProperties() throws JSONException {
+        JSONObject props = new JSONObject();
 
-    /* Instance methods */
+        synchronized (superProperties) {
+            for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
+                String key = (String) keys.next();
+
+                props.put(key, superProperties.get(key));
+            }
+        }
+
+        return props;
+    }
 
     /**
-     * Save JSONObject (shuttle) into SQLite.
+     * Save JSONObject created using Shuttle.toJSONObject() into SQLite.
      * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
      *
-     * @param shuttle pass Shuttle.getJSONObject();
+     * @param shuttle pass Shuttle.toJSONObject();
      */
     public void track(JSONObject shuttle) {
-        if (null == shuttle) {
-            RakeLogger.e(tag, "should not pass null into RakeAPI.track()");
-            return;
-        }
-
         Date now = new Date();
 
+        JSONObject superProps = null;
+        JSONObject defaultProps = null;
+
+        /* 최종 소비자 API 예외 처리 */
         try {
-            JSONObject dataObj = new JSONObject();
-            JSONObject propertiesObj = new JSONObject();
+            superProps = getSuperProperties();
+            defaultProps = getDefaultProps(context, env, token, now);
 
-            // 1. super properties
-            synchronized (superProperties) {
-                for (Iterator<?> keys = superProperties.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    propertiesObj.put(key, superProperties.get(key));
-                }
-            }
-
-            JSONObject sentinel_meta;
-            if (shuttle.has("sentinel_meta")) {
-                sentinel_meta = shuttle.getJSONObject("sentinel_meta");
-                for (Iterator<?> sentinel_meta_keys = sentinel_meta.keys(); sentinel_meta_keys.hasNext(); ) {
-                    String sentinel_meta_key = (String) sentinel_meta_keys.next();
-                    dataObj.put(sentinel_meta_key, sentinel_meta.get(sentinel_meta_key));
-                }
-                shuttle.remove("sentinel_meta");
-            } else {
-                // no sentinel shuttle
-                // need to do something here?
-                // get/make sentinel_meta for this project
-            }
-
-            JSONObject fieldOrder;
-            try {
-                fieldOrder = (JSONObject) dataObj.get("_$fieldOrder");
-            } catch (JSONException e) {
-                fieldOrder = null;
-            }
-
-            // 2-2. custom properties
-            if (shuttle != null) {
-                for (Iterator<?> keys = shuttle.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    if (fieldOrder != null && fieldOrder.has(key)) {    // field defined in schema
-                        if (propertiesObj.has(key) && shuttle.get(key).toString().length() == 0) {
-                            // Do not overwrite super properties with empty string of properties.
-                        } else {
-                            propertiesObj.put(key, shuttle.get(key));
-                        }
-                    } else if (fieldOrder == null) { // no fieldOrder (maybe no shuttle)
-                        propertiesObj.put(key, shuttle.get(key));
-                    }
-                }
-            }
-
-            // 3. auto : device info
-            // get only values in fieldOrder
-            JSONObject defaultProperties = getDefaultEventProperties();
-            if (defaultProperties != null) {
-                for (Iterator<?> keys = defaultProperties.keys(); keys.hasNext(); ) {
-                    String key = (String) keys.next();
-                    boolean addToProperties = true;
-
-                    if (fieldOrder != null) {
-                        if (fieldOrder.has(key)) { addToProperties = true; }
-                        else { addToProperties = false; }
-
-                    } else if (defaultValueBlackList.contains(key)) {
-                        addToProperties = false;
-                    }
-
-                    if (addToProperties) { propertiesObj.put(key, defaultProperties.get(key)); }
-                }
-            }
-
-            // rake token
-            propertiesObj.put("token", token);
-
-            // time
-            // TODO: thread-unsafe
-            propertiesObj.put("base_time", TimeUtil.baseTimeFormat.format(now));
-            propertiesObj.put("local_time", TimeUtil.localTimeFormat.format(now));
-
-            // 4. put properties
-            dataObj.put("properties", propertiesObj);
-
-            RakeLogger.d(tag, "track() called\n" + dataObj);
+            JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
 
             String uri = endpoint.getURI(env);
-            Log log = Log.create(uri, token, dataObj);
+            Log log = Log.create(uri, token, validShuttle);
 
-            if (null == log) {
-                String message = String.format("Invalid `Log` object (TOKEN = [%s], URL = [%s]", token, uri);
-                RakeLogger.e(tag, message);
-                return;
+            if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
+                Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
+
+                if (Env.DEV == env) /* if Env.DEV, flush immediately */
+                    MessageLoop.getInstance(context).queueFlushCommand();
             }
-
-            synchronized (messageLoop) { messageLoop.track(log); }
-            if (Env.DEV == env) { flush(); } /* if Env.DEV, flush immediately */
-
-        } catch (JSONException e) {
-            RakeLogger.e(tag, "Exception tracking event ", e);
+        } catch (Exception e) { /* might be JSONException */
+            MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
+            Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
+            return;
         }
     }
+
+    /**
+     * Send log which persisted in SQLite to Rake server.
+     */
+    public void flush() {
+        Logger.d(tag, "Flush");
+
+        /* 최종 소비자 API 예외 처리 */
+        try {
+            MessageLoop.getInstance(context).queueFlushCommand();
+        } catch (Exception e) {
+            MetricUtil.recordErrorMetric(context, Action.FLUSH, token, e);
+            Logger.e(tag, "Failed to flush", e);
+        }
+    }
+
 
     /**
      * Change end point
@@ -291,11 +271,11 @@ public class RakeAPI {
         this.endpoint = endpoint;
 
         String message = String.format("Changed endpoint from %s to %s", old, endpoint);
-        RakeLogger.d(tag, message);
+        Logger.d(tag, message);
     }
 
     /**
-     * Get current end point of this instance
+     * Get current end point
      *
      * @return endpoint
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
@@ -305,28 +285,27 @@ public class RakeAPI {
     }
 
     /**
+     * Get token
+     * @return String
+     */
+    public String getToken() { return token; }
+
+    /**
      * Enable or disable logging.
      *
      * @param loggingMode Logging.ENABLE or Logging.DISABLE
      * @see {@link com.rake.android.rkmetrics.RakeAPI.Logging}
      */
     public static void setLogging(Logging loggingMode) {
-        RakeLogger.loggingMode = loggingMode;
+        Logger.loggingMode = loggingMode;
     }
 
     /**
-     * Send log which persisted in SQLite to Rake server.
+     * @deprecated as of 0.4.0
      */
-    public void flush() {
-        RakeLogger.d(tag, "flush() called");
-
-        synchronized (messageLoop) {
-            messageLoop.flush();
-        }
-    }
-
+    @Deprecated
     public void registerSuperProperties(JSONObject superProperties) {
-        RakeLogger.d(tag, "registerSuperProperties");
+        Logger.d(tag, "registerSuperProperties");
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
@@ -335,22 +314,29 @@ public class RakeAPI {
                     this.superProperties.put(key, superProperties.get(key));
                 }
             } catch (JSONException e) {
-                RakeLogger.e(tag, "Exception registering super property.", e);
+                Logger.e(tag, "Exception registering super property.", e);
             }
         }
 
         storeSuperProperties();
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public void unregisterSuperProperty(String superPropertyName) {
-        RakeLogger.d(tag, "unregisterSuperProperty");
+        Logger.d(tag, "unregisterSuperProperty");
         synchronized (superProperties) { superProperties.remove(superPropertyName); }
         storeSuperProperties();
     }
 
-
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
-        RakeLogger.d(tag, "registerSuperPropertiesOnce");
+        Logger.d(tag, "registerSuperPropertiesOnce");
 
         for (Iterator<?> iter = superProperties.keys(); iter.hasNext(); ) {
             String key = (String) iter.next();
@@ -359,7 +345,7 @@ public class RakeAPI {
                     try {
                         this.superProperties.put(key, superProperties.get(key));
                     } catch (JSONException e) {
-                        RakeLogger.e(tag, "Exception registering super property.", e);
+                        Logger.e(tag, "Exception registering super property.", e);
                     }
                 }
             }
@@ -368,73 +354,107 @@ public class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     public synchronized void clearSuperProperties() {
-        RakeLogger.d(tag, "clearSuperProperties");
+        Logger.d(tag, "clearSuperProperties");
         superProperties = new JSONObject();
     }
 
-    private JSONObject getDefaultEventProperties() throws JSONException {
-        JSONObject ret = new JSONObject();
+    public static JSONObject getDefaultProps(Context context,
+                                             Env env,
+                                             String token,
+                                             Date now) throws JSONException {
 
-        ret.put("rake_lib", "android");
-        ret.put("rake_lib_version", RakeConfig.RAKE_LIB_VERSION);
-        ret.put("os_name", "Android");
-        ret.put("os_version", Build.VERSION.RELEASE == null ? "UNKNOWN" : Build.VERSION.RELEASE);
-        ret.put("manufacturer", Build.MANUFACTURER == null ? "UNKNOWN" : Build.MANUFACTURER);
-        ret.put("device_model", Build.MODEL == null ? "UNKNOWN" : Build.MODEL);
-        ret.put("device_id", sysInfo.getDeviceId());
+        SystemInformation sys = SystemInformation.getInstance(context);
 
-        DisplayMetrics displayMetrics = sysInfo.getDisplayMetrics();
+        JSONObject defaultProps = new JSONObject();
+
+        defaultProps.put(PROPERTY_NAME_TOKEN, token);
+        defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+        defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION);
+        defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
+        defaultProps.put(PROPERTY_NAME_OS_VERSION,
+                Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
+        defaultProps.put(PROPERTY_NAME_MANUFACTURER,
+                Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
+        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL,
+                Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
+        defaultProps.put(PROPERTY_NAME_DEVICE_ID, sys.getDeviceId());
+
+        DisplayMetrics displayMetrics = sys.getDisplayMetrics();
         int displayWidth = displayMetrics.widthPixels;
         int displayHeight = displayMetrics.heightPixels;
         StringBuilder resolutionBuilder = new StringBuilder();
 
-        // TODO
-        ret.put("screen_height", displayWidth);
-        ret.put("screen_width", displayHeight);
-        ret.put("resolution", resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
+        // TODO: is it correct?
+        defaultProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
+        defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
+        defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
-        // application versionName, buildDate(iff dev mode)
-        String appVersionName = sysInfo.getAppVersionName();
-        String appBuildDate = sysInfo.getAppBuildDate();
-        if (Env.DEV == env && null != appBuildDate) appVersionName += "_" + sysInfo.getAppBuildDate();
-        ret.put("app_version", appVersionName == null ? "UNKNOWN" : appVersionName);
+        /** application versionName, buildDate(iff dev mode) */
+        String appVersionName = sys.getAppVersionName();
+        String appBuildDate = sys.getAppBuildDate();
 
-        String carrier = sysInfo.getCurrentNetworkOperator();
-        ret.put("carrier_name", (null != carrier && carrier.length() > 0) ? carrier : "UNKNOWN");
+        if (Env.DEV == env && null != appBuildDate)
+            appVersionName += "_" + sys.getAppBuildDate();
 
-        Boolean isWifi = sysInfo.isWifiConnected();
-        ret.put("network_type", isWifi == null ? "UNKNOWN" : isWifi.booleanValue() == true ? "WIFI" : "NOT WIFI");
+        defaultProps.put(PROPERTY_NAME_APP_VERSION,
+                appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
 
-        ret.put("language_code", context.getResources().getConfiguration().locale.getCountry());
+        String carrier = sys.getCurrentNetworkOperator();
+        defaultProps.put(PROPERTY_NAME_CARRIER_NAME,
+                (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
 
-        return ret;
+        Boolean isWifi = sys.isWifiConnected();
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi == null) ?
+                PROPERTY_VALUE_UNKNOWN : (isWifi.booleanValue() == true) ?
+                PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI);
+
+        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE,
+                context.getResources().getConfiguration().locale.getCountry());
+
+        return defaultProps;
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     private void readSuperProperties() {
-        String props = storedPreferences.getString("super_properties", "{}");
-        RakeLogger.d(tag, "Loading Super Properties " + props);
-
         try {
+            String prefKey = createSharedPrefPropertyKey(token);
+            String props = storedPreferences.getString(prefKey, "{}");
+            Logger.d(tag, "Loading Super Properties " + props);
             superProperties = new JSONObject(props);
-        } catch (JSONException e) {
-            RakeLogger.e(tag, "Cannot parse stored superProperties");
+        } catch (Exception e) {
+            Logger.e(tag, "Cannot parse stored superProperties");
             superProperties = new JSONObject();
             storeSuperProperties();
-        }
+        } // TODO exception and drop
     }
 
+    private static String createSharedPrefPropertyKey(String token) {
+       return "super_properties_for_" + token;
+    }
+
+    /**
+     * @deprecated as of 0.4.0
+     */
+    @Deprecated
     private void storeSuperProperties() {
+        String prefKey = createSharedPrefPropertyKey(token);
         String props = superProperties.toString();
 
-        RakeLogger.d(tag, "Storing Super Properties " + props);
+        Logger.d(tag, "Storing Super Properties " + props);
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
-        prefsEditor.putString("super_properties", props);
+        prefsEditor.putString(prefKey, props);
         prefsEditor.commit();   // synchronous
-    }
-
-    private SystemInformation getSystemInformation() {
-        return new SystemInformation(context);
     }
 
     void clearPreferences() {

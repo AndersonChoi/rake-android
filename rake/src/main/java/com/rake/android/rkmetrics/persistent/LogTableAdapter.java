@@ -1,14 +1,12 @@
 package com.rake.android.rkmetrics.persistent;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.provider.BaseColumns;
 
-import com.rake.android.rkmetrics.util.RakeLogger;
+import com.rake.android.rkmetrics.util.Logger;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -54,7 +52,39 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return instance;
     }
 
-    public void removeLogById(final String lastId) {
+    /**
+     * @param token
+     * @return -1, if exception occurred or token is NULL
+     */
+    public synchronized int getCount(final String token) {
+        if (null == token) return -1;
+
+        Integer count = executeAndReturnT(new SQLiteCallback<Integer>() {
+            @Override
+            public Integer execute(SQLiteDatabase db) {
+                Cursor c = db.rawQuery(getQuery(), null);
+                c.moveToFirst();
+
+                return c.getInt(0);
+            }
+
+            @Override
+            public String getQuery() {
+                /** starts with ` ` (space) */
+                String BEGIN_WHERE_CLAUSE_TOKEN = String.format(" WHERE %s = \"%s\"",
+                        LogContract.COLUMN_TOKEN, token);
+
+                return "SELECT COUNT(*) FROM " + LogContract.TABLE_NAME + BEGIN_WHERE_CLAUSE_TOKEN;
+            }
+        });
+
+        return (null == count) ? -1 : count;
+    }
+
+    /**
+     * @param chunk should not be null
+     */
+    public synchronized void removeLogChunk(final LogChunk chunk) {
         execute(new SQLiteCallback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
@@ -64,12 +94,20 @@ public final class LogTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return LogContract._ID + " <= " + lastId;
+                String WHERE_CALUSE_TOKEN = String.format("%s = \"%s\"",
+                        LogContract.COLUMN_TOKEN, chunk.getToken());
+
+                String WHERE_CALUSE_URL = String.format("%s = \"%s\"",
+                        LogContract.COLUMN_URL, chunk.getUrl());
+
+                return LogContract._ID + " <= " + chunk.getLastId() +
+                        AND + WHERE_CALUSE_TOKEN +
+                        AND + WHERE_CALUSE_URL;
             }
         });
     }
 
-    public void removeLogByTime(final Long time) {
+    public synchronized void removeLogByTime(final Long time) {
        execute(new SQLiteCallback<Void>() {
            @Override
            public Void execute(SQLiteDatabase db) {
@@ -84,7 +122,12 @@ public final class LogTableAdapter extends DatabaseAdapter {
        });
     }
 
-    public int addLog(final Log log) {
+    public synchronized int addLog(final Log log) {
+        if (null == log) {
+            Logger.e("Can't record NULL log");
+            return - 1;
+        }
+
         Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
@@ -109,11 +152,17 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return ((null == result) ? -1 : result);
     }
 
-    public Transferable getTransferable(final int extractCount) {
+    /**
+     * 개별 토큰마다 flush 하지 않고 아래 처럼 모든 토큰을 flush 하는 이유는,
+     *
+     * - 단말 내에 Rake 를 사용한 복수개의 SDK 가 있을 수 있음
+     * - 개별 SDK 는 자신을 Flush 하지 않을 수 있음
+     */
+    public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
-        Transferable t = executeAndReturnT(new SQLiteCallback<Transferable>() {
+        List<LogChunk> chunks = executeAndReturnT(new SQLiteCallback<List<LogChunk>>() {
             @Override
-            public Transferable execute(SQLiteDatabase db) {
+            public List<LogChunk> execute(SQLiteDatabase db) {
                 Cursor c = null;
                 String lastId = null;
                 List<Log> logList = new ArrayList<Log>();
@@ -130,16 +179,9 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     }
                 } finally { if (null != c) c.close(); }
 
-                Transferable t = Transferable.create(lastId, logList);
+                List<LogChunk> chunks = LogChunk.create(lastId, logList);
 
-                if (null != t) {
-                    String message = String.format("Extracting %d rows from the [%s] table",
-                            logList.size(), LogContract.TABLE_NAME);
-
-                    RakeLogger.d(LOG_TAG_PREFIX, message);
-                }
-
-                return t;
+                return chunks;
             }
 
             @Override
@@ -153,10 +195,10 @@ public final class LogTableAdapter extends DatabaseAdapter {
             }
         });
 
-        return t; /* might be null */
+        return chunks;
     }
 
-    private Log createLog(Cursor c) {
+    private synchronized Log createLog(Cursor c) {
         Log l = null;
 
         try {

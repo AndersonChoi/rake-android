@@ -8,17 +8,31 @@
 - [Rake Android: App Example](https://github.com/sentinel-rake/rake-android-example)
 - [Rake Android: API](http://skpdi.github.io/rake-android/docs/SNAPSHOT/com/rake/android/rkmetrics/RakeAPI.html)
 
-## Development
-
-- add `android-api-19.jar` in libraries. (**IntelliJ Project Setting**)
+# Development
 
 ## Build
 
+빌드시 터미널에 `METRIC_TOKEN_LIVE` 값과 `METRIC_TOKEN_DEV` 값을 입력
+
 ```gradle
-> gradle clean build
+> METRIC_TOKEN_LIVE= METRIC_TOKEN_DEV= gradle clean build
 ```
 
-### License
+### Android Studio on OSX
+
+Android Studio 사용시, gradle 이 환경변수를 읽지 못하므로 다음과 같이 터미널에 세팅
+ 
+```
+> launchctl setenv METRIC_TOKEN_LIVE {TOKEN}  
+> launchctl setenv METRIC_TOKEN_DEV $METRIC_TOKEN_DEV {TOKEN} 
+```
+
+추가적으로 테스트 실행을 위해 Android Studio 에서 `run configuration` 환경변수에 다음을 등록
+
+- `METRIC_TOKEN_LIVE`
+- `METRIC_TOKEN_ENV`
+
+# License
 
 **Apache V2** 를 따릅니다. 이는 개발에 사용된 [Mixpanel](https://github.com/mixpanel) 이 Apache V2 를 따르기 때문입니다. 라이센스에 따라, 이를 사용하는 앱에서는 라이브러리 사용 여부를 표시해야 하기 때문에 라이센스 전문을 링크합니다.
 
