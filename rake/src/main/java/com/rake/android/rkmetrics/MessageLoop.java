@@ -209,8 +209,6 @@ final class MessageLoop {
         Thread thread = new Thread() {
             @Override
             public void run() {
-                Logger.t("Starting");
-
                 android.os.Looper.prepare();
 
                 try {
@@ -267,7 +265,7 @@ final class MessageLoop {
             EventTableAdapter.getInstance(appContext);
             LogTableAdapter.getInstance(appContext);
 
-            Logger.t("Remove expired logs (48 hours before)");
+            Logger.t("[SQLite] Remove expired log (48 hours before)");
             LogTableAdapter.getInstance(appContext)
                     .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
