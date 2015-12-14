@@ -100,13 +100,21 @@ dependencies {
     testCompile "org.robolectric:robolectric:3.0"
 }
 
-uploadArchives {
+configurations {
+    jarArchives
+}
+
+uploadJarArchives {
     repositories {
         mavenDeployer {
             repository(url: 'http://mvn.skplanet.com/content/repositories/releases')
             snapshotRepository(url: 'http://mvn.skplanet.com/content/repositories/snapshots')
         }
     }
+}
+
+artifacts {
+    jarArchives file: file("${releaseJarDir}/${completeJar}")
 }
 
 task updateVersionInSource(type: Copy) {
