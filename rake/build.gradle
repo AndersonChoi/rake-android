@@ -7,7 +7,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'idea'
 
-version = '0.4.0'
+version = '0.4.1-SNAPSHOT'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 

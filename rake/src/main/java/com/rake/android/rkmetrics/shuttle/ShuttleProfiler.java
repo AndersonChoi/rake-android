@@ -381,10 +381,20 @@ public class ShuttleProfiler {
             String key = (String) keys.next();
             Object value = userProps.get(key);
 
-            // TODO: JSON.null SEN-268, SEN-269
+            if (null == value) continue; /* Usually, we can't insert null into JSON */
+
             /** iff userProps is not an empty string and it is in fieldOrder */
-            if (!(value.toString().length() == 0) && fieldOrder.has(key))
-                props.put(key, value);
+            if (fieldOrder.has(key)) {
+                // TODO: JSON.null SEN-268, SEN-269, consider RAKE-389
+
+                /* RAKE-389 */
+                if (props.has(key) && (null != props.get(key)) &&
+                        EMPTY_HEADER_VALUE.equals(value.toString())) { /* value is not null */
+                    /* do not overwrite the superProp as userProp is empty */
+                } else {
+                    props.put(key, value);
+                }
+            }
         }
 
         /** 2. Insert auto-collected fields */
