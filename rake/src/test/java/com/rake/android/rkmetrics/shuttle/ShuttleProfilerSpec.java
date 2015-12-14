@@ -275,6 +275,72 @@ public class ShuttleProfilerSpec {
         assertThat(props.has(invalidPropName)).isFalse();
     }
 
+    /**
+     * case 1 - superProps 가 비었을 경우 userProps 가 무조건 덮어 씀,
+     *          userProps 가 "" (EMPTY STRING) 여도 키가 보존되야 함
+     *
+     * case 2 - superProps 가 있고 userProps 가 "" 라면 superProps 가 유지 됨
+     **/
+    @Test /* RAKE-389 */
+    public void mergeProp_should_preserve_empty_header() throws JSONException {
+        // TODO: header 에 JSON.null 삽입시 테스트 변경 요구
+
+        String HEADER_NAME_SERVICE_TOKEN = "service_token";
+        String HEADER_NAME_APP_PACKAGE = "app_package";
+        String HEADER_NAME_TRANSACTION_ID = "transaction_id";
+
+        String userPropsServiceToken = "example service token";
+        String userPropsAppPackage = "";    /* case 1 */
+        String userPropsTransactionId = ""; /* case 2 */
+        String superPropsTransactionId = "tx-id";
+
+        JSONObject userProps = new RakeClientMetricSentinelShuttle()
+                .service_token(userPropsServiceToken).transaction_id(userPropsTransactionId).toJSONObject();
+        JSONObject meta = extractMeta(userProps);
+        JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
+        JSONObject superProps = new JSONObject();
+        superProps.put(HEADER_NAME_TRANSACTION_ID, superPropsTransactionId);
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+
+        // validate if extra headers exist
+        fieldOrder.get(HEADER_NAME_SERVICE_TOKEN);
+        fieldOrder.get(HEADER_NAME_APP_PACKAGE);
+        fieldOrder.get(HEADER_NAME_TRANSACTION_ID);
+
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+
+        /* normal case */
+        assertThat(props.get(HEADER_NAME_SERVICE_TOKEN)).isEqualTo(userPropsServiceToken);
+        /* case 1 */
+        assertThat(props.get(HEADER_NAME_APP_PACKAGE)).isEqualTo(userPropsAppPackage);
+        /* case 2 */
+        assertThat(props.get(HEADER_NAME_TRANSACTION_ID)).isEqualTo(superPropsTransactionId);
+    }
+
+    @Test /* RAKE-390 */
+    public void test_all_possible_header_values() {
+        /**
+         * HEADER 에
+         *
+         * A. 값을 넣었을 경우 -> 그대로 나와야 함
+         * B. 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야 함
+         * C. NULL 을 넣었을 경우 -> 그대로 나와야함
+         * D. JSON.NULL 을 넣었을 경우 -> ?
+         */
+    }
+
+    @Test /* RAKE-390 */
+    public void test_all_possible_body_values() {
+        /**
+         * BODY 에
+         *
+         * A. 값을 넣었을 경우 -> 그대로 나와야함
+         * B. 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야함
+         * C. NULL 을 넣었을 경우 -> 키가 삭제되야 함
+         * D. JSON.NULL 을 넣었을 경우 -> ?
+         */
+    }
+
     @Test
     public void extractMeta_negative_case_null() throws JSONException {
         JSONObject j1 = extractMeta(null);
@@ -298,6 +364,7 @@ public class ShuttleProfilerSpec {
         assertThat(hasMeta(transformed)).isTrue();
         assertThat(hasMeta(invalid)).isFalse();
     }
+
 
     @Test
     public void test_hasKey() throws JSONException {
