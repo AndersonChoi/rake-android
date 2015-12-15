@@ -1,6 +1,6 @@
 # Rake-Android
 
-[![Build Status](https://travis-ci.org/skpdi/rake-android.svg?branch=develop)](https://travis-ci.org/skpdi/rake-android) [![Coverage Status](https://coveralls.io/repos/skpdi/rake-android/badge.svg?branch=develop)](https://coveralls.io/r/skpdi/rake-android?branch=develop)
+[![Build Status](https://travis-ci.org/skpdi/rake-android.svg?branch=develop)](https://travis-ci.org/skpdi/rake-android) [![Coverage Status](https://coveralls.io/repos/skpdi/rake-android/badge.svg?branch=develop&service=github)](https://coveralls.io/github/skpdi/rake-android?branch=develop) 
 
 *[Change Log](https://github.com/skpdi/rake-android/blob/master/CHANGELOG.md)*
 
