@@ -51,6 +51,7 @@ public class ShuttleProfiler {
     public static final String PROPERTY_NAME_CARRIER_NAME      = "carrier_name";
     public static final String PROPERTY_NAME_NETWORK_TYPE      = "network_type";
     public static final String PROPERTY_NAME_LANGUAGE_CODE     = "language_code";
+    public static final String PROPERTY_NAME_LOG_VERSION       = "log_version";
 
     public static final List<String> DEFAULT_PROPERTY_NAMES = Arrays.asList(
             PROPERTY_NAME_TOKEN,
@@ -79,7 +80,7 @@ public class ShuttleProfiler {
     public static final String PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI = "NOT WIFI";
 
     public static final String EMPTY_BODY_STRING  = new JSONObject().toString();
-    public static final String EMPTY_HEADER_VALUE = "";
+    public static final String EMPTY_FIELD_VALUE = "";
 
     public static boolean hasBodyValue(RakeClientMetricSentinelShuttle shuttle,
                                        String field,
@@ -389,7 +390,7 @@ public class ShuttleProfiler {
 
                 /* RAKE-389 */
                 if (props.has(key) && (null != props.get(key)) &&
-                        EMPTY_HEADER_VALUE.equals(value.toString())) { /* value is not null */
+                        EMPTY_FIELD_VALUE.equals(value.toString())) { /* value is not null */
                     /* do not overwrite the superProp as userProp is empty */
                 } else {
                     props.put(key, value);

@@ -31,8 +31,8 @@ public class BodySpec {
         String bodyString = shuttle.bodyToString();
 
         /* header validation */
-        assertThat(hasHeaderValue(shuttle, HEADER_NAME_ACTION, EMPTY_HEADER_VALUE)).isTrue();
-        assertThat(hasHeaderValue(shuttle, HEADER_NAME_STATUS, EMPTY_HEADER_VALUE)).isTrue();
+        assertThat(hasHeaderValue(shuttle, HEADER_NAME_ACTION, EMPTY_FIELD_VALUE)).isTrue();
+        assertThat(hasHeaderValue(shuttle, HEADER_NAME_STATUS, EMPTY_FIELD_VALUE)).isTrue();
 
         /* body validation */
         assertThat(bodyString).isEqualTo(EMPTY_BODY_STRING);

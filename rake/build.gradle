@@ -88,8 +88,8 @@ android {
 }
 
 dependencies {
-    // provided fileTree(dir: 'libs/provided', include ['*.jar'])
     compile fileTree(dir: 'libs/included', include: ['*.jar'])
+    testCompile fileTree(dir: 'libs/test', include: ['*.jar'])
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.assertj:assertj-core:1.7.1'
