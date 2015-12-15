@@ -1,10 +1,11 @@
 package com.rake.android.rkmetrics.shuttle;
 
-import android.app.Application;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.*;
 
-import com.rake.android.rkmetrics.RakeAPI;
+import android.app.Application;
+import android.util.Log;
+
 import com.rake.android.rkmetrics.TestUtil;
-import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import static org.assertj.core.api.Assertions.*;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
@@ -17,13 +18,12 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import java.util.Date;
-
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
 public class ShuttleProfilerSpec {
 
     Application app = RuntimeEnvironment.application;
+
 
     /**
      * - null 이거나
@@ -89,8 +89,8 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    public void isShuttle_positive_case() {
-        assertThat(isShuttle(new RakeClientMetricSentinelShuttle().toJSONObject())).isTrue();
+    public void isShuttle_positive_case() throws JSONException {
+        assertThat(isShuttle(getTestShuttle().toJSONObject())).isTrue();
     }
 
     @Test
@@ -129,10 +129,9 @@ public class ShuttleProfilerSpec {
          * - 자동수집필드 (default props) 가 properties 에 존재
          */
 
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject superProps = new JSONObject();
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
-
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject validShuttle = createValidShuttle(userProps, superProps, defaultProps);
 
@@ -146,7 +145,7 @@ public class ShuttleProfilerSpec {
         /**
          * superProp 는 userProps 가 있을 경우에 덮어 쓰면 안됌
          */
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
 
         /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
         String sampleHeaderKey = "transaction_id";
@@ -155,8 +154,7 @@ public class ShuttleProfilerSpec {
         assertThat(userProps.has(sampleHeaderKey)).isTrue();
 
         userProps.put(sampleHeaderKey, sampleHeaderValue);
-
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
@@ -173,7 +171,7 @@ public class ShuttleProfilerSpec {
         /**
          * superProp 는 userProps 가 없을 경우 덮어쓸 수 있음
          */
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
 
         /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
         String sampleHeaderKey = "transaction_id";
@@ -185,7 +183,7 @@ public class ShuttleProfilerSpec {
         JSONObject superProps = new JSONObject();
         superProps.put(sampleHeaderKey, sampleHeaderValue);
 
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
@@ -197,7 +195,7 @@ public class ShuttleProfilerSpec {
         /**
          * 사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
          */
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
         userProps.put(PROPERTY_NAME_RAKE_LIB, "invalid rake_lib");
         JSONObject superProps = new JSONObject();
         superProps.put(PROPERTY_NAME_TOKEN, "invalid token");
@@ -206,7 +204,7 @@ public class ShuttleProfilerSpec {
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
 
         String token = TestUtil.genToken();
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, token, new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
@@ -222,10 +220,10 @@ public class ShuttleProfilerSpec {
          * defaultProps 를 가지고 있어야 하고,
          * _$body 키도 가지고 있어야 함
          */
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject props = mergeProps(fieldOrder, userProps, null /* null 일 수 있음 */, defaultProps);
 
@@ -235,11 +233,13 @@ public class ShuttleProfilerSpec {
 
     @Test /** IMPORTANT TEST */
     public void mergeProps_should_not_merge_super_props_if_fieldOrder_does_not_have_it() throws JSONException {
+        assertShuttleSchemaVersion();
+
         JSONObject superProps = new JSONObject();
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
@@ -256,11 +256,14 @@ public class ShuttleProfilerSpec {
 
     @Test /** IMPORTANT TEST */
     public void mergeProps_should_not_merge_default_props_if_fieldOrder_does_not_have_it() throws JSONException {
+        assertShuttleSchemaVersion();
+
+        // mergeProps 를 테스트 하기 위함이므로 helper function 을 작성하지 않고 직접 low-level 테스트
         JSONObject superProps = new JSONObject();
-        JSONObject userProps = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
@@ -285,32 +288,26 @@ public class ShuttleProfilerSpec {
     public void mergeProp_should_preserve_empty_header() throws JSONException {
         // TODO: header 에 JSON.null 삽입시 테스트 변경 요구
 
-        String HEADER_NAME_SERVICE_TOKEN = "service_token";
-        String HEADER_NAME_APP_PACKAGE = "app_package";
-        String HEADER_NAME_TRANSACTION_ID = "transaction_id";
+        assertShuttleSchemaVersion();
 
-        String userPropsServiceToken = "example service token";
+        String userPropsLogSource = "example log source";
         String userPropsAppPackage = "";    /* case 1 */
         String userPropsTransactionId = ""; /* case 2 */
         String superPropsTransactionId = "tx-id";
 
-        JSONObject userProps = new RakeClientMetricSentinelShuttle()
-                .service_token(userPropsServiceToken).transaction_id(userPropsTransactionId).toJSONObject();
+        // mergeProps 를 테스트 하기 위함이므로 helper function 을 작성하지 않고 직접 low-level 테스트
+        JSONObject userProps = getTestShuttle()
+                .log_source(userPropsLogSource).transaction_id(userPropsTransactionId).toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
         JSONObject superProps = new JSONObject();
         superProps.put(HEADER_NAME_TRANSACTION_ID, superPropsTransactionId);
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
-
-        // validate if extra headers exist
-        fieldOrder.get(HEADER_NAME_SERVICE_TOKEN);
-        fieldOrder.get(HEADER_NAME_APP_PACKAGE);
-        fieldOrder.get(HEADER_NAME_TRANSACTION_ID);
+        JSONObject defaultProps = getDefaultPropsForTest(app);
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
         /* normal case */
-        assertThat(props.get(HEADER_NAME_SERVICE_TOKEN)).isEqualTo(userPropsServiceToken);
+        assertThat(props.get(HEADER_NAME_LOG_SOURCE)).isEqualTo(userPropsLogSource);
         /* case 1 */
         assertThat(props.get(HEADER_NAME_APP_PACKAGE)).isEqualTo(userPropsAppPackage);
         /* case 2 */
@@ -318,27 +315,72 @@ public class ShuttleProfilerSpec {
     }
 
     @Test /* RAKE-390 */
-    public void test_all_possible_header_values() {
+    public void test_all_possible_header_values() throws JSONException {
         /**
          * HEADER 에
          *
-         * A. 값을 넣었을 경우 -> 그대로 나와야 함
-         * B. 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야 함
-         * C. NULL 을 넣었을 경우 -> 그대로 나와야함
-         * D. JSON.NULL 을 넣었을 경우 -> ?
+         * A. 값을 안 넣었을 경우
+         * B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> ""
+         * C. String 타입 바디에 null 을 넣었을 경우 -> ""
+         *    추후 JSONObject.NULL 로 변경
+         * D. String 이 아닌 다른 타입의 헤더에 null 값을 넣었을 경우,
          */
+
+        assertShuttleGeneratorVersion();
+        assertShuttleSchemaVersion();
+
+        assertThat(EMPTY_FIELD_VALUE).isEqualTo("");
+        String exampleTransactionId;                     /* case A, empty value  */
+        String exampleLogSource  = EMPTY_FIELD_VALUE;   /* case B, String type */
+        String exampleAppPackage = null;                 /* case B, String type */
+        Long exampleSessionId    = null;                 /* case C, Long type */
+
+        JSONObject userProps = getTestShuttle()
+                .log_source(exampleLogSource)
+                .app_package(exampleAppPackage)
+                .session_id(exampleSessionId)
+                .toJSONObject();
+
+        JSONObject props = getMergedPropsWithEmptySuperPropsForTest(app, userProps);
+
+        assertThat(props.get(HEADER_NAME_TRANSACTION_ID)).isEqualTo(EMPTY_FIELD_VALUE); /* case A */
+        assertThat(props.get(HEADER_NAME_LOG_SOURCE)).isEqualTo(EMPTY_FIELD_VALUE);     /* case B */
+        assertThat(props.get(HEADER_NAME_APP_PACKAGE)).isEqualTo(EMPTY_FIELD_VALUE);    /* case C */
+        assertThat(props.get(HEADER_NAME_SESSION_ID)).isEqualTo(EMPTY_FIELD_VALUE);     /* case D */
     }
 
     @Test /* RAKE-390 */
-    public void test_all_possible_body_values() {
+    public void test_all_possible_body_values() throws JSONException {
         /**
          * BODY 에
-         *
-         * A. 값을 넣었을 경우 -> 그대로 나와야함
-         * B. 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야함
-         * C. NULL 을 넣었을 경우 -> 키가 삭제되야 함
-         * D. JSON.NULL 을 넣었을 경우 -> ?
+         * A. 아무 값도 넣지 않았을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
+         * B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야함
+         * C. String 타입 바디에 null 을 넣었을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
+         *    추후 JSONObject.NULL 로 변경 (키 존재)
+         * D. String 이 아닌 다른 타입의 바디에 null 값을 넣었을 경우 -> 키가 삭제되야 함
          */
+
+        assertShuttleGeneratorVersion();
+        assertShuttleSchemaVersion();
+
+        String exampleRepository;       /* case A */
+        String exampleBranch    = "";   /* case B */
+        String exampleCodeText  = null; /* case C */
+        Long exampleIssueId  = null;    /* case D */
+
+        JSONObject userProps = getTestShuttle()
+                .branch(exampleBranch)
+                .code_text(exampleCodeText)
+                .issue_id(exampleIssueId)
+                .toJSONObject();
+
+        JSONObject _$body = userProps.getJSONObject(FIELD_NAME_BODY);
+
+
+        assertThat(_$body.has(BODY_NAME_REPOSITORY)).isFalse();
+        assertThat(_$body.get(BODY_NAME_BRANCH)).isEqualTo(EMPTY_FIELD_VALUE);
+        assertThat(_$body.has(BODY_NAME_CODE_TEXT)).isFalse();
+        assertThat(_$body.has(BODY_NAME_ISSUE_ID)).isFalse();
     }
 
     @Test
@@ -349,22 +391,19 @@ public class ShuttleProfilerSpec {
 
     @Test
     public void extractMeta_should_return_meta() throws JSONException {
-        RakeClientMetricSentinelShuttle shuttle = new RakeClientMetricSentinelShuttle();
-        JSONObject transformed = extractMeta(shuttle.toJSONObject());
-
+        JSONObject transformed = extractMeta(getTestShuttle().toJSONObject());
         assertThat(hasMetaFields(transformed)).isTrue();
     }
 
     @Test
     public void test_hasMeta() throws JSONException {
-        JSONObject shuttle = new RakeClientMetricSentinelShuttle().toJSONObject();
+        JSONObject shuttle = getTestShuttle().toJSONObject();
         JSONObject transformed = extractMeta(shuttle);
         JSONObject invalid = new JSONObject();
 
         assertThat(hasMeta(transformed)).isTrue();
         assertThat(hasMeta(invalid)).isFalse();
     }
-
 
     @Test
     public void test_hasKey() throws JSONException {
@@ -396,19 +435,5 @@ public class ShuttleProfilerSpec {
         assertThat(hasKey(depth2, "nested_key4", null)).isFalse();
     }
 
-    private static JSONObject getShuttleWithMissingField(String depth1, String depth2)
-            throws JSONException {
 
-        JSONObject shuttle = new RakeClientMetricSentinelShuttle().toJSONObject();
-
-        if (null == depth2) {
-            shuttle.remove(depth1);
-            return shuttle;
-        }
-
-        JSONObject container = shuttle.getJSONObject(depth1);
-        container.remove(depth2);
-
-        return shuttle;
-    }
 }
