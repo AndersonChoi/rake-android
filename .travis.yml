@@ -17,7 +17,7 @@ script:
 - gradle :rake:build
 
 after_success:
-- gradle cobertura coveralls
+- gradle jacocoTestReport coveralls
 
 notifications:
   slack: skp-di:c0VSovqSCgaZd8qT7cClh799
