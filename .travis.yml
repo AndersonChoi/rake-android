@@ -14,7 +14,7 @@ android:
     - android-sdk-license-5be876d5
 
 script:
-- gradle :rake:build
+- gradle :rake:test
 
 after_success:
 - gradle jacocoTestReport coveralls
