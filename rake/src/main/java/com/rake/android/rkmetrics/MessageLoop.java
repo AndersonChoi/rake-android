@@ -130,34 +130,6 @@ final class MessageLoop {
 
     private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
 
-    public void queueInstallMetric(long operationTime,
-                                   String token,
-                                   RakeAPI.Env env,
-                                   String endpoint,
-                                   RakeAPI.Logging logging) {
-        Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
-        InstallMetric installMetric = new InstallMetric();
-
-        /** persisted_log_count, expired_log_count will be filled in MessageLoop due to performance */
-
-        installMetric.setHeader(h);
-        installMetric
-                .setOperationTime(operationTime)
-                .setEndpoint(endpoint)
-                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION))
-                .setEnv(env)
-                .setLogging(logging)
-                .setMaxTrackCount(Long.valueOf(RakeConfig.TRACK_MAX_LOG_COUNT))
-                .setAutoFlushOnOff(autoFlushOption)
-                .setAutoFlushInterval(autoFlushInterval);
-
-        Message m = Message.obtain();
-        m.what = Command.RECORD_INSTALL_METRIC.code;
-        m.obj = installMetric;
-
-        queueMessage(m);
-    }
-
     public boolean queueTrackCommand(Log log) {
         if (null == log) {
             Logger.e("Can't track null `Log`");
@@ -450,9 +422,6 @@ final class MessageLoop {
                         android.os.Looper.myLooper().quit();
                     }
 
-                } else if (command == RECORD_INSTALL_METRIC) {
-                    InstallMetric metric = (InstallMetric) msg.obj;
-                    recordInstallMetric(appContext, metric);
                 } else { /* UNKNOWN COMMAND */
                     Logger.e("Unexpected message received by Rake worker: " + msg);
                 }

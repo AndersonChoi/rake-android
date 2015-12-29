@@ -130,8 +130,6 @@ public final class RakeAPI {
                                       Env env,
                                       Logging logging) {
 
-        long startAt = System.currentTimeMillis();
-
         setLogging(logging);
 
         synchronized (sInstanceMap) {
@@ -149,12 +147,6 @@ public final class RakeAPI {
                 Endpoint endpoint = Endpoint.DEFAULT;
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
-
-                long endAt = System.currentTimeMillis();
-
-                /** record metric */
-                MessageLoop.getInstance(context)
-                        .queueInstallMetric(endAt - startAt, token, env, endpoint.getURI(env), logging);
             } else {
                 Logger.e("RakeAPI is already initialized for TOKEN ", token);
             }
