@@ -282,16 +282,6 @@ final class MessageLoop {
                     return;
                 }
 
-                /** Metric 이 아닌 경우에만 Network, Database 연산에 대해 report */
-                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
-                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
-                    Logger.t(message);
-
-                    RakeProtocolV1.reportResponse
-                            (responseMetric.getResponseBody(), responseMetric.getResponseCode());
-                }
-
                 Long operationTime = (endAt - startAt);
                 Status status = responseMetric.getFlushStatus();
 
@@ -320,9 +310,19 @@ final class MessageLoop {
                         return;
                 }
 
-                /** write metric values */
-                MetricUtil.recordFlushMetric(
-                        appContext, status, flushType, operationTime, chunk, responseMetric);
+
+                /** 메트릭 전송용 토큰이 아닌 경우에만 */
+                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                    /** Network, Database 연산에 대해 report */
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
+                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
+                    Logger.t(message);
+
+                    RakeProtocolV1.reportResponse(responseMetric.getResponseBody(), responseMetric.getResponseCode());
+
+                    /** `flush` 메트릭을 기록 */
+                    MetricUtil.recordFlushMetric(appContext, status, flushType, operationTime, chunk, responseMetric);
+                }
             }
         }
         private ServerResponseMetric send(LogChunk chunk) {
@@ -339,8 +339,8 @@ final class MessageLoop {
                 Logger.t(message);
             }
 
-            ServerResponseMetric responseMetric =
-                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
+            /* TODO: + token */
+            ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl());
 
             return responseMetric;
         }
@@ -362,7 +362,6 @@ final class MessageLoop {
                 Logger.t(message);
 
                 ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
-
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be null");
