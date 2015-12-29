@@ -292,10 +292,6 @@ public final class RakeAPI {
         Logger.loggingMode = loggingMode;
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     public void registerSuperProperties(JSONObject superProperties) {
         Logger.d(tag, "registerSuperProperties");
 
@@ -313,20 +309,12 @@ public final class RakeAPI {
         storeSuperProperties();
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     public void unregisterSuperProperty(String superPropertyName) {
         Logger.d(tag, "unregisterSuperProperty");
         synchronized (superProperties) { superProperties.remove(superPropertyName); }
         storeSuperProperties();
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
         Logger.d(tag, "registerSuperPropertiesOnce");
 
@@ -346,10 +334,6 @@ public final class RakeAPI {
         storeSuperProperties();
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     public synchronized void clearSuperProperties() {
         Logger.d(tag, "clearSuperProperties");
         superProperties = new JSONObject();
@@ -414,10 +398,6 @@ public final class RakeAPI {
         return defaultProps;
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     private void readSuperProperties() {
         try {
             String prefKey = createSharedPrefPropertyKey(token);
@@ -435,10 +415,6 @@ public final class RakeAPI {
        return "super_properties_for_" + token;
     }
 
-    /**
-     * @deprecated as of 0.4.0
-     */
-    @Deprecated
     private void storeSuperProperties() {
         String prefKey = createSharedPrefPropertyKey(token);
         String props = superProperties.toString();
