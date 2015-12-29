@@ -148,7 +148,7 @@ public final class RakeAPI {
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             } else {
-                Logger.e("RakeAPI is already initialized for TOKEN ", token);
+                Logger.w("RakeAPI is already initialized for TOKEN ", token);
             }
 
             return rake;
