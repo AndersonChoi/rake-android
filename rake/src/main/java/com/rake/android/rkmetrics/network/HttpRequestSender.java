@@ -93,6 +93,7 @@ final public class HttpRequestSender {
 
             long endAt = System.currentTimeMillis();
             operationTime = (endAt - startAt);
+
             responseCode = conn.getResponseCode();
 
             BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
