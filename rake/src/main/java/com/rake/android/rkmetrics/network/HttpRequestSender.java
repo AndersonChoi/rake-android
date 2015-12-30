@@ -172,7 +172,7 @@ final public class HttpRequestSender {
         Status flushStatus = DROP;
         String responseBody = null;
         int responseCode = 0;
-        long operationTime = 0L;
+        long responseTime = 0L;
         Throwable t = null;
 
         try {
@@ -184,11 +184,11 @@ final public class HttpRequestSender {
             long startAt = System.currentTimeMillis();
             HttpResponse response = client.execute(httppost);
             long endAt = System.currentTimeMillis();
-            operationTime = (endAt - startAt);
+            responseTime = (endAt - startAt);
 
             if (null == response || null == response.getEntity()) {
                 Logger.d("HttpResponse or HttpEntity is null. Retry later");
-                return ServerResponseMetric.create(null, RETRY, null, 0, operationTime);
+                return ServerResponseMetric.create(null, RETRY, null, 0, responseTime);
             }
 
             HttpEntity responseEntity = response.getEntity();
@@ -218,7 +218,7 @@ final public class HttpRequestSender {
         }
 
         return ServerResponseMetric.create(
-                t, flushStatus, responseBody, responseCode, operationTime);
+                t, flushStatus, responseBody, responseCode, responseTime);
     }
 
     private static HttpClient createHttpsClient() throws GeneralSecurityException {
