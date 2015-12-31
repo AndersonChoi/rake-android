@@ -138,9 +138,8 @@ public final class MetricUtil {
             return false;
         }
 
-        /** 메트릭 자체에 대한 flush:DONE 메트릭은 기록하지 않음, flush:DROP, flush:RETRY 등은 오류 파악을 위해 기록 */
-        if (MetricUtil.isMetricToken(chunk.getToken())
-                && Status.DONE == status)
+        /** 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
+        if (MetricUtil.isMetricToken(chunk.getToken()))
             return false;
 
         FlushMetric metric = new FlushMetric();
