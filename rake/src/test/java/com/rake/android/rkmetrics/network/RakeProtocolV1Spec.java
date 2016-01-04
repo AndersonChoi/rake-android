@@ -115,5 +115,6 @@ public class RakeProtocolV1Spec {
         assertThat(DEFAULT_COMPRESS_STRATEGY).isEqualTo("plain");
         assertThat(DATA_FIELD_NAME).isEqualTo("data");
         assertThat(CHAR_ENCODING).isEqualTo("UTF-8");
+        assertThat(RAKE_PROTOCOL_VERSION).isEqualTo("V1");
     }
 }

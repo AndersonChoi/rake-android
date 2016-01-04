@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Map;
 
 public final class RakeProtocolV1 {
+    public static final String RAKE_PROTOCOL_VERSION = "V1";
     public static final String COMPRESS_FIELD_NAME = "compress";
     public static final String DEFAULT_COMPRESS_STRATEGY = "plain";
     public static final String DATA_FIELD_NAME = "data";

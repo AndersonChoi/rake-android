@@ -35,6 +35,7 @@ public final class Compatibility {
         }
     }
 
+    // TODO: Caching
     public static int getCurrentAPILevelAsInt() {
         int apiLevel = 1;
         try {

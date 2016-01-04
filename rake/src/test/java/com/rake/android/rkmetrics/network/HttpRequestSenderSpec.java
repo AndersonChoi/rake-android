@@ -1,5 +1,6 @@
 package com.rake.android.rkmetrics.network;
 
+import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.UnknownRakeStateException;
 
 import static org.assertj.core.api.Assertions.*;
@@ -32,67 +33,54 @@ public class HttpRequestSenderSpec {
 
     /** DROP cases */
 
+    public void assertFlushStatusReturnedFromHandleResponse(Throwable e, Status status) {
+        ServerResponseMetric metric = HttpRequestSender.handleResponse(
+                null, null, FlushMethod.HTTP_URL_CONNECTION, createProcedureThrowingException(e));
+
+        assertThat(metric.getFlushStatus()).isEqualTo(status);
+        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+    }
+
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_UnsupportedEncodingException() {
         Throwable e= new UnsupportedEncodingException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_GeneralSecurityException() {
         Throwable e= new GeneralSecurityException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_MalformedURLException() {
         Throwable e= new MalformedURLException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_ProtocolException() {
         Throwable e= new ProtocolException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_UnknownRakeStateException() {
         Throwable e= new UnknownRakeStateException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_Exception() {
         Throwable e= new Exception("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_Throwable() {
         Throwable e= new Throwable("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(DROP);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     /** RETRY cases */
@@ -100,107 +88,82 @@ public class HttpRequestSenderSpec {
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_IOException() {
         Throwable e= new IOException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     public void handleException_should_mark_RETRY_given_procedure_throw_UnknownHostException() {
         Throwable e= new UnknownHostException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SocketTimeoutException() {
         Throwable e= new SocketTimeoutException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLException() {
         Throwable e= new SSLException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLHandshakeException() {
         Throwable e= new SSLHandshakeException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLProtocolException() {
         Throwable e= new SSLProtocolException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_BindException() {
         Throwable e= new BindException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_ConnectException() {
         Throwable e= new ConnectException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SocketException() {
         Throwable e= new SocketException("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_OutOfMemory() {
         Throwable e = new OutOfMemoryError("");
-        ServerResponseMetric metric = HttpRequestSender.handleException(null, null, createProcedureThrowingException(e));
-
-        assertThat(metric.getFlushStatus()).isEqualTo(RETRY);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test(expected = UnknownRakeStateException.class)
     public void procedure_should_throw_UnknownRakeStateException_given_url_is_NULL() throws Throwable {
-        HttpRequestSender.procedure.execute(null, "log");
+        HttpRequestSender.procedure.execute(null, "log", FlushMethod.HTTP_URL_CONNECTION);
     }
 
     @Test(expected = UnknownRakeStateException.class)
     public void procedure_should_throw_UnknownRakeStateException_given_log_is_NULL() throws Throwable {
-        HttpRequestSender.procedure.execute("url", null);
+        HttpRequestSender.procedure.execute("url", null, FlushMethod.HTTP_URL_CONNECTION);
+    }
+
+    @Test(expected = UnknownRakeStateException.class)
+    public void procedure_should_throw_UnknownRakeStateException_given_flushMethod_is_NULL() throws Throwable {
+        HttpRequestSender.procedure.execute("url", "log", null);
     }
 
     public HttpRequestProcedure createProcedureThrowingException(final Throwable e) {
         return new HttpRequestProcedure() {
             @Override
-            public ServerResponseMetric execute(String url, String log) throws Throwable {
+            public ServerResponseMetric execute(String url, String log, FlushMethod flushMethod) throws Throwable {
                 throw e;
             }
         };

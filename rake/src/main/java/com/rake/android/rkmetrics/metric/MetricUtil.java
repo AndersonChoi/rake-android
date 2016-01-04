@@ -159,7 +159,8 @@ public final class MetricUtil {
                 .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
                 .setServerResponseBody(resMetric.getResponseBody())
                 .setServerResponseCode(Long.valueOf(resMetric.getResponseCode()))
-                .setServerResponseTime(resMetric.getServerResponseTime());
+                .setServerResponseTime(resMetric.getServerResponseTime())
+                .setFlushMethod(resMetric.getFlushMethod());
 
         return recordMetric(context, metric);
     }

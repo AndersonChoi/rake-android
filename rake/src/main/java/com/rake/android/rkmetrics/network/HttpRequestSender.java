@@ -1,6 +1,5 @@
 package com.rake.android.rkmetrics.network;
 
-import com.rake.android.rkmetrics.android.Compatibility;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
@@ -27,8 +26,8 @@ import java.net.*;
 import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
 
-import static com.rake.android.rkmetrics.android.Compatibility.getCurrentAPILevelAsInt;
 import static com.rake.android.rkmetrics.metric.model.Status.*;
+import static com.rake.android.rkmetrics.network.FlushMethod.*;
 
 final public class HttpRequestSender {
     public static final int CONNECTION_TIMEOUT = 3000;
@@ -38,54 +37,54 @@ final public class HttpRequestSender {
 
     public static HttpRequestProcedure procedure = new HttpRequestProcedure() {
         @Override
-        public ServerResponseMetric execute(String url, String log) throws Exception {
+        public ServerResponseMetric execute(String url, String log, FlushMethod flushMethod) throws Exception {
             if (null == url) throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
             if (null == log) throw new UnknownRakeStateException("log can't be NULL in HttpRequestProcedure.execute");
+            if (null == flushMethod) throw new UnknownRakeStateException("flushMethod can't be NULL in HttpRequestProcedure.execute");
 
             /** 4.0 이상일 경우 HttpUrlConnection 이용 */
-            if (getCurrentAPILevelAsInt() >= Compatibility.APILevel.ICE_CREAM_SANDWICH.getLevel()) {
+            if (HTTP_URL_CONNECTION == flushMethod)
                 return HttpRequestSender.sendHttpUrlStreamRequest(url, log);
-            } else {
+            else
                 return HttpRequestSender.sendHttpClientRequest(url, log);
-            }
         }
     };
 
-    public static ServerResponseMetric handleException(String url, String log, HttpRequestProcedure callback) {
+    public static ServerResponseMetric handleResponse(String url, String log, FlushMethod flushMethod, HttpRequestProcedure callback) {
 
         Status flushStatus = DROP;
         ServerResponseMetric responseMetric = null;
 
         try {
-            responseMetric = callback.execute(url, log);
+            responseMetric = callback.execute(url, log, flushMethod);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         } catch (GeneralSecurityException e) {
             Logger.e("SSL error (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         } catch (MalformedURLException e) {
             Logger.e("Malformed url (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         }  catch (ProtocolException e) {
             Logger.e("Invalid protocol (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         } catch (IOException e) {
             Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponseMetric.createErrorMetric(e, RETRY);
+            return ServerResponseMetric.createErrorMetric(e, RETRY, flushMethod);
         } catch (OutOfMemoryError e) {
             Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponseMetric.createErrorMetric(e, RETRY);
+            return ServerResponseMetric.createErrorMetric(e, RETRY, flushMethod);
         } catch (Exception e) {
             Logger.e("Uncaught exception (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         } catch (Throwable e) {
             Logger.e("Uncaught throwable (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP);
+            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
         }
 
-        if (null == responseMetric)
-            return ServerResponseMetric.createErrorMetric(new UnknownRakeStateException("ServerResponseMetric can't be NULL"), DROP);
+        if (null == responseMetric) return ServerResponseMetric.createErrorMetric(
+                new UnknownRakeStateException("ServerResponseMetric can't be NULL"), DROP, flushMethod);
 
         flushStatus = RakeProtocolV1.interpretResponse(
                 responseMetric.getResponseBody(), responseMetric.getResponseCode());
@@ -157,7 +156,7 @@ final public class HttpRequestSender {
             if (null != conn) conn.disconnect();
         }
 
-        return ServerResponseMetric.create(responseBody, responseCode, operationTime);
+        return ServerResponseMetric.create(responseBody, responseCode, operationTime, HTTP_URL_CONNECTION);
     }
 
     /**
@@ -184,14 +183,15 @@ final public class HttpRequestSender {
 
         if (null == response || null == response.getEntity()) {
             Logger.d("HttpResponse or HttpEntity is null. Retry later");
-            return ServerResponseMetric.createErrorMetric(new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY);
+            return ServerResponseMetric.createErrorMetric(
+                    new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY, HTTP_CLIENT);
         }
 
         HttpEntity responseEntity = response.getEntity();
         responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
         responseCode = response.getStatusLine().getStatusCode();
 
-        return ServerResponseMetric.create(responseBody, responseCode, responseTime);
+        return ServerResponseMetric.create(responseBody, responseCode, responseTime, HTTP_CLIENT);
     }
 
     public static HttpClient createHttpsClient() throws GeneralSecurityException {

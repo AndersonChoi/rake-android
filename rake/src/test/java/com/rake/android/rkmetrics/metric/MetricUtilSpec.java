@@ -5,6 +5,7 @@ import android.app.Application;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 
@@ -77,7 +78,7 @@ public class MetricUtilSpec {
     }
 
     private ServerResponseMetric createEmptySRM(Status status) {
-        ServerResponseMetric srm = ServerResponseMetric.create("body", 0, 0L).setFlushStatus(status);
+        ServerResponseMetric srm = ServerResponseMetric.create("body", 0, 0L, FlushMethod.HTTP_URL_CONNECTION).setFlushStatus(status);
         assertThat(srm).isNotNull();
         return srm;
     }
