@@ -276,20 +276,15 @@ final class MessageLoop {
 
                 Long endAt = System.currentTimeMillis();
 
-                if (null == responseMetric) {
-                    Logger.e("ServerResponseMetric can't be NULL");
+                if (null == responseMetric || null == responseMetric.getFlushStatus()) {
+                    Logger.e("ServerResponseMetric or ServerResponseMetric.getFlushStatus() can't be NULL");
+                    // TODO unknown state
                     LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
                 Long operationTime = (endAt - startAt);
                 Status status = responseMetric.getFlushStatus();
-
-                if (null == status) {
-                    Logger.e("Status can't be NULL");
-                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
-                    return;
-                }
 
                 /**
                  * - 전송된 데이터를 삭제해도 되는지(DONE),
@@ -306,10 +301,10 @@ final class MessageLoop {
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
                         break;
                     default:
+                        // TODO: UnknownRakeStateException logging
                         Logger.e("Unknown FlushStatus");
                         return;
                 }
-
 
                 /** 메트릭 전송용 토큰이 아닌 경우에만 */
                 if (MetricUtil.isNotMetricToken(chunk.getToken())) {
@@ -374,7 +369,7 @@ final class MessageLoop {
                         (responseMetric.getResponseBody(), responseMetric.getResponseCode());
 
                 if (DONE == status || DROP == status) {
-                    // if DROP, we have an unrecoverable failure.
+                    // Unrecoverable failure. DROP it.
                     EventTableAdapter.getInstance(appContext).removeEventById(lastId);
                 } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, autoFlushInterval);

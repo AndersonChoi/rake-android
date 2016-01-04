@@ -5,6 +5,7 @@ import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
 import com.rake.android.rkmetrics.util.StringUtil;
+import com.rake.android.rkmetrics.util.UnknownRakeStateException;
 
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
@@ -48,26 +49,67 @@ final public class HttpRequestSender {
 
     public static ServerResponseMetric sendRequest(String message, String url) {
 
-        String encodedData = Base64Coder.encodeString(message);
+        Status flushStatus = DROP;
+        ServerResponseMetric responseMetric = null;
 
-        if (getCurrentAPILevelAsInt() >= APILevel.ICE_CREAM_SANDWICH.getLevel()) {
-            return sendHttpUrlStreamRequest(url, encodedData);
-        } else {
-            return sendHttpClientRequest(url, encodedData);
+        try {
+            /** 4.0 이상일 경우 HttpUrlConnection 이용 */
+            if (getCurrentAPILevelAsInt() >= APILevel.ICE_CREAM_SANDWICH.getLevel()) {
+                responseMetric = sendHttpUrlStreamRequest(url, message);
+            } else {
+                responseMetric = sendHttpClientRequest(url, message);
+            }
+        } catch(UnsupportedEncodingException e) {
+            Logger.e("Invalid encoding", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
+        } catch (GeneralSecurityException e) {
+            Logger.e("SSL error (DROP)", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
+        } catch (MalformedURLException e) {
+            Logger.e("Malformed url (DROP)", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
+        }  catch (ProtocolException e) {
+            Logger.e("Invalid protocol (DROP)", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
+        } catch (IOException e) {
+            Logger.e("Can't post message to Rake Server (RETRY)", e);
+            return ServerResponseMetric.createErrorMetric(e, RETRY);
+        } catch (OutOfMemoryError e) {
+            Logger.e("Can't post message to Rake Server (RETRY)", e);
+            return ServerResponseMetric.createErrorMetric(e, RETRY);
+        } catch (Exception e) {
+            Logger.e("Uncaught exception (DROP)", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
         }
+
+        if (null == responseMetric)
+            return ServerResponseMetric.createErrorMetric(new UnknownRakeStateException("ServerResponseMetric can't be NULL"), DROP);
+
+        flushStatus = RakeProtocolV1.interpretResponse(
+                responseMetric.getResponseBody(), responseMetric.getResponseCode());
+
+        return responseMetric.setFlushStatus(flushStatus);
     }
 
-    private static ServerResponseMetric sendHttpUrlStreamRequest(String endPoint, String encodedData) {
+    /**
+     * @throws MalformedURLException
+     * @throws UnsupportedEncodingException
+     * @throws ProtocolException
+     * @throws IOException
+     */
+    public static ServerResponseMetric sendHttpUrlStreamRequest(String endPoint,
+                                                                String encodedData)
+            throws MalformedURLException, UnsupportedEncodingException, ProtocolException, IOException {
 
         URL url;
         OutputStream os = null;
         BufferedWriter writer = null;
+        BufferedReader br = null;
         HttpURLConnection conn = null;
         StringBuilder builder = new StringBuilder();
 
         int responseCode = 0;
         String responseBody = null;
-        Status flushStatus = DROP;
         long operationTime = 0L;
         Throwable t = null;
 
@@ -96,53 +138,33 @@ final public class HttpRequestSender {
 
             responseCode = conn.getResponseCode();
 
-            BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            if (responseCode >= 400) br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+            else br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+
             String line;
 
             while ((line = br.readLine()) != null) builder.append(line);
 
             responseBody = builder.toString();
-            flushStatus = RakeProtocolV1.interpretResponse(responseBody, responseCode);
 
-        } catch (MalformedURLException e) {
-            Logger.e("Invalid URL", e);
-            flushStatus = RETRY;
-            t = e;
-        } catch (UnsupportedEncodingException e) {
-            Logger.e("Unsupported encoding", e);
-            flushStatus = DROP;
-            t = e;
-        } catch (ProtocolException e) {
-            Logger.e("Invalid protocol", e);
-            flushStatus = DROP;
-            t = e;
-        } catch (IOException e) {
-            Logger.e("Network error", e);
-            flushStatus = RETRY;
-            t = e;
-        } catch (OutOfMemoryError e) {
-            Logger.e("Memory insufficient", e);
-            flushStatus = RETRY;
-            t = e;
-        } catch (Exception e) {
-            Logger.e("Uncaught exception", e);
-            flushStatus = DROP;
-            t = e;
         } finally {
-            if (null != conn) conn.disconnect();
-
+            StreamUtil.closeQuietly(br);
             StreamUtil.closeQuietly(writer);
             StreamUtil.closeQuietly(os);
+
+            if (null != conn) conn.disconnect();
         }
 
-        return ServerResponseMetric.create(t, flushStatus, responseBody, responseCode, operationTime);
+        return ServerResponseMetric.create(responseBody, responseCode, operationTime);
     }
 
-    private static String buildHttpUrlConnectionRequestBody(String encodedDate) throws UnsupportedEncodingException {
+    public static String buildHttpUrlConnectionRequestBody(String message)
+            throws UnsupportedEncodingException {
         Map<String, String> params = new HashMap<String, String>();
 
+        String base64Encoded = Base64Coder.encodeString(message);
         params.put(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY);
-        params.put(DATA_FIELD_NAME, encodedDate);
+        params.put(DATA_FIELD_NAME, base64Encoded);
 
         StringBuilder result = new StringBuilder();
         boolean first = true;
@@ -159,69 +181,52 @@ final public class HttpRequestSender {
         return result.toString();
     }
 
-    private static HttpEntity buildHttpClientRequestBody(String encodedData) throws UnsupportedEncodingException {
+    public static HttpEntity buildHttpClientRequestBody(String message)
+            throws UnsupportedEncodingException {
         List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
 
+        String base64Encoded = Base64Coder.encodeString(message);
         nameValuePairs.add(new BasicNameValuePair(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY));
-        nameValuePairs.add(new BasicNameValuePair(DATA_FIELD_NAME, encodedData));
+        nameValuePairs.add(new BasicNameValuePair(DATA_FIELD_NAME, base64Encoded));
 
         return new UrlEncodedFormEntity(nameValuePairs);
     }
 
-    private static ServerResponseMetric sendHttpClientRequest(String endPoint, String requestMessage) {
-        Status flushStatus = DROP;
+    /**
+     * @throws UnsupportedEncodingException
+     * @throws GeneralSecurityException
+     * @throws IOException
+     */
+    public static ServerResponseMetric sendHttpClientRequest(String endPoint,
+                                                             String requestMessage)
+            throws UnsupportedEncodingException, GeneralSecurityException, IOException {
         String responseBody = null;
         int responseCode = 0;
         long responseTime = 0L;
-        Throwable t = null;
 
-        try {
-            HttpEntity requestEntity = buildHttpClientRequestBody(requestMessage);
-            HttpPost httppost = new HttpPost(endPoint);
-            httppost.setEntity(requestEntity);
-            HttpClient client = createHttpsClient();
+        HttpEntity requestEntity = buildHttpClientRequestBody(requestMessage);
+        HttpPost httppost = new HttpPost(endPoint);
+        httppost.setEntity(requestEntity);
+        HttpClient client = createHttpsClient();
 
-            long startAt = System.currentTimeMillis();
-            HttpResponse response = client.execute(httppost);
-            long endAt = System.currentTimeMillis();
-            responseTime = (endAt - startAt);
+        long startAt = System.currentTimeMillis();
+        HttpResponse response = client.execute(httppost);
+        long endAt = System.currentTimeMillis();
+        responseTime = (endAt - startAt);
 
-            if (null == response || null == response.getEntity()) {
-                Logger.d("HttpResponse or HttpEntity is null. Retry later");
-                return ServerResponseMetric.create(null, RETRY, null, 0, responseTime);
-            }
-
-            HttpEntity responseEntity = response.getEntity();
-            responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
-            responseCode = response.getStatusLine().getStatusCode();
-
-            flushStatus = RakeProtocolV1.interpretResponse(responseBody, responseCode);
-
-        } catch(UnsupportedEncodingException e) {
-            Logger.e("Invalid encoding", e);
-            flushStatus = DROP;
-            t = e;
-        } catch (IOException e) {
-            Logger.e("Cannot post message to Rake Servers (May Retry)", e);
-            flushStatus = RETRY;
-            t = e;
-        } catch (OutOfMemoryError e) {
-            Logger.e("Cannot post message to Rake Servers, will not retry.", e);
-            flushStatus = RETRY;
-            t = e;
-        } catch (GeneralSecurityException e) {
-            Logger.e("Cannot build SSL Client", e);
-            t = e;
-        } catch (Exception e) {
-            Logger.e("Uncaught exception", e);
-            t = e;
+        if (null == response || null == response.getEntity()) {
+            Logger.d("HttpResponse or HttpEntity is null. Retry later");
+            return ServerResponseMetric.createErrorMetric(new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY);
         }
 
-        return ServerResponseMetric.create(
-                t, flushStatus, responseBody, responseCode, responseTime);
+        HttpEntity responseEntity = response.getEntity();
+        responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
+        responseCode = response.getStatusLine().getStatusCode();
+
+        return ServerResponseMetric.create(responseBody, responseCode, responseTime);
     }
 
-    private static HttpClient createHttpsClient() throws GeneralSecurityException {
+    public static HttpClient createHttpsClient() throws GeneralSecurityException {
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
         schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
@@ -231,7 +236,7 @@ final public class HttpRequestSender {
         return new DefaultHttpClient(connectionManager, params);
     }
 
-    private static HttpParams getDefaultHttpParams() {
+    public static HttpParams getDefaultHttpParams() {
         HttpParams params = new BasicHttpParams();
 
         HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);
