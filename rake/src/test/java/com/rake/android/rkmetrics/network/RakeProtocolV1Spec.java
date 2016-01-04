@@ -110,8 +110,10 @@ public class RakeProtocolV1Spec {
 
     @Test
     public void assert_RAKE_PROTOCOL_constants() {
+        /** 변경되면 안되므로 하드코딩으로 검증 */
         assertThat(COMPRESS_FIELD_NAME).isEqualTo("compress");
         assertThat(DEFAULT_COMPRESS_STRATEGY).isEqualTo("plain");
         assertThat(DATA_FIELD_NAME).isEqualTo("data");
+        assertThat(CHAR_ENCODING).isEqualTo("UTF-8");
     }
 }

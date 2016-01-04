@@ -4,6 +4,7 @@ import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
 import static com.rake.android.rkmetrics.metric.MetricUtil.*;
 import static com.rake.android.rkmetrics.metric.model.Status.*;
+import static com.rake.android.rkmetrics.android.Compatibility.*;
 
 import android.content.Context;
 import android.os.Handler;
@@ -13,10 +14,9 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
-import com.rake.android.rkmetrics.metric.model.Header;
-import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.RakeProtocolV1;
+import com.rake.android.rkmetrics.network.HttpRequestProcedure;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -320,6 +320,7 @@ final class MessageLoop {
                 }
             }
         }
+
         private ServerResponseMetric send(LogChunk chunk) {
 
             if (null == chunk) {
@@ -335,7 +336,10 @@ final class MessageLoop {
             }
 
             /* TODO: + token */
-            ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl());
+            // TODO: handleException test
+            // TODO add body to shuttle - flush protocol: HttpClient & HttpUrlConnection
+            ServerResponseMetric responseMetric =
+                    HttpRequestSender.handleException(chunk.getUrl(), chunk.getChunk(), HttpRequestSender.procedure);
 
             return responseMetric;
         }
@@ -349,14 +353,15 @@ final class MessageLoop {
 
             if (event != null) {
                 String lastId = event.getLastId();
-                String log = event.getLog();
-                String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
+                final String log = event.getLog();
+                final String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
+                ServerResponseMetric responseMetric =
+                        HttpRequestSender.handleException(url, log, HttpRequestSender.procedure);
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be null");

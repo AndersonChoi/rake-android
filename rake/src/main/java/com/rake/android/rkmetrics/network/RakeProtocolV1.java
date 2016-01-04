@@ -21,6 +21,7 @@ public final class RakeProtocolV1 {
     public static final String COMPRESS_FIELD_NAME = "compress";
     public static final String DEFAULT_COMPRESS_STRATEGY = "plain";
     public static final String DATA_FIELD_NAME = "data";
+    public static final String CHAR_ENCODING = "UTF-8";
 
     public static final int HTTP_STATUS_CODE_OK = 200;
     public static final int HTTP_STATUS_CODE_REQUEST_TOO_LONG = 413;
@@ -95,9 +96,9 @@ public final class RakeProtocolV1 {
             if (first) first = false;
             else result.append("&");
 
-            result.append(URLEncoder.encode(entry.getKey(), HttpRequestSender.CHAR_ENCODING));
+            result.append(URLEncoder.encode(entry.getKey(), CHAR_ENCODING));
             result.append("=");
-            result.append(URLEncoder.encode(entry.getValue(), HttpRequestSender.CHAR_ENCODING));
+            result.append(URLEncoder.encode(entry.getValue(), CHAR_ENCODING));
         }
 
         return result.toString();

@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.network;
 
+import com.rake.android.rkmetrics.android.Compatibility;
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
 import com.rake.android.rkmetrics.util.StringUtil;
@@ -9,7 +9,6 @@ import com.rake.android.rkmetrics.util.UnknownRakeStateException;
 
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.scheme.PlainSocketFactory;
@@ -18,7 +17,6 @@ import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.params.BasicHttpParams;
 import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
@@ -28,33 +26,38 @@ import java.io.*;
 import java.net.*;
 import java.net.ProtocolException;
 import java.security.GeneralSecurityException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
-import static com.rake.android.rkmetrics.android.Compatibility.*;
+import static com.rake.android.rkmetrics.android.Compatibility.getCurrentAPILevelAsInt;
 import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 final public class HttpRequestSender {
-    public static final String CHAR_ENCODING = "UTF-8";
     public static final int CONNECTION_TIMEOUT = 3000;
     public static final int SOCKET_TIMEOUT = 120000;
 
     private HttpRequestSender() {}
 
-    public static ServerResponseMetric sendRequest(String message, String url) {
+    public static HttpRequestProcedure procedure = new HttpRequestProcedure() {
+        @Override
+        public ServerResponseMetric execute(String url, String log) throws Exception {
+            if (null == url) throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
+            if (null == log) throw new UnknownRakeStateException("log can't be NULL in HttpRequestProcedure.execute");
+
+            /** 4.0 이상일 경우 HttpUrlConnection 이용 */
+            if (getCurrentAPILevelAsInt() >= Compatibility.APILevel.ICE_CREAM_SANDWICH.getLevel()) {
+                return HttpRequestSender.sendHttpUrlStreamRequest(url, log);
+            } else {
+                return HttpRequestSender.sendHttpClientRequest(url, log);
+            }
+        }
+    };
+
+    public static ServerResponseMetric handleException(String url, String log, HttpRequestProcedure callback) {
 
         Status flushStatus = DROP;
         ServerResponseMetric responseMetric = null;
 
         try {
-            /** 4.0 이상일 경우 HttpUrlConnection 이용 */
-            if (getCurrentAPILevelAsInt() >= APILevel.ICE_CREAM_SANDWICH.getLevel()) {
-                responseMetric = sendHttpUrlStreamRequest(url, message);
-            } else {
-                responseMetric = sendHttpClientRequest(url, message);
-            }
+            responseMetric = callback.execute(url, log);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
             return ServerResponseMetric.createErrorMetric(e, DROP);
@@ -75,6 +78,9 @@ final public class HttpRequestSender {
             return ServerResponseMetric.createErrorMetric(e, RETRY);
         } catch (Exception e) {
             Logger.e("Uncaught exception (DROP)", e);
+            return ServerResponseMetric.createErrorMetric(e, DROP);
+        } catch (Throwable e) {
+            Logger.e("Uncaught throwable (DROP)", e);
             return ServerResponseMetric.createErrorMetric(e, DROP);
         }
 
@@ -125,7 +131,7 @@ final public class HttpRequestSender {
             long startAt = System.currentTimeMillis();
 
             os = conn.getOutputStream();
-            writer = new BufferedWriter(new OutputStreamWriter(os, CHAR_ENCODING));
+            writer = new BufferedWriter(new OutputStreamWriter(os, RakeProtocolV1.CHAR_ENCODING));
             writer.write(requestBody);
             writer.flush();
 
