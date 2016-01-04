@@ -5,6 +5,7 @@ import android.app.Application;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 
@@ -62,9 +63,7 @@ public class MetricUtilSpec {
     }
 
     @Test
-    public void recordFlushMetric_should_return_false_given_status_is_DONE_while_metric_token() {
-        /** 메트릭값 flush 에 대한 메트릭이더라도 flush:DONE 이 아니면 기록 (e.g flush:RETRY, flush:DROP) */
-
+    public void recordFlushMetric_should_return_false_given_metric_token() {
         LogChunk l1 = LogChunk.create("lastId", "url", MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, "chunk", 1);
 
         /** Status 는 최소한 1개 이상이어야 아래 루프에서 검증이 가능 */
@@ -74,13 +73,12 @@ public class MetricUtilSpec {
             ServerResponseMetric srm = createEmptySRM(s);
             boolean b = recordFlushMetric(app, s, FlushType.MANUAL_FLUSH, 0L, l1, srm);
 
-            if (Status.DONE == s) assertThat(b).isFalse();
-            else assertThat(b).isTrue();
+            assertThat(b).isFalse();
         }
     }
 
     private ServerResponseMetric createEmptySRM(Status status) {
-        ServerResponseMetric srm = ServerResponseMetric.create(null, status, "body", 0, 0L);
+        ServerResponseMetric srm = ServerResponseMetric.create("body", 0, 0L, FlushMethod.HTTP_URL_CONNECTION).setFlushStatus(status);
         assertThat(srm).isNotNull();
         return srm;
     }

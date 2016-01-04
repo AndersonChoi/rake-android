@@ -8,7 +8,7 @@ public class ExceptionUtil {
     public static String createExceptionType(Throwable e) {
         if (null == e) return null;
 
-        return e.getClass().getSimpleName();
+        return e.getClass().getCanonicalName();
     }
 
     public static String createStacktrace(Throwable e) {

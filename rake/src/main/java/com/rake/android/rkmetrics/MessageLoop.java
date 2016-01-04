@@ -13,9 +13,8 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
-import com.rake.android.rkmetrics.metric.model.Header;
-import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.RakeProtocolV1;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
@@ -276,20 +275,15 @@ final class MessageLoop {
 
                 Long endAt = System.currentTimeMillis();
 
-                if (null == responseMetric) {
-                    Logger.e("ServerResponseMetric can't be NULL");
+                if (null == responseMetric || null == responseMetric.getFlushStatus()) {
+                    Logger.e("ServerResponseMetric or ServerResponseMetric.getFlushStatus() can't be NULL");
+                    // TODO unknown state
                     LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
                 Long operationTime = (endAt - startAt);
                 Status status = responseMetric.getFlushStatus();
-
-                if (null == status) {
-                    Logger.e("Status can't be NULL");
-                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
-                    return;
-                }
 
                 /**
                  * - 전송된 데이터를 삭제해도 되는지(DONE),
@@ -306,10 +300,10 @@ final class MessageLoop {
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
                         break;
                     default:
+                        // TODO: UnknownRakeStateException logging
                         Logger.e("Unknown FlushStatus");
                         return;
                 }
-
 
                 /** 메트릭 전송용 토큰이 아닌 경우에만 */
                 if (MetricUtil.isNotMetricToken(chunk.getToken())) {
@@ -325,6 +319,7 @@ final class MessageLoop {
                 }
             }
         }
+
         private ServerResponseMetric send(LogChunk chunk) {
 
             if (null == chunk) {
@@ -339,8 +334,9 @@ final class MessageLoop {
                 Logger.t(message);
             }
 
-            /* TODO: + token */
-            ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl());
+            // TODO: add token to URI
+            ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
+                    chunk.getUrl(), chunk.getChunk(), FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
 
             return responseMetric;
         }
@@ -354,14 +350,15 @@ final class MessageLoop {
 
             if (event != null) {
                 String lastId = event.getLastId();
-                String log = event.getLog();
-                String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
+                final String log = event.getLog();
+                final String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
+                ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
+                        url, log, FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be null");
@@ -374,7 +371,7 @@ final class MessageLoop {
                         (responseMetric.getResponseBody(), responseMetric.getResponseCode());
 
                 if (DONE == status || DROP == status) {
-                    // if DROP, we have an unrecoverable failure.
+                    // Unrecoverable failure. DROP it.
                     EventTableAdapter.getInstance(appContext).removeEventById(lastId);
                 } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, autoFlushInterval);
