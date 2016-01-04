@@ -107,4 +107,11 @@ public class RakeProtocolV1Spec {
         assertThat(HTTP_STATUS_CODE_BAD_GATEWAY).isEqualTo(502);
         assertThat(HTTP_STATUS_CODE_SERVICE_UNAVAILABLE).isEqualTo(503);
     }
+
+    @Test
+    public void assert_RAKE_PROTOCOL_constants() {
+        assertThat(COMPRESS_FIELD_NAME).isEqualTo("compress");
+        assertThat(DEFAULT_COMPRESS_STRATEGY).isEqualTo("plain");
+        assertThat(DATA_FIELD_NAME).isEqualTo("data");
+    }
 }

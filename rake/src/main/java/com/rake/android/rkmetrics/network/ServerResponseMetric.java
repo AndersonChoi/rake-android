@@ -1,7 +1,6 @@
 package com.rake.android.rkmetrics.network;
 
 import com.rake.android.rkmetrics.metric.model.Status;
-
 public final class ServerResponseMetric {
 
     private ServerResponseMetric() {}
@@ -40,6 +39,7 @@ public final class ServerResponseMetric {
 
         return new ServerResponseMetric(e, flushStatus);
     }
+
 
     /** instance */
 

@@ -37,11 +37,7 @@ import static com.rake.android.rkmetrics.android.Compatibility.*;
 import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 final public class HttpRequestSender {
-    private static final String COMPRESS_FIELD_NAME = "compress";
-    private static final String DEFAULT_COMPRESS_STRATEGY = "plain";
-    private static final String DATA_FIELD_NAME = "data";
-    private static final String CHAR_ENCODING = "UTF-8";
-
+    public static final String CHAR_ENCODING = "UTF-8";
     public static final int CONNECTION_TIMEOUT = 3000;
     public static final int SOCKET_TIMEOUT = 120000;
 
@@ -116,7 +112,7 @@ final public class HttpRequestSender {
         try {
             url = new URL(endPoint);
             conn = (HttpURLConnection) url.openConnection();
-            String requestBody = buildHttpUrlConnectionRequestBody(encodedData);
+            String requestBody = RakeProtocolV1.buildHttpUrlConnectionRequestBody(encodedData);
 
             conn.setReadTimeout(SOCKET_TIMEOUT);
             conn.setConnectTimeout(CONNECTION_TIMEOUT);
@@ -158,40 +154,6 @@ final public class HttpRequestSender {
         return ServerResponseMetric.create(responseBody, responseCode, operationTime);
     }
 
-    public static String buildHttpUrlConnectionRequestBody(String message)
-            throws UnsupportedEncodingException {
-        Map<String, String> params = new HashMap<String, String>();
-
-        String base64Encoded = Base64Coder.encodeString(message);
-        params.put(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY);
-        params.put(DATA_FIELD_NAME, base64Encoded);
-
-        StringBuilder result = new StringBuilder();
-        boolean first = true;
-
-        for(Map.Entry<String, String> entry : params.entrySet()) {
-            if (first) first = false;
-            else result.append("&");
-
-            result.append(URLEncoder.encode(entry.getKey(), CHAR_ENCODING));
-            result.append("=");
-            result.append(URLEncoder.encode(entry.getValue(), CHAR_ENCODING));
-        }
-
-        return result.toString();
-    }
-
-    public static HttpEntity buildHttpClientRequestBody(String message)
-            throws UnsupportedEncodingException {
-        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
-
-        String base64Encoded = Base64Coder.encodeString(message);
-        nameValuePairs.add(new BasicNameValuePair(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY));
-        nameValuePairs.add(new BasicNameValuePair(DATA_FIELD_NAME, base64Encoded));
-
-        return new UrlEncodedFormEntity(nameValuePairs);
-    }
-
     /**
      * @throws UnsupportedEncodingException
      * @throws GeneralSecurityException
@@ -204,7 +166,7 @@ final public class HttpRequestSender {
         int responseCode = 0;
         long responseTime = 0L;
 
-        HttpEntity requestEntity = buildHttpClientRequestBody(requestMessage);
+        HttpEntity requestEntity = RakeProtocolV1.buildHttpClientRequestBody(requestMessage);
         HttpPost httppost = new HttpPost(endPoint);
         httppost.setEntity(requestEntity);
         HttpClient client = createHttpsClient();

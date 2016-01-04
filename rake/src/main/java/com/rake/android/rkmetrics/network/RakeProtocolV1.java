@@ -2,9 +2,25 @@ package com.rake.android.rkmetrics.network;
 
 import static com.rake.android.rkmetrics.metric.model.Status.*;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.util.Base64Coder;
 import com.rake.android.rkmetrics.util.Logger;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.NameValuePair;
+import org.apache.http.client.entity.UrlEncodedFormEntity;
+import org.apache.http.message.BasicNameValuePair;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 public final class RakeProtocolV1 {
+    public static final String COMPRESS_FIELD_NAME = "compress";
+    public static final String DEFAULT_COMPRESS_STRATEGY = "plain";
+    public static final String DATA_FIELD_NAME = "data";
 
     public static final int HTTP_STATUS_CODE_OK = 200;
     public static final int HTTP_STATUS_CODE_REQUEST_TOO_LONG = 413;
@@ -61,5 +77,40 @@ public final class RakeProtocolV1 {
     public static void reportResponse(String responseBody, int responseCode) {
         String message = String.format("[NETWORK] Server returned code: %d, body: %s", responseCode, responseBody);
         Logger.t(message);
+    }
+
+    public static String buildHttpUrlConnectionRequestBody(String message)
+            throws UnsupportedEncodingException {
+
+        Map<String, String> params = new HashMap<String, String>();
+
+        String base64Encoded = Base64Coder.encodeString(message);
+        params.put(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY);
+        params.put(DATA_FIELD_NAME, base64Encoded);
+
+        StringBuilder result = new StringBuilder();
+        boolean first = true;
+
+        for(Map.Entry<String, String> entry : params.entrySet()) {
+            if (first) first = false;
+            else result.append("&");
+
+            result.append(URLEncoder.encode(entry.getKey(), HttpRequestSender.CHAR_ENCODING));
+            result.append("=");
+            result.append(URLEncoder.encode(entry.getValue(), HttpRequestSender.CHAR_ENCODING));
+        }
+
+        return result.toString();
+    }
+
+    public static HttpEntity buildHttpClientRequestBody(String message)
+            throws UnsupportedEncodingException {
+        List<NameValuePair> nameValuePairs = new ArrayList<NameValuePair>(2);
+
+        String base64Encoded = Base64Coder.encodeString(message);
+        nameValuePairs.add(new BasicNameValuePair(COMPRESS_FIELD_NAME, DEFAULT_COMPRESS_STRATEGY));
+        nameValuePairs.add(new BasicNameValuePair(DATA_FIELD_NAME, base64Encoded));
+
+        return new UrlEncodedFormEntity(nameValuePairs);
     }
 }
