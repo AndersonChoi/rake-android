@@ -14,5 +14,10 @@
 
     <string name="btnSetAutoFlushON">AutoFlush ON</string>
     <string name="btnSetAutoFlushOFF">AutoFlush OFF</string>
+    <string name="large_text">
+
+    </string>
+
+
 
 </resources>

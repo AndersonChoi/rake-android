@@ -9,14 +9,15 @@ android:
     - android-19
     - android-23
     - extra-android-support
+    - extra-android-m2repository
   licenses:
     - android-sdk-license-5be876d5
 
 script:
-- gradle :rake:build
+- gradle :rake:test
 
 after_success:
-- gradle cobertura coveralls
+- gradle jacocoTestReport coveralls
 
 notifications:
   slack: skp-di:c0VSovqSCgaZd8qT7cClh799

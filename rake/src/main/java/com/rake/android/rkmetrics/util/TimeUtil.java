@@ -28,4 +28,8 @@ public class TimeUtil {
     public static DateFormat getBaseFormatter() { return baseTimeFormatter.get(); }
     public static DateFormat getLocalFormatter() { return localTimeFormatter.get(); }
     public static String getCurrentTime() { return baseTimeFormatter.get().format(new Date()); }
+
+    public static long convertNanoTimeDurationToMillis(long start, long end) {
+        return (end - start) / 1000000; /* drop nano second accuracy */
+    }
 }

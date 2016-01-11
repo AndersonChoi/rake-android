@@ -51,6 +51,7 @@ public class ShuttleProfiler {
     public static final String PROPERTY_NAME_CARRIER_NAME      = "carrier_name";
     public static final String PROPERTY_NAME_NETWORK_TYPE      = "network_type";
     public static final String PROPERTY_NAME_LANGUAGE_CODE     = "language_code";
+    public static final String PROPERTY_NAME_LOG_VERSION       = "log_version";
 
     public static final List<String> DEFAULT_PROPERTY_NAMES = Arrays.asList(
             PROPERTY_NAME_TOKEN,
@@ -79,7 +80,7 @@ public class ShuttleProfiler {
     public static final String PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI = "NOT WIFI";
 
     public static final String EMPTY_BODY_STRING  = new JSONObject().toString();
-    public static final String EMPTY_HEADER_VALUE = "";
+    public static final String EMPTY_FIELD_VALUE = "";
 
     public static boolean hasBodyValue(RakeClientMetricSentinelShuttle shuttle,
                                        String field,
@@ -381,10 +382,20 @@ public class ShuttleProfiler {
             String key = (String) keys.next();
             Object value = userProps.get(key);
 
-            // TODO: JSON.null SEN-268, SEN-269
+            if (null == value) continue; /* Usually, we can't insert null into JSON */
+
             /** iff userProps is not an empty string and it is in fieldOrder */
-            if (!(value.toString().length() == 0) && fieldOrder.has(key))
-                props.put(key, value);
+            if (fieldOrder.has(key)) {
+                // TODO: JSON.null SEN-268, SEN-269, consider RAKE-389
+
+                /* RAKE-389 */
+                if (props.has(key) && (null != props.get(key)) &&
+                        EMPTY_FIELD_VALUE.equals(value.toString())) { /* value is not null */
+                    /* do not overwrite the superProp as userProp is empty */
+                } else {
+                    props.put(key, value);
+                }
+            }
         }
 
         /** 2. Insert auto-collected fields */

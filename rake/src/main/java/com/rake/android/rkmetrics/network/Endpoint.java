@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Endpoint {
-    CHARGED("CHANGED"),
+    CHARGED("CHARGED"),
     FREE("FREE");
 
     public final static String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";

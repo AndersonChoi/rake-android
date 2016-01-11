@@ -1,30 +1,48 @@
-import org.slf4j.Logger
-import org.slf4j.LoggerFactory
-
-import java.util.regex.Pattern
-
 apply plugin: 'com.android.library'
 apply plugin: 'maven'
 apply plugin: 'idea'
+apply plugin: 'jacoco-android'
+apply plugin: 'com.github.kt3k.coveralls'
 
-version = '0.4.0'
+buildscript {
+    repositories {
+        jcenter()
+        mavenCentral()
+        maven { url "https://plugins.gradle.org/m2/" }
+    }
+
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.5.0'
+        classpath "gradle.plugin.com.vanniktech:gradle-android-javadoc-plugin:0.2.1"
+        classpath 'org.ajoberstar:gradle-git:1.3.1'
+        classpath 'com.dicedmelon.gradle:jacoco-android:0.1.1'
+        classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.0.1'
+    }
+}
+
+import java.util.regex.Pattern
+
+version = '0.4.1'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
-/* constant */
-def currentProjectDir = "${rootProject.projectDir}/rake"
-def tempJar = "${archivesBaseName}-${version}-withoutShuttle.jar"
-def completeJar = "${archivesBaseName}-${version}.jar"
-def docsDir = "${rootProject.projectDir}/docs/"
-def currentVersionDocsDir = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
-def releaseDir = "${rootProject.projectDir}/release"
-def releaseJarDir = "$releaseDir/jar"
-String DIR_AAR = "$currentProjectDir/build/outputs/aar"
-String DEBUG_AAR = "rake-release.aar"
-String PATH_DEBUG_AAR = "$DIR_AAR/$DEBUG_AAR"
+/**
+ * 경로 파일 이름 관련 상수
+ */
+String CURRENT_PROJECT_DIR = "${rootProject.projectDir}/rake"
+String TEMP_JAR = "${archivesBaseName}-${version}-withoutShuttle.jar"
+String COMPLETE_JAR = "${archivesBaseName}-${version}.jar"
+String DOCS_DIR = "${rootProject.projectDir}/docs/"
+String CURRENT_VERSION_DOCS = (version.contains("SNAPSHOT")) ? "SNAPSHOT" : version
+String RELEASE_DIR = "${rootProject.projectDir}/release"
+String RELEASE_JAR_DIR = "$RELEASE_DIR/jar"
+String DIR_AAR = "$CURRENT_PROJECT_DIR/build/outputs/aar"
+String RELEASE_AAR = "${archivesBaseName}-release.aar"
+String PATH_DEBUG_AAR = "$DIR_AAR/$RELEASE_AAR"
 String DIR_TEST_APP_LIBS = "${rootProject.projectDir}/testApp/libs"
-def includedDir = "${currentProjectDir}/libs/included";
-def branchName = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+String LIB_INCLUDED_DIR = "${CURRENT_PROJECT_DIR}/libs/included";
+String BRANCH_NAME = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
+
 def logger = { String message -> println("[RAKE BUILDER] $message") }
 def updateFile = { String path, Pattern regex, String replace ->
     def encoding = "UTF-8"
@@ -44,14 +62,14 @@ def updateFile = { String path, Pattern regex, String replace ->
  * 빌드타임에 변수 또는 상수가 치환(replace) 되는 파일들
  */
 String RAKE_ROOT_PACKAGE = "src/main/java/com/rake/android/rkmetrics";
-String FILE_REPLACED_CONFIG = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/config/RakeConfig.java"
-String FILE_REPLACED_METRIC_LOGGER = "${currentProjectDir}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
+String FILE_REPLACED_CONFIG = "${CURRENT_PROJECT_DIR}/$RAKE_ROOT_PACKAGE/config/RakeConfig.java"
+String FILE_REPLACED_METRIC_LOGGER = "${CURRENT_PROJECT_DIR}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
 
 String RELEASE_BRANCH = "release"
-def isReleaseBranch = branchName.startsWith(RELEASE_BRANCH)
+def isReleaseBranch = BRANCH_NAME.startsWith(RELEASE_BRANCH)
 String VAR_BRANCH = "BUILD_CONSTANT_BRANCH";
 Pattern REGEX_BRANCH = ~/String $VAR_BRANCH = "(.)*"/
-String FILLED_BRANCH = "String $VAR_BRANCH = \"$branchName\""
+String FILLED_BRANCH = "String $VAR_BRANCH = \"$BRANCH_NAME\""
 
 String VAR_METRIC_TOKEN = "BUILD_CONSTANT_METRIC_TOKEN"
 Pattern REGEX_METRIC_TOKEN_FILLED = ~/String $VAR_METRIC_TOKEN = "(.)*"/
@@ -75,12 +93,14 @@ android {
         versionCode 1
         versionName "1.0"
     }
+
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
@@ -88,8 +108,8 @@ android {
 }
 
 dependencies {
-    // provided fileTree(dir: 'libs/provided', include ['*.jar'])
     compile fileTree(dir: 'libs/included', include: ['*.jar'])
+    testCompile fileTree(dir: 'libs/test', include: ['*.jar'])
 
     testCompile 'junit:junit:4.12'
     testCompile 'org.assertj:assertj-core:1.7.1'
@@ -100,13 +120,32 @@ dependencies {
     testCompile "org.robolectric:robolectric:3.0"
 }
 
-uploadArchives {
+coveralls {
+    def reportDir = "build/reports/jacoco/jacocoTestDebugUnitTestReport"
+    jacocoReportPath "${CURRENT_PROJECT_DIR}/${reportDir}/jacocoTestDebugUnitTestReport.xml"
+}
+
+jacocoAndroidUnitTestReport {
+    csv.enabled false
+    html.enabled true
+    xml.enabled true
+}
+
+configurations {
+    jarArchives
+}
+
+uploadJarArchives {
     repositories {
         mavenDeployer {
             repository(url: 'http://mvn.skplanet.com/content/repositories/releases')
             snapshotRepository(url: 'http://mvn.skplanet.com/content/repositories/snapshots')
         }
     }
+}
+
+artifacts {
+    jarArchives file: file("${RELEASE_JAR_DIR}/${COMPLETE_JAR}")
 }
 
 task updateVersionInSource(type: Copy) {
@@ -200,14 +239,15 @@ task updateRakeEnv(type: Copy) {
 gradle.projectsEvaluated { /* do something before compile */
     updateVersionInSource.execute()
     updateMetricToken.execute()
-
 }
 
 task createJavadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    destinationDir = file("${docsDir}/$currentVersionDocsDir")
-    failOnError false
+    if (BRANCH_NAME.startsWith("gh-pages")) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        destinationDir = file("${DOCS_DIR}/$CURRENT_VERSION_DOCS")
+        failOnError false
+    }
 }
 
 tasks.build.doLast {
@@ -215,11 +255,11 @@ tasks.build.doLast {
 /* extract jar from AAR and create rake.jar without shuttle */
     task extractJarFromAar(type: Copy) {
 
-        logger "Extracting ${tempJar} from ${PATH_DEBUG_AAR}"
+        logger "Extracting ${TEMP_JAR} from ${PATH_DEBUG_AAR}"
 
         from zipTree(file(PATH_DEBUG_AAR))
         into DIR_AAR
-        rename "classes.jar", tempJar
+        rename "classes.jar", TEMP_JAR
         exclude "R.txt", "assets", "aidl", "aapt/**/*", "res/**/*", "AndroidManifest.xml",
                 "libs/**/*"
         includeEmptyDirs = false
@@ -233,22 +273,22 @@ tasks.build.doLast {
         def shuttleJarNames = []
 
         /* logic */
-        new File("${includedDir}").eachFile { file ->
+        new File("${LIB_INCLUDED_DIR}").eachFile { file ->
             if (file.path.contains(shuttleJarNamePrefix))
                 shuttleJarNames << file.path
         }
 
         if (shuttleJarNames.size > 1)
-            throw new IllegalStateException("Multiple shuttle jar exists in ${includedDir}")
+            throw new IllegalStateException("Multiple shuttle jar exists in ${LIB_INCLUDED_DIR}")
         else if (shuttleJarNames.size == 0)
-            throw new IllegalStateException("Can not find shuttle jar in ${includedDir}")
+            throw new IllegalStateException("Can not find shuttle jar in ${LIB_INCLUDED_DIR}")
 
         String shuttleJarName = shuttleJarNames[0]
         logger "Provided shuttle: ${shuttleJarName}"
 
         // merge crash-logger.jar with shuttle.jar
         from zipTree(file("${shuttleJarName}"))
-        from zipTree(file("${DIR_AAR}/${tempJar}"))
+        from zipTree(file("${DIR_AAR}/${TEMP_JAR}"))
         exclude ".gitkeep", "META-INF/", "${shuttleJarNamePrefix}.java"
         include "**/*"
         extension "jar"
@@ -257,20 +297,20 @@ tasks.build.doLast {
 
     task copyCompleteJarToTestApp(type: Copy) {
 
-        logger "Copying $DIR_AAR/$completeJar to ${DIR_TEST_APP_LIBS}/"
+        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_TEST_APP_LIBS}/"
 
         from DIR_AAR
-        include completeJar
+        include COMPLETE_JAR
         into DIR_TEST_APP_LIBS
     }
 
     task copyCompleteJarToReleaseDir(type: Copy) {
 
-        logger "Copying $DIR_AAR/$completeJar to ${releaseJarDir}/"
+        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${RELEASE_JAR_DIR}/"
 
         from DIR_AAR
-        include completeJar
-        into releaseJarDir
+        include COMPLETE_JAR
+        into RELEASE_JAR_DIR
     }
 
     task initializeBuildConstant(type: Copy) {
@@ -283,11 +323,10 @@ tasks.build.doLast {
     zipWithShuttle.execute();
     copyCompleteJarToTestApp.execute();
 
-    if (branchName.startsWith("release")) {
+    if (BRANCH_NAME.startsWith("release")) {
         createJavadoc.execute()
         copyCompleteJarToReleaseDir.execute();
     }
 
     initializeBuildConstant.execute();
 }
-

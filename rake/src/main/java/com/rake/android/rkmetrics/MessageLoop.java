@@ -13,9 +13,8 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
-import com.rake.android.rkmetrics.metric.model.Header;
-import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.RakeProtocolV1;
 import com.rake.android.rkmetrics.network.ServerResponseMetric;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
@@ -28,6 +27,7 @@ import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
+import com.rake.android.rkmetrics.util.TimeUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -129,34 +129,6 @@ final class MessageLoop {
     }
 
     private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
-
-    public void queueInstallMetric(long operationTime,
-                                   String token,
-                                   RakeAPI.Env env,
-                                   String endpoint,
-                                   RakeAPI.Logging logging) {
-        Header h = Header.create(appContext, Action.INSTALL, Status.DONE, token /* service token */);
-        InstallMetric installMetric = new InstallMetric();
-
-        /** persisted_log_count, expired_log_count will be filled in MessageLoop due to performance */
-
-        installMetric.setHeader(h);
-        installMetric
-                .setOperationTime(operationTime)
-                .setEndpoint(endpoint)
-                .setDatabaseVersion(Long.valueOf(DatabaseAdapter.DATABASE_VERSION))
-                .setEnv(env)
-                .setLogging(logging)
-                .setMaxTrackCount(Long.valueOf(RakeConfig.TRACK_MAX_LOG_COUNT))
-                .setAutoFlushOnOff(autoFlushOption)
-                .setAutoFlushInterval(autoFlushInterval);
-
-        Message m = Message.obtain();
-        m.what = Command.RECORD_INSTALL_METRIC.code;
-        m.obj = installMetric;
-
-        queueMessage(m);
-    }
 
     public boolean queueTrackCommand(Log log) {
         if (null == log) {
@@ -297,37 +269,22 @@ final class MessageLoop {
             if (null == chunks || 0 == chunks.size()) return;
 
             for (LogChunk chunk : chunks) {
-                Long startAt = System.currentTimeMillis();
+                long startAt = System.nanoTime();
 
                 /** network operation */
                 ServerResponseMetric responseMetric = send(chunk);
 
-                Long endAt = System.currentTimeMillis();
+                long endAt = System.nanoTime();
 
-                if (null == responseMetric) {
-                    Logger.e("ServerResponseMetric can't be NULL");
+                if (null == responseMetric || null == responseMetric.getFlushStatus()) {
+                    Logger.e("ServerResponseMetric or ServerResponseMetric.getFlushStatus() can't be NULL");
+                    // TODO unknown state
                     LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
-                /** Metric 이 아닌 경우에만 Network, Database 연산에 대해 report */
-                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
-                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
-                    Logger.t(message);
-
-                    RakeProtocolV1.reportResponse
-                            (responseMetric.getResponseBody(), responseMetric.getResponseCode());
-                }
-
-                Long operationTime = (endAt - startAt);
+                Long operationTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
                 Status status = responseMetric.getFlushStatus();
-
-                if (null == status) {
-                    Logger.e("Status can't be NULL");
-                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
-                    return;
-                }
 
                 /**
                  * - 전송된 데이터를 삭제해도 되는지(DONE),
@@ -344,15 +301,26 @@ final class MessageLoop {
                         if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
                         break;
                     default:
+                        // TODO: UnknownRakeStateException logging
                         Logger.e("Unknown FlushStatus");
                         return;
                 }
 
-                /** write metric values */
-                MetricUtil.recordFlushMetric(
-                        appContext, status, flushType, operationTime, chunk, responseMetric);
+                /** 메트릭 전송용 토큰이 아닌 경우에만 */
+                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
+                    /** Network, Database 연산에 대해 report */
+                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
+                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
+                    Logger.t(message);
+
+                    RakeProtocolV1.reportResponse(responseMetric.getResponseBody(), responseMetric.getResponseCode());
+
+                    /** `flush` 메트릭을 기록 */
+                    MetricUtil.recordFlushMetric(appContext, status, flushType, operationTime, chunk, responseMetric);
+                }
             }
         }
+
         private ServerResponseMetric send(LogChunk chunk) {
 
             if (null == chunk) {
@@ -367,8 +335,9 @@ final class MessageLoop {
                 Logger.t(message);
             }
 
-            ServerResponseMetric responseMetric =
-                    HttpRequestSender.sendRequest(chunk.getChunk(), chunk.getUrl() /* TODO + token */);
+            // TODO: add token to URI
+            ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
+                    chunk.getUrl(), chunk.getChunk(), FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
 
             return responseMetric;
         }
@@ -382,15 +351,15 @@ final class MessageLoop {
 
             if (event != null) {
                 String lastId = event.getLastId();
-                String log = event.getLog();
-                String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
+                final String log = event.getLog();
+                final String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
                 /* assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                ServerResponseMetric responseMetric = HttpRequestSender.sendRequest(log, url);
-
+                ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
+                        url, log, FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
 
                 if (null == responseMetric) {
                     Logger.e("ServerResponseMetric can't be null");
@@ -403,7 +372,7 @@ final class MessageLoop {
                         (responseMetric.getResponseBody(), responseMetric.getResponseCode());
 
                 if (DONE == status || DROP == status) {
-                    // if DROP, we have an unrecoverable failure.
+                    // Unrecoverable failure. DROP it.
                     EventTableAdapter.getInstance(appContext).removeEventById(lastId);
                 } else if (RETRY == status) {
                     sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, autoFlushInterval);
@@ -450,9 +419,6 @@ final class MessageLoop {
                         android.os.Looper.myLooper().quit();
                     }
 
-                } else if (command == RECORD_INSTALL_METRIC) {
-                    InstallMetric metric = (InstallMetric) msg.obj;
-                    recordInstallMetric(appContext, metric);
                 } else { /* UNKNOWN COMMAND */
                     Logger.e("Unexpected message received by Rake worker: " + msg);
                 }
