@@ -1,5 +1,18 @@
 # Change Log
 
+## [0.4.1](https://github.com/skpdi/rake-android/tree/0.4.1) (2016-01-11)
+
+[Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.0...0.4.1)
+
+**Fixed bugs:**
+
+- fix\(rake\): Preserve empty headers [\#2](https://github.com/skpdi/rake-android/pull/2) ([1ambda](https://github.com/1ambda))
+- fix typo. [\#1](https://github.com/skpdi/rake-android/pull/1) ([NohSeho](https://github.com/NohSeho))
+
+**Merged pull requests:**
+
+- test\(shuttle\): Validate header, body RAKE-390 [\#3](https://github.com/skpdi/rake-android/pull/3) ([1ambda](https://github.com/1ambda))
+
 ## [0.4.0](https://github.com/skpdi/rake-android/tree/0.4.0) (2015-12-07)
 [Full Changelog](https://github.com/skpdi/rake-android/compare/0.3.19...0.4.0)
 
