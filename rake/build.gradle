@@ -22,7 +22,7 @@ buildscript {
 
 import java.util.regex.Pattern
 
-version = '0.4.1-SNAPSHOT'
+version = '0.4.1'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -242,10 +242,12 @@ gradle.projectsEvaluated { /* do something before compile */
 }
 
 task createJavadoc(type: Javadoc) {
-    source = android.sourceSets.main.java.srcDirs
-    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-    destinationDir = file("${DOCS_DIR}/$CURRENT_VERSION_DOCS")
-    failOnError false
+    if (BRANCH_NAME.startsWith("gh-pages")) {
+        source = android.sourceSets.main.java.srcDirs
+        classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+        destinationDir = file("${DOCS_DIR}/$CURRENT_VERSION_DOCS")
+        failOnError false
+    }
 }
 
 tasks.build.doLast {
