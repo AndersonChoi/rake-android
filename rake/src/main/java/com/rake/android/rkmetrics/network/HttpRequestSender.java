@@ -4,6 +4,7 @@ import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
 import com.rake.android.rkmetrics.util.StringUtil;
+import com.rake.android.rkmetrics.util.TimeUtil;
 import com.rake.android.rkmetrics.util.UnknownRakeStateException;
 
 import org.apache.http.*;
@@ -127,15 +128,15 @@ final public class HttpRequestSender {
             conn.setDoInput(true);
             conn.setDoOutput(true);
 
-            long startAt = System.currentTimeMillis();
+            long startAt = System.nanoTime();
 
             os = conn.getOutputStream();
             writer = new BufferedWriter(new OutputStreamWriter(os, RakeProtocolV1.CHAR_ENCODING));
             writer.write(requestBody);
             writer.flush();
 
-            long endAt = System.currentTimeMillis();
-            operationTime = (endAt - startAt);
+            long endAt = System.nanoTime();
+            operationTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
 
             responseCode = conn.getResponseCode();
 
@@ -179,7 +180,7 @@ final public class HttpRequestSender {
         long startAt = System.currentTimeMillis();
         HttpResponse response = client.execute(httppost);
         long endAt = System.currentTimeMillis();
-        responseTime = (endAt - startAt);
+        responseTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
 
         if (null == response || null == response.getEntity()) {
             Logger.d("HttpResponse or HttpEntity is null. Retry later");

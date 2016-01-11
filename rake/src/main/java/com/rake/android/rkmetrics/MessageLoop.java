@@ -27,6 +27,7 @@ import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
+import com.rake.android.rkmetrics.util.TimeUtil;
 
 import java.util.HashMap;
 import java.util.List;
@@ -268,12 +269,12 @@ final class MessageLoop {
             if (null == chunks || 0 == chunks.size()) return;
 
             for (LogChunk chunk : chunks) {
-                Long startAt = System.currentTimeMillis();
+                long startAt = System.nanoTime();
 
                 /** network operation */
                 ServerResponseMetric responseMetric = send(chunk);
 
-                Long endAt = System.currentTimeMillis();
+                long endAt = System.nanoTime();
 
                 if (null == responseMetric || null == responseMetric.getFlushStatus()) {
                     Logger.e("ServerResponseMetric or ServerResponseMetric.getFlushStatus() can't be NULL");
@@ -282,7 +283,7 @@ final class MessageLoop {
                     return;
                 }
 
-                Long operationTime = (endAt - startAt);
+                Long operationTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
                 Status status = responseMetric.getFlushStatus();
 
                 /**
