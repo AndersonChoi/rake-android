@@ -3,7 +3,22 @@
 **Rake** 는 단말에서 서버로 로그를 *쉽고*, *안전하게* 전송할 수 있도록 도와주는 *가벼운* 라이브러리입니다. 자세한 내용은 위키를 참조해주세요.
 
 - [Rake iPhone Manual](https://github.com/sentinel-rake/rake-document/wiki/2.-Rake-iPhone)
-- [Rake iPhone Example](https://github.com/sentinel-rake/rake-iphone-example)
+- [Rake Objective C  Example](https://github.com/skpdi/rake-iphone/tree/master/rake-iOS-example-Objc)
+- [Rake Swift  Example](https://github.com/skpdi/rake-iphone/tree/master/rake-iOS-example-Swift)
+
+##Requirements
+- iOS7 이상
+- Xcode 6 이상
+- Objective C와 Swift 2.x 을 지원합니다.
+
+##Install
+###Static Framework
+ 1. Rake Static Framework 를 다운로드 받으세요
+ 2. Realm.framework 을 선택하여 Xcode 프로젝트의 File Navigation에 넣습니다. 이때, Copy items if needed 이 선택된지 확인하고, Finish 버튼을 누릅니다.
+ 3. XCode 프로젝트 ->Tartget -> Build Settings -> Linking -> Other Linker Flags 에 -ObjC를 추가합니다 (Category 지원)
+
+----------
+
 
 ## Developement
 
@@ -36,5 +51,4 @@ METRIC_TOKEN_DEV= METRIC_TOKEN_LIVE= TEST_TOKEN_DEV= TEST_TOKEN_LIVE= gulp build
 
 - [Apache V2](http://www.apache.org/licenses/LICENSE-2.0.html)
 - [Mixpanel: iPhone](https://github.com/mixpanel/mixpanel-iphone)
-- [JSnappy (for prior to Rake 0.3)](https://code.google.com/p/jsnappy/source/browse/trunk/LICENCE.txt)
 
