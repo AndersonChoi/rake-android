@@ -14,7 +14,7 @@
 				3182726C1C4CA90000CAC16B /* ShellScript */,
 			);
 			dependencies = (
-				3182729A1C4CC19800CAC16B /* PBXTargetDependency */,
+				315E063A1C50ED02005CB28E /* PBXTargetDependency */,
 			);
 			name = Framework;
 			productName = Framework;
@@ -23,11 +23,12 @@
 
 /* Begin PBXBuildFile section */
 		21362C2D1C19451A007B42F5 /* Rake.m in Sources */ = {isa = PBXBuildFile; fileRef = 21362C2C1C19451A007B42F5 /* Rake.m */; };
-		21362C2F1C194524007B42F5 /* NSData+RKBase64.m in Sources */ = {isa = PBXBuildFile; fileRef = 21362C2E1C194524007B42F5 /* NSData+RKBase64.m */; };
+		315E062C1C50DFC9005CB28E /* Base64Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E062B1C50DFC9005CB28E /* Base64Test.m */; };
+		315E06371C50EA1D005CB28E /* Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = 315E06351C50EA1D005CB28E /* Base64.h */; };
+		315E06381C50EA1D005CB28E /* Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E06361C50EA1D005CB28E /* Base64.m */; };
 		3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 3177B9F61C4CEE93002523FF /* RakeTest.m */; };
 		3177B9FC1C4CF133002523FF /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177B9FB1C4CF133002523FF /* Rake.framework */; };
 		318272641C4CA61000CAC16B /* Rake.h in Headers */ = {isa = PBXBuildFile; fileRef = 21362C2B1C194511007B42F5 /* Rake.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		318272651C4CA62500CAC16B /* NSData+RKBase64.h in Headers */ = {isa = PBXBuildFile; fileRef = 21362C301C19452A007B42F5 /* NSData+RKBase64.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		318272661C4CA63F00CAC16B /* RakeConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		318272921C4CBC7100CAC16B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 318272911C4CBC7100CAC16B /* SystemConfiguration.framework */; };
 		318272941C4CBC7700CAC16B /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 318272931C4CBC7700CAC16B /* CoreTelephony.framework */; };
@@ -35,21 +36,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
-		21362C261C1943E7007B42F5 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 74B5E3E348F48EF8C6D38BCA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 21362C121C1943D5007B42F5;
-			remoteInfo = Rake;
-		};
-		3177B9F91C4CF10D002523FF /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 74B5E3E348F48EF8C6D38BCA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 318272681C4CA85300CAC16B;
-			remoteInfo = Framework;
-		};
-		318272991C4CC19800CAC16B /* PBXContainerItemProxy */ = {
+		315E06391C50ED02005CB28E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
 			containerPortal = 74B5E3E348F48EF8C6D38BCA /* Project object */;
 			proxyType = 1;
@@ -76,9 +63,10 @@
 		21362C241C1943E7007B42F5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		21362C2B1C194511007B42F5 /* Rake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rake.h; sourceTree = "<group>"; };
 		21362C2C1C19451A007B42F5 /* Rake.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Rake.m; sourceTree = "<group>"; };
-		21362C2E1C194524007B42F5 /* NSData+RKBase64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "NSData+RKBase64.m"; sourceTree = "<group>"; };
-		21362C301C19452A007B42F5 /* NSData+RKBase64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "NSData+RKBase64.h"; sourceTree = "<group>"; };
 		21362C311C194532007B42F5 /* Rake-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Rake-Prefix.pch"; sourceTree = "<group>"; };
+		315E062B1C50DFC9005CB28E /* Base64Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base64Test.m; sourceTree = "<group>"; };
+		315E06351C50EA1D005CB28E /* Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base64.h; sourceTree = "<group>"; };
+		315E06361C50EA1D005CB28E /* Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base64.m; sourceTree = "<group>"; };
 		3177B9F61C4CEE93002523FF /* RakeTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeTest.m; sourceTree = "<group>"; };
 		3177B9FB1C4CF133002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = release/Rake.framework; sourceTree = "<group>"; };
 		318272911C4CBC7100CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -113,11 +101,11 @@
 			isa = PBXGroup;
 			children = (
 				21362C311C194532007B42F5 /* Rake-Prefix.pch */,
-				21362C301C19452A007B42F5 /* NSData+RKBase64.h */,
-				21362C2E1C194524007B42F5 /* NSData+RKBase64.m */,
 				21362C2C1C19451A007B42F5 /* Rake.m */,
 				21362C2B1C194511007B42F5 /* Rake.h */,
 				74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */,
+				315E06351C50EA1D005CB28E /* Base64.h */,
+				315E06361C50EA1D005CB28E /* Base64.m */,
 			);
 			path = Rake;
 			sourceTree = "<group>";
@@ -128,6 +116,7 @@
 				3177B9F81C4CF059002523FF /* Supporting Files */,
 				74B5E23E46A5597C10D63E79 /* Library */,
 				3177B9F61C4CEE93002523FF /* RakeTest.m */,
+				315E062B1C50DFC9005CB28E /* Base64Test.m */,
 			);
 			path = RakeTests;
 			sourceTree = "<group>";
@@ -187,7 +176,7 @@
 			files = (
 				318272641C4CA61000CAC16B /* Rake.h in Headers */,
 				318272661C4CA63F00CAC16B /* RakeConfig.h in Headers */,
-				318272651C4CA62500CAC16B /* NSData+RKBase64.h in Headers */,
+				315E06371C50EA1D005CB28E /* Base64.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,8 +213,6 @@
 			buildRules = (
 			);
 			dependencies = (
-				21362C271C1943E7007B42F5 /* PBXTargetDependency */,
-				3177B9FA1C4CF10D002523FF /* PBXTargetDependency */,
 			);
 			name = RakeTests;
 			productName = RakeTests;
@@ -314,7 +301,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				21362C2F1C194524007B42F5 /* NSData+RKBase64.m in Sources */,
+				315E06381C50EA1D005CB28E /* Base64.m in Sources */,
 				21362C2D1C19451A007B42F5 /* Rake.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -323,6 +310,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				315E062C1C50DFC9005CB28E /* Base64Test.m in Sources */,
 				3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */,
 				74B5E863FB49D25D68FFC639 /* RakeClientTestSentinelShuttle.m in Sources */,
 			);
@@ -331,20 +319,10 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
-		21362C271C1943E7007B42F5 /* PBXTargetDependency */ = {
+		315E063A1C50ED02005CB28E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
 			target = 21362C121C1943D5007B42F5 /* Rake */;
-			targetProxy = 21362C261C1943E7007B42F5 /* PBXContainerItemProxy */;
-		};
-		3177B9FA1C4CF10D002523FF /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 318272681C4CA85300CAC16B /* Framework */;
-			targetProxy = 3177B9F91C4CF10D002523FF /* PBXContainerItemProxy */;
-		};
-		3182729A1C4CC19800CAC16B /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 21362C121C1943D5007B42F5 /* Rake */;
-			targetProxy = 318272991C4CC19800CAC16B /* PBXContainerItemProxy */;
+			targetProxy = 315E06391C50ED02005CB28E /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

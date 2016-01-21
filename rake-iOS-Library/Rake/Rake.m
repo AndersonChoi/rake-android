@@ -14,7 +14,7 @@
 #import <SystemConfiguration/SystemConfiguration.h>
 
 #import <Rake.h>
-#import <NSData+RKBase64.h>
+#import <Base64.h>
 
 #ifdef RAKE_LOG
 #define RakeLog(...) NSLog(__VA_ARGS__)
@@ -385,7 +385,7 @@ static NSArray* defaultValueBlackList = nil;
     NSString *b64String = @"";
     NSData *data = [self JSONSerializeObject:array];
     if (data) {
-        b64String = [data rk_base64EncodedString];
+        b64String = [Base64 rk_base64EncodedString:data];
         b64String = (id)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
                                                                                   (CFStringRef)b64String,
                                                                                   NULL,
