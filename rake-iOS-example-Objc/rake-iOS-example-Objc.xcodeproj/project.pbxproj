@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		3177B9FE1C4DCD47002523FF /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177B9FD1C4DCD47002523FF /* Rake.framework */; };
+		315E06241C50C720005CB28E /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 315E06231C50C720005CB28E /* Rake.framework */; };
 		318272821C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 318272811C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m */; };
 		3182728D1C4CB7DF00CAC16B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */; };
 		3182728F1C4CB7E600CAC16B /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3182728E1C4CB7E600CAC16B /* CoreTelephony.framework */; };
@@ -20,7 +20,7 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		3177B9FD1C4DCD47002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = "../rake-iOS-Library/release/Rake.framework"; sourceTree = "<group>"; };
+		315E06231C50C720005CB28E /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = "../rake-iOS-Library/release/Rake.framework"; sourceTree = "<group>"; };
 		318272801C4CB10700CAC16B /* RakeClientTestSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientTestSentinelShuttle.h; sourceTree = "<group>"; };
 		318272811C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientTestSentinelShuttle.m; sourceTree = "<group>"; };
 		3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -43,8 +43,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				3182728F1C4CB7E600CAC16B /* CoreTelephony.framework in Frameworks */,
+				315E06241C50C720005CB28E /* Rake.framework in Frameworks */,
 				3182728D1C4CB7DF00CAC16B /* SystemConfiguration.framework in Frameworks */,
-				3177B9FE1C4DCD47002523FF /* Rake.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,11 +54,12 @@
 		3177B9F31C4CE7FF002523FF /* Framework */ = {
 			isa = PBXGroup;
 			children = (
-				3177B9FD1C4DCD47002523FF /* Rake.framework */,
+				315E06231C50C720005CB28E /* Rake.framework */,
 				3182728E1C4CB7E600CAC16B /* CoreTelephony.framework */,
 				3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */,
 			);
 			name = Framework;
+			path = ..;
 			sourceTree = "<group>";
 		};
 		318272781C4CB0B900CAC16B /* Library */ = {
@@ -81,7 +82,6 @@
 		31DBE6451C4CA1D8005D15DC = {
 			isa = PBXGroup;
 			children = (
-				3177B9F31C4CE7FF002523FF /* Framework */,
 				31DBE6501C4CA1D8005D15DC /* rake-iOS-example-Objc */,
 				31DBE64F1C4CA1D8005D15DC /* Products */,
 			);
@@ -98,6 +98,7 @@
 		31DBE6501C4CA1D8005D15DC /* rake-iOS-example-Objc */ = {
 			isa = PBXGroup;
 			children = (
+				3177B9F31C4CE7FF002523FF /* Framework */,
 				318272781C4CB0B900CAC16B /* Library */,
 				31DBE6541C4CA1D8005D15DC /* AppDelegate.h */,
 				31DBE6551C4CA1D8005D15DC /* AppDelegate.m */,
@@ -242,6 +243,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/../rake-iOS-Library/release";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -256,7 +258,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				LIBRARY_SEARCH_PATHS = "";
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				OTHER_LDFLAGS = (
@@ -289,6 +293,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/../rake-iOS-Library/release";
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -297,7 +302,9 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
+				HEADER_SEARCH_PATHS = "";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.2;
+				LIBRARY_SEARCH_PATHS = "";
 				MTL_ENABLE_DEBUG_INFO = NO;
 				OTHER_LDFLAGS = (
 					"-ObjC",
@@ -311,21 +318,19 @@
 		31DBE6661C4CA1D8005D15DC /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
-					"$(PROJECT_DIR)/rake-iOS-example-Objc/Library",
 				);
+				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = "rake-iOS-example-Objc/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rake-iOS-example-Objc/Library",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"-ObjC",
 					"-all_load",
@@ -339,21 +344,19 @@
 		31DBE6671C4CA1D8005D15DC /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = YES;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
-					"$(PROJECT_DIR)/rake-iOS-example-Objc/Library",
 				);
+				HEADER_SEARCH_PATHS = "";
 				INFOPLIST_FILE = "rake-iOS-example-Objc/Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 7.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/rake-iOS-example-Objc/Library",
-				);
+				LIBRARY_SEARCH_PATHS = "$(inherited)";
 				OTHER_LDFLAGS = (
 					"-ObjC",
 					"-all_load",
