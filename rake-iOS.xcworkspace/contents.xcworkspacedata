@@ -2,9 +2,12 @@
 <Workspace
    version = "1.0">
    <FileRef
-      location = "group:rake-iOS-example-Objc/rake-iOS-example-Objc.xcodeproj">
+      location = "group:rake-iOS-Library/rake-iOS-Library.xcodeproj">
    </FileRef>
    <FileRef
-      location = "group:rake-iOS-Library/rake-iOS-Library.xcodeproj">
+      location = "group:rake-iOS-example-Swift/rake-iOS-example-Swift.xcodeproj">
+   </FileRef>
+   <FileRef
+      location = "group:rake-iOS-example-Objc/rake-iOS-example-Objc.xcodeproj">
    </FileRef>
 </Workspace>

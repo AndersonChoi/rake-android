@@ -1,0 +1,368 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		3177BA6C1C5084EF002523FF /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3177BA6B1C5084EF002523FF /* AppDelegate.swift */; };
+		3177BA6E1C5084EF002523FF /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3177BA6D1C5084EF002523FF /* ViewController.swift */; };
+		3177BA711C5084EF002523FF /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3177BA6F1C5084EF002523FF /* Main.storyboard */; };
+		3177BA731C5084EF002523FF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3177BA721C5084EF002523FF /* Assets.xcassets */; };
+		3177BA761C5084EF002523FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 3177BA741C5084EF002523FF /* LaunchScreen.storyboard */; };
+		3177BA8A1C509568002523FF /* RakeClientTestSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 3177BA891C509568002523FF /* RakeClientTestSentinelShuttle.m */; };
+		3177BA8C1C5095D2002523FF /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177BA8B1C5095D2002523FF /* CoreTelephony.framework */; };
+		3177BA8E1C5095E2002523FF /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177BA8D1C5095E2002523FF /* SystemConfiguration.framework */; };
+		3177BA931C50A42E002523FF /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177BA921C50A42E002523FF /* Rake.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		3177BA681C5084EF002523FF /* rake-iOS-example-Swift.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "rake-iOS-example-Swift.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3177BA6B1C5084EF002523FF /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		3177BA6D1C5084EF002523FF /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
+		3177BA701C5084EF002523FF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		3177BA721C5084EF002523FF /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		3177BA751C5084EF002523FF /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		3177BA771C5084EF002523FF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		3177BA801C5086ED002523FF /* rake-iOS-example-Swift-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "rake-iOS-example-Swift-Bridging-Header.h"; sourceTree = SOURCE_ROOT; };
+		3177BA881C509568002523FF /* RakeClientTestSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientTestSentinelShuttle.h; sourceTree = "<group>"; };
+		3177BA891C509568002523FF /* RakeClientTestSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientTestSentinelShuttle.m; sourceTree = "<group>"; };
+		3177BA8B1C5095D2002523FF /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		3177BA8D1C5095E2002523FF /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
+		3177BA921C50A42E002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = "../../rake-iOS-Library/release/Rake.framework"; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3177BA651C5084EF002523FF /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3177BA8E1C5095E2002523FF /* SystemConfiguration.framework in Frameworks */,
+				3177BA8C1C5095D2002523FF /* CoreTelephony.framework in Frameworks */,
+				3177BA931C50A42E002523FF /* Rake.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		3177BA5F1C5084EF002523FF = {
+			isa = PBXGroup;
+			children = (
+				3177BA6A1C5084EF002523FF /* rake-iOS-example-Swift */,
+				3177BA691C5084EF002523FF /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		3177BA691C5084EF002523FF /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				3177BA681C5084EF002523FF /* rake-iOS-example-Swift.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		3177BA6A1C5084EF002523FF /* rake-iOS-example-Swift */ = {
+			isa = PBXGroup;
+			children = (
+				3177BA7D1C508539002523FF /* Framework */,
+				3177BA801C5086ED002523FF /* rake-iOS-example-Swift-Bridging-Header.h */,
+				3177BA861C509568002523FF /* Library */,
+				3177BA6B1C5084EF002523FF /* AppDelegate.swift */,
+				3177BA6D1C5084EF002523FF /* ViewController.swift */,
+				3177BA6F1C5084EF002523FF /* Main.storyboard */,
+				3177BA721C5084EF002523FF /* Assets.xcassets */,
+				3177BA741C5084EF002523FF /* LaunchScreen.storyboard */,
+				3177BA771C5084EF002523FF /* Info.plist */,
+			);
+			path = "rake-iOS-example-Swift";
+			sourceTree = "<group>";
+		};
+		3177BA7D1C508539002523FF /* Framework */ = {
+			isa = PBXGroup;
+			children = (
+				3177BA921C50A42E002523FF /* Rake.framework */,
+				3177BA8D1C5095E2002523FF /* SystemConfiguration.framework */,
+				3177BA8B1C5095D2002523FF /* CoreTelephony.framework */,
+			);
+			name = Framework;
+			sourceTree = "<group>";
+		};
+		3177BA861C509568002523FF /* Library */ = {
+			isa = PBXGroup;
+			children = (
+				3177BA871C509568002523FF /* Shuttle */,
+			);
+			path = Library;
+			sourceTree = "<group>";
+		};
+		3177BA871C509568002523FF /* Shuttle */ = {
+			isa = PBXGroup;
+			children = (
+				3177BA881C509568002523FF /* RakeClientTestSentinelShuttle.h */,
+				3177BA891C509568002523FF /* RakeClientTestSentinelShuttle.m */,
+			);
+			path = Shuttle;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3177BA671C5084EF002523FF /* rake-iOS-example-Swift */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3177BA7A1C5084EF002523FF /* Build configuration list for PBXNativeTarget "rake-iOS-example-Swift" */;
+			buildPhases = (
+				3177BA641C5084EF002523FF /* Sources */,
+				3177BA651C5084EF002523FF /* Frameworks */,
+				3177BA661C5084EF002523FF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = "rake-iOS-example-Swift";
+			productName = "rake-iOS-example-Swift";
+			productReference = 3177BA681C5084EF002523FF /* rake-iOS-example-Swift.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		3177BA601C5084EF002523FF /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 0720;
+				LastUpgradeCheck = 0720;
+				ORGANIZATIONNAME = skpdi;
+				TargetAttributes = {
+					3177BA671C5084EF002523FF = {
+						CreatedOnToolsVersion = 7.2;
+					};
+				};
+			};
+			buildConfigurationList = 3177BA631C5084EF002523FF /* Build configuration list for PBXProject "rake-iOS-example-Swift" */;
+			compatibilityVersion = "Xcode 3.2";
+			developmentRegion = English;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 3177BA5F1C5084EF002523FF;
+			productRefGroup = 3177BA691C5084EF002523FF /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3177BA671C5084EF002523FF /* rake-iOS-example-Swift */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		3177BA661C5084EF002523FF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3177BA761C5084EF002523FF /* LaunchScreen.storyboard in Resources */,
+				3177BA731C5084EF002523FF /* Assets.xcassets in Resources */,
+				3177BA711C5084EF002523FF /* Main.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		3177BA641C5084EF002523FF /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3177BA6E1C5084EF002523FF /* ViewController.swift in Sources */,
+				3177BA6C1C5084EF002523FF /* AppDelegate.swift in Sources */,
+				3177BA8A1C509568002523FF /* RakeClientTestSentinelShuttle.m in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		3177BA6F1C5084EF002523FF /* Main.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3177BA701C5084EF002523FF /* Base */,
+			);
+			name = Main.storyboard;
+			sourceTree = "<group>";
+		};
+		3177BA741C5084EF002523FF /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				3177BA751C5084EF002523FF /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		3177BA781C5084EF002523FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/../rake-iOS-Library/release";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				LIBRARY_SEARCH_PATHS = "";
+				MTL_ENABLE_DEBUG_INFO = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		3177BA791C5084EF002523FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++0x";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = "$(PROJECT_DIR)/../rake-iOS-Library/release";
+				GCC_C_LANGUAGE_STANDARD = gnu99;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 9.2;
+				LIBRARY_SEARCH_PATHS = "";
+				MTL_ENABLE_DEBUG_INFO = NO;
+				SDKROOT = iphoneos;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		3177BA7B1C5084EF002523FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ENABLE_MODULES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rake-iOS-example-Swift",
+				);
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = "rake-iOS-example-Swift/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skp.rake.example.rake-iOS-example-Swift";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_INCLUDE_PATHS = "";
+				SWIFT_OBJC_BRIDGING_HEADER = "rake-iOS-example-Swift-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Debug;
+		};
+		3177BA7C1C5084EF002523FF /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = NO;
+				CLANG_ENABLE_MODULES = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/rake-iOS-example-Swift",
+				);
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = "rake-iOS-example-Swift/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				OTHER_LDFLAGS = (
+					"-all_load",
+					"-ObjC",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = "com.skp.rake.example.rake-iOS-example-Swift";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "rake-iOS-example-Swift-Bridging-Header.h";
+				USER_HEADER_SEARCH_PATHS = "";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		3177BA631C5084EF002523FF /* Build configuration list for PBXProject "rake-iOS-example-Swift" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3177BA781C5084EF002523FF /* Debug */,
+				3177BA791C5084EF002523FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3177BA7A1C5084EF002523FF /* Build configuration list for PBXNativeTarget "rake-iOS-example-Swift" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3177BA7B1C5084EF002523FF /* Debug */,
+				3177BA7C1C5084EF002523FF /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 3177BA601C5084EF002523FF /* Project object */;
+}
