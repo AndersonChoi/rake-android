@@ -15,6 +15,7 @@
 
 #import <Rake.h>
 #import <Base64.h>
+#import <RakeExceptionHandler.h>
 
 #ifdef RAKE_LOG
 #define RakeLog(...) NSLog(__VA_ARGS__)
@@ -29,6 +30,10 @@
 #endif
 
 #define USE_NO_IFA
+
+
+#define VERSION @"1.8"
+
 
 @interface Rake () <UIAlertViewDelegate> {
     NSUInteger _flushInterval;
@@ -119,6 +124,9 @@ static NSArray* defaultValueBlackList = nil;
         NSLog(@"%@ warning empty api token", self);
     }
     if (self = [self init]) {
+        // Install uncaught exception handlers first
+        [[RakeExceptionHandler sharedHandler] addRakeInstance:self];
+        
         self.apiToken = apiToken;
         _flushInterval = flushInterval;
         self.flushOnBackground = YES;
@@ -271,6 +279,17 @@ static NSArray* defaultValueBlackList = nil;
 //    return radio;
 //}
 #endif
+
+- (NSString *)libVersion
+{
+    return [Rake libVersion];
+}
+
++ (NSString *)libVersion
+{
+    return VERSION;
+}
+
 
 - (NSMutableDictionary *)collectAutomaticProperties
 {

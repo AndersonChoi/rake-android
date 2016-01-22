@@ -26,6 +26,9 @@
 		315E062C1C50DFC9005CB28E /* Base64Test.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E062B1C50DFC9005CB28E /* Base64Test.m */; };
 		315E06371C50EA1D005CB28E /* Base64.h in Headers */ = {isa = PBXBuildFile; fileRef = 315E06351C50EA1D005CB28E /* Base64.h */; };
 		315E06381C50EA1D005CB28E /* Base64.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E06361C50EA1D005CB28E /* Base64.m */; };
+		315E063E1C51BD34005CB28E /* MemoryLeakTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E063D1C51BD34005CB28E /* MemoryLeakTest.m */; };
+		315E06E81C51EC20005CB28E /* RakeExceptionHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */; };
+		315E06E91C51EC20005CB28E /* RakeExceptionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */; };
 		3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 3177B9F61C4CEE93002523FF /* RakeTest.m */; };
 		3177B9FC1C4CF133002523FF /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177B9FB1C4CF133002523FF /* Rake.framework */; };
 		318272641C4CA61000CAC16B /* Rake.h in Headers */ = {isa = PBXBuildFile; fileRef = 21362C2B1C194511007B42F5 /* Rake.h */; settings = {ATTRIBUTES = (Public, ); }; };
@@ -67,6 +70,9 @@
 		315E062B1C50DFC9005CB28E /* Base64Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base64Test.m; sourceTree = "<group>"; };
 		315E06351C50EA1D005CB28E /* Base64.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Base64.h; sourceTree = "<group>"; };
 		315E06361C50EA1D005CB28E /* Base64.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base64.m; sourceTree = "<group>"; };
+		315E063D1C51BD34005CB28E /* MemoryLeakTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MemoryLeakTest.m; sourceTree = "<group>"; };
+		315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeExceptionHandler.h; sourceTree = "<group>"; };
+		315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeExceptionHandler.m; sourceTree = "<group>"; };
 		3177B9F61C4CEE93002523FF /* RakeTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeTest.m; sourceTree = "<group>"; };
 		3177B9FB1C4CF133002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = release/Rake.framework; sourceTree = "<group>"; };
 		318272911C4CBC7100CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -101,11 +107,13 @@
 			isa = PBXGroup;
 			children = (
 				21362C311C194532007B42F5 /* Rake-Prefix.pch */,
-				21362C2C1C19451A007B42F5 /* Rake.m */,
 				21362C2B1C194511007B42F5 /* Rake.h */,
+				21362C2C1C19451A007B42F5 /* Rake.m */,
 				74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */,
 				315E06351C50EA1D005CB28E /* Base64.h */,
 				315E06361C50EA1D005CB28E /* Base64.m */,
+				315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */,
+				315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */,
 			);
 			path = Rake;
 			sourceTree = "<group>";
@@ -117,6 +125,7 @@
 				74B5E23E46A5597C10D63E79 /* Library */,
 				3177B9F61C4CEE93002523FF /* RakeTest.m */,
 				315E062B1C50DFC9005CB28E /* Base64Test.m */,
+				315E063D1C51BD34005CB28E /* MemoryLeakTest.m */,
 			);
 			path = RakeTests;
 			sourceTree = "<group>";
@@ -174,6 +183,7 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				315E06E81C51EC20005CB28E /* RakeExceptionHandler.h in Headers */,
 				318272641C4CA61000CAC16B /* Rake.h in Headers */,
 				318272661C4CA63F00CAC16B /* RakeConfig.h in Headers */,
 				315E06371C50EA1D005CB28E /* Base64.h in Headers */,
@@ -302,6 +312,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				315E06381C50EA1D005CB28E /* Base64.m in Sources */,
+				315E06E91C51EC20005CB28E /* RakeExceptionHandler.m in Sources */,
 				21362C2D1C19451A007B42F5 /* Rake.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -311,6 +322,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				315E062C1C50DFC9005CB28E /* Base64Test.m in Sources */,
+				315E063E1C51BD34005CB28E /* MemoryLeakTest.m in Sources */,
 				3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */,
 				74B5E863FB49D25D68FFC639 /* RakeClientTestSentinelShuttle.m in Sources */,
 			);

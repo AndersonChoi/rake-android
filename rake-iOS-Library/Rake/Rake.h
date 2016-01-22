@@ -299,7 +299,13 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
 
 - (void)createAlias:(NSString *)alias forDistinctID:(NSString *)distinctID;
 
+
+- (NSString *)libVersion;
++ (NSString *)libVersion;
+
 @end
+
+
 
 /*!
  @protocol
