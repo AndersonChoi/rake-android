@@ -717,8 +717,8 @@ static NSArray* defaultValueBlackList = nil;
 {
     dispatch_async(dispatch_get_main_queue(), ^{
         if (self.timer) {
-            [self.timer invalidate];
             RakeDebug(@"%@ stopped flush timer: %@", self, self.timer);
+            [self.timer invalidate];
         }
         self.timer = nil;
     });
@@ -995,13 +995,18 @@ static NSArray* defaultValueBlackList = nil;
 {
     RakeDebug(@"%@ did enter background", self);
 
-    self.taskId = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
-        RakeDebug(@"%@ flush %lu cut short", self, (unsigned long)self.taskId);
-        [[UIApplication sharedApplication] endBackgroundTask:self.taskId];
+    __block UIBackgroundTaskIdentifier backgroundTask = [[UIApplication sharedApplication] beginBackgroundTaskWithExpirationHandler:^{
+        RakeDebug(@"%@ flush %lu cut short", self, (unsigned long) backgroundTask);
+        [[UIApplication sharedApplication] endBackgroundTask:backgroundTask];
         self.taskId = UIBackgroundTaskInvalid;
     }];
+    self.taskId = backgroundTask;
     RakeDebug(@"%@ starting background cleanup task %lu", self, (unsigned long)self.taskId);
-
+    
+    if (self.flushOnBackground) {
+        [self flush];
+    }
+    
     dispatch_async(_serialQueue, ^{
         [self archive];
         RakeDebug(@"%@ ending background cleanup task %lu", self, (unsigned long)self.taskId);
@@ -1015,11 +1020,24 @@ static NSArray* defaultValueBlackList = nil;
 - (void)applicationWillEnterForeground:(NSNotificationCenter *)notification
 {
     RakeDebug(@"%@ will enter foreground", self);
-    [self unarchiveAndFlush];
+    dispatch_async(self.serialQueue, ^{
+        if (self.taskId != UIBackgroundTaskInvalid) {
+            [[UIApplication sharedApplication] endBackgroundTask:self.taskId];
+            self.taskId = UIBackgroundTaskInvalid;
+            [self updateNetworkActivityIndicator:NO];
+        }
+    });
+    
+//    [self unarchiveAndFlush];
 }
 
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
+    RakeDebug(@"%@ will applicationWillTerminate", self);
+    dispatch_async(_serialQueue, ^{
+        [self archive];
+    });
+
 }
 
 @end

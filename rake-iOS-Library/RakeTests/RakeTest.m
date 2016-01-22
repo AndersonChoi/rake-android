@@ -19,6 +19,7 @@
     [super setUp];
     // Put setup code here. This method is called before the invocation of each test method in the class.
     self.rake =[Rake sharedInstanceWithToken:@"59c1dacfdce83f9c90214748f1db107185749a43" andUseDevServer:YES];
+//    [self.rake performSelector:@selector(kill:) withObject:nil withObject:nil];
 }
 
 - (void)tearDown {
@@ -34,6 +35,7 @@
     
     [self.rake track: [shuttle toNSDictionary]];
     [self.rake flush];
+   
     
     [NSThread sleepForTimeInterval:0.2f];
     NSLog(@"Flush");
