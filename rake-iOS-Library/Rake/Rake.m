@@ -141,8 +141,8 @@ static NSArray* defaultValueBlackList = nil;
         NSString *label = [NSString stringWithFormat:@"com.rake.%@.%p", apiToken, self];
         self.serialQueue = dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_SERIAL);
 
-        self.localDateFormatter = [[NSDateFormatter alloc] init];
-        self.baseDateFormatter = [[NSDateFormatter alloc] init];
+        self.localDateFormatter = [[NSDateFormatter alloc] init]; //Device Time
+        self.baseDateFormatter = [[NSDateFormatter alloc] init]; //server Location time
         [_localDateFormatter setDateFormat:@"yyyyMMddHHmmssSSS"];
         [_baseDateFormatter setLocale:[[NSLocale alloc] initWithLocaleIdentifier:@"en_US_POSIX"]];
         [_baseDateFormatter setDateFormat:@"yyyyMMddHHmmssSSS"];
@@ -344,7 +344,7 @@ static NSArray* defaultValueBlackList = nil;
     NSError *error = nil;
     NSData *data = nil;
     @try {
-        data = [NSJSONSerialization dataWithJSONObject:coercedObj options:0 error:&error];
+        data = [NSJSONSerialization dataWithJSONObject:coercedObj options:(NSJSONWritingOptions)0 error:&error];
     }
     @catch (NSException *exception) {
         NSLog(@"%@ exception encoding api data: %@", self, exception);
@@ -406,7 +406,7 @@ static NSArray* defaultValueBlackList = nil;
     if (data) {
         b64String = [Base64 rk_base64EncodedString:data];
         b64String = (id)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
-                                                                                  (CFStringRef)b64String,
+                                                                                  (__bridge CFStringRef)b64String,
                                                                                   NULL,
                                                                                   CFSTR("!*'();:@&=+$,/?%#[]"),
                                                                                   kCFStringEncodingUTF8));
@@ -480,12 +480,8 @@ static NSArray* defaultValueBlackList = nil;
     dispatch_async(self.serialQueue, ^{
         NSMutableDictionary *p = [NSMutableDictionary dictionary];
 
-
-
-
         // 1. super properties
         [p addEntriesFromDictionary:self.superProperties];
-
 
         // 3-1. sentinel(schema) meta data
 //        NSString* schemaId;
