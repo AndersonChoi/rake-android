@@ -694,6 +694,7 @@ static NSArray* defaultValueBlackList = nil;
     @synchronized(self) {
         _flushInterval = interval;
     }
+    [self flush];
     [self startFlushTimer];
 }
 
