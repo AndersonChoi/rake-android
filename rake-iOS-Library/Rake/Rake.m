@@ -17,6 +17,7 @@
 #import <Base64.h>
 #import <RakeExceptionHandler.h>
 #import <RakeClientMetricSentinelShuttle.h>
+#import <RakeConfig.h>
 
 
 #ifdef RAKE_LOG
@@ -107,7 +108,7 @@ static NSArray* defaultValueBlackList = nil;
         sharedInstance.isDevServer = isDevServer;
         if(isDevServer){
             [sharedInstance setServerURL:@"https://pg.rake.skplanet.com:8443/log"];
-            sharedInstance.flushInterval = 5;
+            sharedInstance.flushInterval = 10;
         } else {
             [sharedInstance setServerURL:@"https://rake.skplanet.com:8443/log/"];
         }
@@ -499,12 +500,12 @@ static NSArray* defaultValueBlackList = nil;
     [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
     [trackMetric rake_protocol_version:@"V1"];
     
-    [self track:[trackMetric toNSDictionary] ApiToken:METRIC_TOKEN_DEV Queue:self.metricsQueue];
+    [self track:[trackMetric toNSDictionary] ApiToken:METRIC_TOKEN_DEV Queue:_metricsQueue];
     
 }
 - (void)track:(NSDictionary *)properties  {
     @try {
-        [self track:properties ApiToken:self.apiToken Queue:self.eventsQueue];
+        [self track:properties ApiToken:self.apiToken Queue:_eventsQueue];
     }
     @catch (NSException *exception) {
         RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
@@ -518,7 +519,7 @@ static NSArray* defaultValueBlackList = nil;
         [self trackMetric:trackMetric];
     }
 }
-- (void)track:(NSDictionary *)properties ApiToken:(NSString *)apiToken Queue:(NSMutableArray *)Queue
+- (void)track:(NSDictionary *)properties ApiToken:(NSString *)apiToken Queue:(NSMutableArray *)queue
 {
 
     properties = [properties copy];
@@ -623,9 +624,9 @@ static NSArray* defaultValueBlackList = nil;
 
         RakeLog(@"%@ queueing event: %@", self, e);
 
-        [Queue addObject:e];
-        if ([Queue count] > MAX_TRACK_COUNT) {
-            [Queue removeObjectAtIndex:0];
+        [queue addObject:e];
+        if ([queue count] > MAX_TRACK_COUNT) {
+            [queue removeObjectAtIndex:0];
         }
         if ([Rake inBackground]) {
             [self archiveEvents];
@@ -856,12 +857,14 @@ static NSArray* defaultValueBlackList = nil;
         // statusCode might be 0 if response == nil
         NSInteger statusCode = [response statusCode];
         [trackMetric server_response_code:@(statusCode)];
-
+        [trackMetric status:@"ERROR"];
         if (statusCode == 500) {
             NSLog(@"%@ internal server error: %ld", self, (long)statusCode);
             [trackMetric status:@"RETRY"];
             [self trackMetric:trackMetric];
             break;
+        } else if(statusCode == 400) {
+            NSLog(@"%@ server return BAD Request: %ld", self, (long)statusCode);
         }
 
         NSLog(@"response code: %ld", (long)statusCode);
@@ -874,12 +877,20 @@ static NSArray* defaultValueBlackList = nil;
         } else if ([responseBody intValue] == 1) {
             NSLog(@"%@ %@ api accepted items", self, endpoint);
             [trackMetric status:@"DONE"];
+        } else {
+            NSLog(@"%@ %@ api no response Body", self, endpoint);
+            
         }
         
         [queue removeObjectsInArray:batch];
 
         [trackMetric server_response_body:responseBody];
-        [self trackMetric:trackMetric];
+        if(queue == _eventsQueue) {
+            [self trackMetric:trackMetric];
+            RakeDebug(@"_eventsQueue sent");
+        } else {
+            RakeDebug(@"_metricsQueue sent");
+        }
         
     }
 }
