@@ -23,6 +23,7 @@
 
 /* Begin PBXBuildFile section */
 		21362C2D1C19451A007B42F5 /* Rake.m in Sources */ = {isa = PBXBuildFile; fileRef = 21362C2C1C19451A007B42F5 /* Rake.m */; };
+		3110FA8A1C572F1F00E847BD /* MetricTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 3110FA891C572F1F00E847BD /* MetricTest.m */; };
 		311551D21C5203340068D660 /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3177B9FB1C4CF133002523FF /* Rake.framework */; };
 		311551D51C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h in Headers */ = {isa = PBXBuildFile; fileRef = 311551D31C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h */; };
 		311551D61C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 311551D41C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m */; };
@@ -76,6 +77,7 @@
 		21362C2B1C194511007B42F5 /* Rake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rake.h; sourceTree = "<group>"; };
 		21362C2C1C19451A007B42F5 /* Rake.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Rake.m; sourceTree = "<group>"; };
 		21362C311C194532007B42F5 /* Rake-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Rake-Prefix.pch"; sourceTree = "<group>"; };
+		3110FA891C572F1F00E847BD /* MetricTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MetricTest.m; sourceTree = "<group>"; };
 		311551D31C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientMetricSentinelShuttle.h; sourceTree = "<group>"; };
 		311551D41C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientMetricSentinelShuttle.m; sourceTree = "<group>"; };
 		315E062B1C50DFC9005CB28E /* Base64Test.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Base64Test.m; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 				3177B9F61C4CEE93002523FF /* RakeTest.m */,
 				315E062B1C50DFC9005CB28E /* Base64Test.m */,
 				315E063D1C51BD34005CB28E /* MemoryLeakTest.m */,
+				3110FA891C572F1F00E847BD /* MetricTest.m */,
 			);
 			path = RakeTests;
 			sourceTree = "<group>";
@@ -340,6 +343,7 @@
 				315E062C1C50DFC9005CB28E /* Base64Test.m in Sources */,
 				315E063E1C51BD34005CB28E /* MemoryLeakTest.m in Sources */,
 				3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */,
+				3110FA8A1C572F1F00E847BD /* MetricTest.m in Sources */,
 				74B5E863FB49D25D68FFC639 /* RakeClientTestSentinelShuttle.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

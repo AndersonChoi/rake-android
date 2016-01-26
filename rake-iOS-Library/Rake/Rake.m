@@ -792,7 +792,8 @@ static NSArray* defaultValueBlackList = nil;
             [trackMetric thread_info:exception.reason];
             [trackMetric status:@"ERROR"];
             [trackMetric action:@"flush"];
-            NSData *callStacks = [self JSONSerializableObjectForObject:exception.callStackSymbols];
+            NSLog(@"callstack:%@",exception.callStackSymbols);
+            NSData *callStacks = [self JSONSerializeObject:exception.callStackSymbols];
             NSString *strCallStacks = [[NSString alloc] initWithData:callStacks encoding:NSUTF8StringEncoding];
             [trackMetric stacktrace:strCallStacks];
             [self trackMetric:trackMetric];
@@ -812,9 +813,8 @@ static NSArray* defaultValueBlackList = nil;
 
 - (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint maxBatchSize:(NSUInteger)maxBatchSize
 {
-    
     while ([queue count] > 0) {
-
+    
         RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
         [trackMetric endpoint:endpoint];
         [trackMetric action:@"flush"];
@@ -946,8 +946,6 @@ static NSArray* defaultValueBlackList = nil;
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
     [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
 //    [request setValue:@"gzip" forHTTPHeaderField:@"Content-Encoding"];
-
-
 
     [request setHTTPMethod:@"POST"];
     [request setHTTPBody:[body dataUsingEncoding:NSUTF8StringEncoding]];
