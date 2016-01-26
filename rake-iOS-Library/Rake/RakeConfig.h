@@ -4,3 +4,5 @@
 #define BUILD_BRANCH @"develop"
 #define METRIC_TOKEN_DEV @""
 #define METRIC_TOKEN_LIVE @""
+#define DEV_SERVER_URL @"https://pg.rake.skplanet.com:8443/log"
+#define LIVE_SERVER_URL @"https://rake.skplanet.com:8443/log/"

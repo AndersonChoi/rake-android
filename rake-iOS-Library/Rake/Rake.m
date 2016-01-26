@@ -35,11 +35,8 @@
 #define USE_NO_IFA
 
 
-#define VERSION @"1.8"
+#define VERSION RAKE_LIB_VERSION
 #define MAX_TRACK_COUNT 500
-
-#define DEV_SERVER_URL @"https://pg.rake.skplanet.com:8443/log"
-#define LIVE_SERVER_URL @"https://rake.skplanet.com:8443/log/"
 
 @interface Rake () <UIAlertViewDelegate> {
     NSUInteger _flushInterval;
@@ -107,10 +104,10 @@ static NSArray* defaultValueBlackList = nil;
         sharedInstance = [[super alloc] initWithToken:apiToken andFlushInterval:60];
         sharedInstance.isDevServer = isDevServer;
         if(isDevServer){
-            [sharedInstance setServerURL:@"https://pg.rake.skplanet.com:8443/log"];
+            [sharedInstance setServerURL:DEV_SERVER_URL];
             sharedInstance.flushInterval = 10;
         } else {
-            [sharedInstance setServerURL:@"https://rake.skplanet.com:8443/log/"];
+            [sharedInstance setServerURL:LIVE_SERVER_URL];
         }
         defaultValueBlackList = @[];
     });
@@ -143,7 +140,7 @@ static NSArray* defaultValueBlackList = nil;
         _flushInterval = flushInterval;
         self.flushOnBackground = YES;
         //        self.showNetworkActivityIndicator = YES;
-        self.serverURL = @"https://pg.rake.skplanet.com:8443/log";
+        self.serverURL = LIVE_SERVER_URL;
 
         self.distinctId = [self defaultDistinctId];
         self.superProperties = [NSMutableDictionary dictionary];
