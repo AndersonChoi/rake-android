@@ -258,7 +258,7 @@ static NSArray* defaultValueBlackList = nil;
 
 - (NSString *)IFA
 {
-    NSString *ifa = @"UNKNOWN";
+    NSString *ifa = nil;
 
 #ifndef USE_NO_IFA
     Class ASIdentifierManagerClass = NSClassFromString(@"ASIdentifierManager");
