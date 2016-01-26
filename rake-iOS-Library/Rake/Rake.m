@@ -16,6 +16,8 @@
 #import <Rake.h>
 #import <Base64.h>
 #import <RakeExceptionHandler.h>
+#import <RakeClientMetricSentinelShuttle.h>
+
 
 #ifdef RAKE_LOG
 #define RakeLog(...) NSLog(__VA_ARGS__)
@@ -33,7 +35,10 @@
 
 
 #define VERSION @"1.8"
+#define MAX_TRACK_COUNT 500
 
+#define DEV_SERVER_URL @"https://pg.rake.skplanet.com:8443/log"
+#define LIVE_SERVER_URL @"https://rake.skplanet.com:8443/log/"
 
 @interface Rake () <UIAlertViewDelegate> {
     NSUInteger _flushInterval;
@@ -48,6 +53,8 @@
 @property (nonatomic, strong) NSMutableDictionary *automaticProperties; // mutable because we update $wifi when reachability changes
 @property (nonatomic, strong) NSTimer *timer;
 @property (nonatomic, strong) NSMutableArray *eventsQueue;
+@property (nonatomic, strong) NSMutableArray *metricsQueue;
+
 @property (nonatomic, assign) UIBackgroundTaskIdentifier taskId;
 @property (nonatomic, strong) dispatch_queue_t serialQueue;
 @property (nonatomic, assign) SCNetworkReachabilityRef reachability;
@@ -56,6 +63,7 @@
 @property (nonatomic, strong) NSDateFormatter *baseDateFormatter;
 @property (nonatomic) BOOL isDevServer;
 
+@property (nonatomic, strong) NSDate *appStartDate;
 @end
 
 
@@ -99,11 +107,13 @@ static NSArray* defaultValueBlackList = nil;
         sharedInstance.isDevServer = isDevServer;
         if(isDevServer){
             [sharedInstance setServerURL:@"https://pg.rake.skplanet.com:8443/log"];
+            sharedInstance.flushInterval = 5;
         } else {
             [sharedInstance setServerURL:@"https://rake.skplanet.com:8443/log/"];
         }
         defaultValueBlackList = @[];
     });
+    RakeLog(@"shared Instance created");
     return sharedInstance;
 }
 
@@ -126,6 +136,7 @@ static NSArray* defaultValueBlackList = nil;
     if (self = [self init]) {
         // Install uncaught exception handlers first
         [[RakeExceptionHandler sharedHandler] addRakeInstance:self];
+        self.appStartDate = [NSDate date];
         
         self.apiToken = apiToken;
         _flushInterval = flushInterval;
@@ -137,6 +148,8 @@ static NSArray* defaultValueBlackList = nil;
         self.superProperties = [NSMutableDictionary dictionary];
         self.automaticProperties = [self collectAutomaticProperties];
         self.eventsQueue = [NSMutableArray array];
+        self.metricsQueue = [NSMutableArray array];
+        
         self.taskId = UIBackgroundTaskInvalid;
         NSString *label = [NSString stringWithFormat:@"com.rake.%@.%p", apiToken, self];
         self.serialQueue = dispatch_queue_create([label UTF8String], DISPATCH_QUEUE_SERIAL);
@@ -207,7 +220,16 @@ static NSArray* defaultValueBlackList = nil;
 
     return self;
 }
-
+- (instancetype)initWithToken:(NSString *)apiToken andUseDevServer:(BOOL)isDevServer {
+    Rake *ret = [self initWithToken:apiToken andFlushInterval:isDevServer];
+    if(isDevServer){
+        [ret setServerURL:DEV_SERVER_URL];
+        ret.flushInterval = 5;
+    } else {
+        [ret setServerURL:LIVE_SERVER_URL];
+    }
+    return ret;
+}
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
@@ -466,16 +488,43 @@ static NSArray* defaultValueBlackList = nil;
     [self track:@{@"distinct_id": distinctID, @"alias": alias}];
 }
 
-
-- (void)track:(NSDictionary *)properties
+- (void)trackMetric:(RakeClientMetricSentinelShuttle *)trackMetric {
+    //Create Metric
+    
+    [trackMetric max_track_count:@(MAX_TRACK_COUNT)];
+    [trackMetric auto_flush_interval:@(self.flushInterval)];
+    [trackMetric auto_flush_onoff:@"enable"];
+    [trackMetric flush_method:@"HttpClient"];
+    [trackMetric flush_method:@"TIMER"];
+    [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
+    [trackMetric rake_protocol_version:@"V1"];
+    
+    [self track:[trackMetric toNSDictionary] ApiToken:METRIC_TOKEN_DEV Queue:self.metricsQueue];
+    
+}
+- (void)track:(NSDictionary *)properties  {
+    @try {
+        [self track:properties ApiToken:self.apiToken Queue:self.eventsQueue];
+    }
+    @catch (NSException *exception) {
+        RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
+        [trackMetric exception_type:exception.name];
+        [trackMetric thread_info:exception.reason];
+        [trackMetric status:@"ERROR"];
+        [trackMetric action:@"track"];
+        NSData *callStacks = [self JSONSerializableObjectForObject:exception.callStackSymbols];
+        NSString *strCallStacks = [[NSString alloc] initWithData:callStacks encoding:NSUTF8StringEncoding];
+        [trackMetric stacktrace:strCallStacks];
+        [self trackMetric:trackMetric];
+    }
+}
+- (void)track:(NSDictionary *)properties ApiToken:(NSString *)apiToken Queue:(NSMutableArray *)Queue
 {
 
     properties = [properties copy];
     [Rake assertPropertyTypes:properties];
 
     NSDate* now = [NSDate date];
-
-
 
     dispatch_async(self.serialQueue, ^{
         NSMutableDictionary *p = [NSMutableDictionary dictionary];
@@ -553,7 +602,7 @@ static NSArray* defaultValueBlackList = nil;
         }
 
         // rake token
-        p[@"token"] = self.apiToken;
+        p[@"token"] = apiToken;
         p[@"local_time"] = [_localDateFormatter stringFromDate:now];
         p[@"base_time"] = [_baseDateFormatter stringFromDate:now];
 
@@ -574,17 +623,14 @@ static NSArray* defaultValueBlackList = nil;
 
         RakeLog(@"%@ queueing event: %@", self, e);
 
-        [self.eventsQueue addObject:e];
-        if ([self.eventsQueue count] > 500) {
-            [self.eventsQueue removeObjectAtIndex:0];
+        [Queue addObject:e];
+        if ([Queue count] > MAX_TRACK_COUNT) {
+            [Queue removeObjectAtIndex:0];
         }
         if ([Rake inBackground]) {
             [self archiveEvents];
         }
 
-        if(_isDevServer){
-            [self flush];
-        }
 
     });
 }
@@ -676,6 +722,7 @@ static NSArray* defaultValueBlackList = nil;
         self.nameTag = nil;
         self.superProperties = [NSMutableDictionary dictionary];
         self.eventsQueue = [NSMutableArray array];
+        self.metricsQueue = [NSMutableArray array];
         [self archive];
     });
 }
@@ -734,25 +781,44 @@ static NSArray* defaultValueBlackList = nil;
             RakeDebug(@"%@ flush deferred by delegate", self);
             return;
         }
-
-        [self flushEvents];
-
+        @try {
+            [self flushEvents];
+            [self flushMetrics];
+        }
+        @catch (NSException *exception) {
+            RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
+            [trackMetric exception_type:exception.name];
+            [trackMetric thread_info:exception.reason];
+            [trackMetric status:@"ERROR"];
+            [trackMetric action:@"flush"];
+            NSData *callStacks = [self JSONSerializableObjectForObject:exception.callStackSymbols];
+            NSString *strCallStacks = [[NSString alloc] initWithData:callStacks encoding:NSUTF8StringEncoding];
+            [trackMetric stacktrace:strCallStacks];
+            [self trackMetric:trackMetric];
+        }
         RakeDebug(@"%@ flush complete", self);
     });
 }
 
 - (void)flushEvents
 {
-    [self flushQueue:_eventsQueue endpoint:@"/track/"];
+    [self flushQueue:_eventsQueue endpoint:@"/track/" maxBatchSize:50];
+}
+- (void)flushMetrics
+{
+    [self flushQueue:_metricsQueue endpoint:@"/track/" maxBatchSize:5];
 }
 
-
-- (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint
+- (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint maxBatchSize:(NSUInteger)maxBatchSize
 {
-
+    
     while ([queue count] > 0) {
-        NSUInteger batchSize = ([queue count] > 50) ? 50 : [queue count];
 
+        RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
+        [trackMetric endpoint:endpoint];
+        [trackMetric action:@"flush"];
+        
+        NSUInteger batchSize = ([queue count] > maxBatchSize) ? maxBatchSize : [queue count];
         NSArray *batch = [queue subarrayWithRange:NSMakeRange(0, batchSize)];
 
         NSString *requestData = [self encodeAPIData:batch];
@@ -762,22 +828,39 @@ static NSArray* defaultValueBlackList = nil;
         NSError *error = nil;
 
         [self updateNetworkActivityIndicator:YES];
-
         NSHTTPURLResponse *response = nil;
+
+        CFTimeInterval reqStartTime = CACurrentMediaTime();
         NSData *responseData = [NSURLConnection sendSynchronousRequest:request returningResponse:&response error:&error];
+        CFTimeInterval reqEndTime = CACurrentMediaTime();
+        RakeDebug(@"Total Request Runtime: %g s", reqEndTime - reqStartTime);
 
         [self updateNetworkActivityIndicator:NO];
 
+        //metric
+        NSUInteger respTimeUInt = (reqEndTime - reqStartTime) * 1000;
+        [trackMetric server_response_time:@(respTimeUInt)]; // sec? ms?
+        NSUInteger log_size = [requestData lengthOfBytesUsingEncoding:NSUTF8StringEncoding];
+        [trackMetric log_size:@(log_size)];
+        [trackMetric log_count:@(batchSize)];
+
+        
         // if network is off, or timeout occurred
         if (error) {
+            [trackMetric status:@"RETRY"];
+            [self trackMetric:trackMetric];
             NSLog(@"%@ network failure: %@", self, error);
             break;
         }
 
         // statusCode might be 0 if response == nil
         NSInteger statusCode = [response statusCode];
+        [trackMetric server_response_code:@(statusCode)];
+
         if (statusCode == 500) {
             NSLog(@"%@ internal server error: %ld", self, (long)statusCode);
+            [trackMetric status:@"RETRY"];
+            [self trackMetric:trackMetric];
             break;
         }
 
@@ -787,11 +870,17 @@ static NSArray* defaultValueBlackList = nil;
 
         if ([responseBody intValue] == -1) {
             NSLog(@"%@ %@ api rejected some items", self, endpoint);
+            [trackMetric status:@"DROP"];
         } else if ([responseBody intValue] == 1) {
             NSLog(@"%@ %@ api accepted items", self, endpoint);
+            [trackMetric status:@"DONE"];
         }
-
+        
         [queue removeObjectsInArray:batch];
+
+        [trackMetric server_response_body:responseBody];
+        [self trackMetric:trackMetric];
+        
     }
 }
 
@@ -869,10 +958,10 @@ static NSArray* defaultValueBlackList = nil;
     return [self filePathForData:@"events"];
 }
 
-//- (NSString *)peopleFilePath
-//{
-//    return [self filePathForData:@"people"];
-//}
+- (NSString *)metricFilePath
+{
+    return [self filePathForData:@"metrics"];
+}
 
 - (NSString *)propertiesFilePath
 {
@@ -882,6 +971,7 @@ static NSArray* defaultValueBlackList = nil;
 - (void)archive
 {
     [self archiveEvents];
+    [self archiveMetrics];
     [self archiveProperties];
 }
 
@@ -895,6 +985,15 @@ static NSArray* defaultValueBlackList = nil;
     }
 }
 
+- (void)archiveMetrics
+{
+    NSString *filePath = [self metricFilePath];
+    NSMutableArray *metricsQueueCopy = [NSMutableArray arrayWithArray:[self.metricsQueue copy]];
+    RakeDebug(@"%@ archiving metrics data to %@: %@", self, filePath, metricsQueueCopy);
+    if (![NSKeyedArchiver archiveRootObject:metricsQueueCopy toFile:filePath]) {
+        NSLog(@"%@ unable to archive events data", self);
+    }
+}
 
 - (void)archiveProperties
 {
@@ -922,8 +1021,33 @@ static NSArray* defaultValueBlackList = nil;
 - (void)unarchive
 {
     [self unarchiveEvents];
+    [self unarchiveMetrics];
     [self unarchiveProperties];
 }
+
+- (void)unarchiveMetrics
+{
+    NSString *filePath = [self metricFilePath];
+    @try {
+        self.metricsQueue = [NSKeyedUnarchiver unarchiveObjectWithFile:filePath];
+        RakeDebug(@"%@ unarchived events data: %@", self, self.eventsQueue);
+    }
+    @catch (NSException *exception) {
+        NSLog(@"%@ unable to unarchive events data, starting fresh", self);
+        self.metricsQueue = nil;
+    }
+    if ([[NSFileManager defaultManager] fileExistsAtPath:filePath]) {
+        NSError *error;
+        BOOL removed = [[NSFileManager defaultManager] removeItemAtPath:filePath error:&error];
+        if (!removed) {
+            NSLog(@"%@ unable to remove archived events file at %@ - %@", self, filePath, error);
+        }
+    }
+    if (!self.metricsQueue) {
+        self.metricsQueue = [NSMutableArray array];
+    }
+}
+
 
 - (void)unarchiveEvents
 {
@@ -1027,7 +1151,6 @@ static NSArray* defaultValueBlackList = nil;
             [self updateNetworkActivityIndicator:NO];
         }
     });
-    
 //    [self unarchiveAndFlush];
 }
 

@@ -2,7 +2,11 @@
 #import <UIKit/UIKit.h>
 
 #import "RakeConfig.h"
+
+#if DEBUG
+#define RAKE_LOG
 #define RAKE_DEBUG
+#endif
 
 //! Project version number for Rake.
 FOUNDATION_EXPORT double RakeVersionNumber;
