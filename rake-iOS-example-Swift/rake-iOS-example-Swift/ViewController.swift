@@ -16,6 +16,8 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
+        print("rake libversion :\(rake.libVersion())")
+
     }
 
     override func didReceiveMemoryWarning() {
@@ -27,8 +29,7 @@ class ViewController: UIViewController {
     @IBAction func actionBtnTrack(sender: AnyObject) {
         let shuttle = RakeClientTestSentinelShuttle()
         shuttle.ab_test_group("1")
-        rake .track(shuttle.toNSDictionary())
-
+        rake.track(shuttle.toNSDictionary())
         print("track")
         
     }

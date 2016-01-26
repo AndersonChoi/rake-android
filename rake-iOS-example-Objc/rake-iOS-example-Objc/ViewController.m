@@ -22,6 +22,7 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view, typically from a nib.
     self.rake = [Rake sharedInstanceWithToken: @"your-rake-token" andUseDevServer: true];
+    NSLog(@"rake Version %@",[self.rake libVersion]);
 
 }
 
