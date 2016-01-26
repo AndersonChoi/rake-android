@@ -31,16 +31,17 @@
 }
 - (IBAction)actionBtnFlush:(id)sender {
     [self.rake flush];
+    NSLog(@"Flush");
 
 }
 - (IBAction)actionBtnTrack:(id)sender {
     RakeClientTestSentinelShuttle* shuttle = [[RakeClientTestSentinelShuttle alloc] init];
     
-    [shuttle ab_test_group: @"1"];
+    [shuttle setBodyOf_home___with_stacktrace:@" " exception_type:@" " push_notification_id:@" " user_id:@" " oauth_provider:@" " oauth_token:@" " job_advertisement_id:@" " repository:@" " branch:@" " code_text:@" " issue_id:@" " title:@" " comment_text:@" " pull_request_id:@" " target_branch:@" " ab_test_group:@"1"];
     
     [self.rake track: [shuttle toNSDictionary]];
 
-    NSLog(@"Flush");
+    NSLog(@"Track");
 }
 
 @end
