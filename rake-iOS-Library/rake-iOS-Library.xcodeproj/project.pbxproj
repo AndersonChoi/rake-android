@@ -33,11 +33,19 @@
 		315E063E1C51BD34005CB28E /* MemoryLeakTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E063D1C51BD34005CB28E /* MemoryLeakTest.m */; };
 		315E06E81C51EC20005CB28E /* RakeExceptionHandler.h in Headers */ = {isa = PBXBuildFile; fileRef = 315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */; };
 		315E06E91C51EC20005CB28E /* RakeExceptionHandler.m in Sources */ = {isa = PBXBuildFile; fileRef = 315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */; };
+		31618EB41C6078D00049CE85 /* RakeCrashReporter.h in Headers */ = {isa = PBXBuildFile; fileRef = 31618EB21C6078D00049CE85 /* RakeCrashReporter.h */; settings = {ATTRIBUTES = (Public, ); }; };
+		31618EB51C6078D00049CE85 /* RakeCrashReporter.m in Sources */ = {isa = PBXBuildFile; fileRef = 31618EB31C6078D00049CE85 /* RakeCrashReporter.m */; };
+		31618EBC1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h in Headers */ = {isa = PBXBuildFile; fileRef = 31618EBA1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h */; };
+		31618EBD1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m in Sources */ = {isa = PBXBuildFile; fileRef = 31618EBB1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m */; };
+		316190771C61C73F0049CE85 /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 316190761C61C73F0049CE85 /* CrashReporter.framework */; };
+		316190781C61C73F0049CE85 /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 316190761C61C73F0049CE85 /* CrashReporter.framework */; };
 		3177B9F71C4CEE93002523FF /* RakeTest.m in Sources */ = {isa = PBXBuildFile; fileRef = 3177B9F61C4CEE93002523FF /* RakeTest.m */; };
 		318272641C4CA61000CAC16B /* Rake.h in Headers */ = {isa = PBXBuildFile; fileRef = 21362C2B1C194511007B42F5 /* Rake.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		318272661C4CA63F00CAC16B /* RakeConfig.h in Headers */ = {isa = PBXBuildFile; fileRef = 74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */; };
 		318272921C4CBC7100CAC16B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 318272911C4CBC7100CAC16B /* SystemConfiguration.framework */; };
 		318272941C4CBC7700CAC16B /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 318272931C4CBC7700CAC16B /* CoreTelephony.framework */; };
+		31EDFEBC1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h in Headers */ = {isa = PBXBuildFile; fileRef = 31EDFEBA1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h */; };
+		31EDFEBD1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 31EDFEBB1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m */; };
 		74B5E863FB49D25D68FFC639 /* RakeClientTestSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 74B5E860F9EAE64D3DC181E6 /* RakeClientTestSentinelShuttle.m */; };
 /* End PBXBuildFile section */
 
@@ -86,10 +94,17 @@
 		315E063D1C51BD34005CB28E /* MemoryLeakTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MemoryLeakTest.m; sourceTree = "<group>"; };
 		315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeExceptionHandler.h; sourceTree = "<group>"; };
 		315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeExceptionHandler.m; sourceTree = "<group>"; };
+		31618EB21C6078D00049CE85 /* RakeCrashReporter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeCrashReporter.h; sourceTree = "<group>"; };
+		31618EB31C6078D00049CE85 /* RakeCrashReporter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeCrashReporter.m; sourceTree = "<group>"; };
+		31618EBA1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeCrashLoggerTextFormatter.h; sourceTree = "<group>"; };
+		31618EBB1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeCrashLoggerTextFormatter.m; sourceTree = "<group>"; };
+		316190761C61C73F0049CE85 /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CrashReporter.framework; path = ../CrashReporter.framework; sourceTree = "<group>"; };
 		3177B9F61C4CEE93002523FF /* RakeTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeTest.m; sourceTree = "<group>"; };
 		3177B9FB1C4CF133002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = release/Rake.framework; sourceTree = "<group>"; };
 		318272911C4CBC7100CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		318272931C4CBC7700CAC16B /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		31EDFEBA1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppCrashLoggerSentinelShuttle.h; sourceTree = "<group>"; };
+		31EDFEBB1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppCrashLoggerSentinelShuttle.m; sourceTree = "<group>"; };
 		74B5E1591E2E68F812541002 /* RakeClientTestSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientTestSentinelShuttle.h; sourceTree = "<group>"; };
 		74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeConfig.h; sourceTree = "<group>"; };
 		74B5E860F9EAE64D3DC181E6 /* RakeClientTestSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientTestSentinelShuttle.m; sourceTree = "<group>"; };
@@ -101,6 +116,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				318272941C4CBC7700CAC16B /* CoreTelephony.framework in Frameworks */,
+				316190781C61C73F0049CE85 /* CrashReporter.framework in Frameworks */,
 				318272921C4CBC7100CAC16B /* SystemConfiguration.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -110,6 +126,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				311551D21C5203340068D660 /* Rake.framework in Frameworks */,
+				316190771C61C73F0049CE85 /* CrashReporter.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -119,6 +136,9 @@
 		21362C141C1943D5007B42F5 /* Rake */ = {
 			isa = PBXGroup;
 			children = (
+				316190761C61C73F0049CE85 /* CrashReporter.framework */,
+				31EDFEBA1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h */,
+				31EDFEBB1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m */,
 				311551D31C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h */,
 				311551D41C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m */,
 				21362C311C194532007B42F5 /* Rake-Prefix.pch */,
@@ -129,6 +149,10 @@
 				315E06361C50EA1D005CB28E /* Base64.m */,
 				315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */,
 				315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */,
+				31618EB21C6078D00049CE85 /* RakeCrashReporter.h */,
+				31618EB31C6078D00049CE85 /* RakeCrashReporter.m */,
+				31618EBA1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h */,
+				31618EBB1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m */,
 			);
 			path = Rake;
 			sourceTree = "<group>";
@@ -199,10 +223,13 @@
 			isa = PBXHeadersBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31618EB41C6078D00049CE85 /* RakeCrashReporter.h in Headers */,
 				315E06E81C51EC20005CB28E /* RakeExceptionHandler.h in Headers */,
+				31618EBC1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h in Headers */,
 				318272641C4CA61000CAC16B /* Rake.h in Headers */,
 				318272661C4CA63F00CAC16B /* RakeConfig.h in Headers */,
 				311551D51C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h in Headers */,
+				31EDFEBC1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h in Headers */,
 				315E06371C50EA1D005CB28E /* Base64.h in Headers */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -329,10 +356,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31EDFEBD1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m in Sources */,
 				315E06381C50EA1D005CB28E /* Base64.m in Sources */,
 				315E06E91C51EC20005CB28E /* RakeExceptionHandler.m in Sources */,
 				21362C2D1C19451A007B42F5 /* Rake.m in Sources */,
 				311551D61C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m in Sources */,
+				31618EBD1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m in Sources */,
+				31618EB51C6078D00049CE85 /* RakeCrashReporter.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -386,6 +416,10 @@
 				DEAD_CODE_STRIPPING = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -434,6 +468,10 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)",
+				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
@@ -478,6 +516,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/release",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
@@ -534,6 +573,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/release",
+					"$(PROJECT_DIR)",
 				);
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_NO_COMMON_BLOCKS = YES;

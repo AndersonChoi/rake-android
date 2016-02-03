@@ -81,7 +81,21 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  */
 @property (atomic) BOOL flushOnBackground;
 
+
+/*!
+ @property
+ 
+ @abstract
+  CrashLogger use or not
+ 
+ @discussion
+  If set crashLoggerAppKey , CrashLogger will start.
+ */
+@property (nonatomic, copy) NSString *crashLoggerAppKey;
+
 @property (atomic) BOOL showNetworkActivityIndicator;
+
+
 
 /*!
  @property

@@ -16,9 +16,10 @@
 #import <Rake.h>
 #import <Base64.h>
 #import <RakeExceptionHandler.h>
-#import <RakeClientMetricSentinelShuttle.h>
 #import <RakeConfig.h>
-
+#import <RakeClientMetricSentinelShuttle.h>
+#import <AppCrashLoggerSentinelShuttle.h>
+#import <RakeCrashReporter.h>
 
 #ifdef RAKE_LOG
 #define RakeLog(...) NSLog(__VA_ARGS__)
@@ -52,7 +53,6 @@
 @property (nonatomic, strong) NSTimer *timer;
 @property (nonatomic, strong) NSMutableArray *eventsQueue;
 @property (nonatomic, strong) NSMutableArray *metricsQueue;
-
 @property (nonatomic, assign) UIBackgroundTaskIdentifier taskId;
 @property (nonatomic, strong) dispatch_queue_t serialQueue;
 @property (nonatomic, assign) SCNetworkReachabilityRef reachability;
@@ -60,8 +60,8 @@
 @property (nonatomic, strong) NSDateFormatter *localDateFormatter;
 @property (nonatomic, strong) NSDateFormatter *baseDateFormatter;
 @property (nonatomic) BOOL isDevServer;
-
 @property (nonatomic, strong) NSDate *appStartDate;
+@property (nonatomic, assign) RakeCrashReporter *crashReporter;
 @end
 
 
@@ -117,6 +117,7 @@ static NSArray* defaultValueBlackList = nil;
 
 + (Rake *)sharedInstance
 {
+    NSAssert(sharedInstance != nil, @"Warning sharedInstance called before sharedInstanceWithToken:");
     if (sharedInstance == nil) {
         NSLog(@"%@ warning sharedInstance called before sharedInstanceWithToken:", self);
     }
@@ -485,7 +486,6 @@ static NSArray* defaultValueBlackList = nil;
     }
     [self track:@{@"distinct_id": distinctID, @"alias": alias}];
 }
-
 - (void)trackMetric:(RakeClientMetricSentinelShuttle *)trackMetric {
     //Create Metric
     
@@ -497,7 +497,20 @@ static NSArray* defaultValueBlackList = nil;
     [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
     [trackMetric rake_protocol_version:@"V1"];
     
-    [self track:[trackMetric toNSDictionary] ApiToken:METRIC_TOKEN_DEV Queue:_metricsQueue];
+    NSString *apiToken = METRIC_TOKEN_LIVE;
+    if(self.isDevServer) apiToken = METRIC_TOKEN_DEV;
+    [self track:[trackMetric toNSDictionary] ApiToken:apiToken Queue:_metricsQueue];
+    
+}
+- (void)trackCrashLog:(AppCrashLoggerSentinelShuttle *)crashLog {
+    
+    NSString *apiToken = CRASHLOGGER_TOKEN_LIVE;
+    if(self.isDevServer) apiToken = CRASHLOGGER_TOKEN_DEV;
+    
+    [crashLog app_key:self.crashLoggerAppKey];
+    NSString *transactionID = [NSString stringWithFormat:@"%@_%F",self.distinctId,[[NSDate date] timeIntervalSince1970]];
+    [crashLog transaction_id:transactionID];
+    [self track:[crashLog toNSDictionary] ApiToken:apiToken Queue:_eventsQueue];
     
 }
 - (void)track:(NSDictionary *)properties  {
@@ -794,6 +807,7 @@ static NSArray* defaultValueBlackList = nil;
             NSString *strCallStacks = [[NSString alloc] initWithData:callStacks encoding:NSUTF8StringEncoding];
             [trackMetric stacktrace:strCallStacks];
             [self trackMetric:trackMetric];
+            NSLog(@"%@ exception",exception);
         }
         RakeDebug(@"%@ flush complete", self);
     });
@@ -1103,8 +1117,21 @@ static NSArray* defaultValueBlackList = nil;
         self.superProperties = properties[@"superProperties"] ? properties[@"superProperties"] : [NSMutableDictionary dictionary];
     }
 }
-
-
+#pragma mark - Property
+- (void)setCrashLoggerAppKey:(NSString *)crashLoggerAppKey {
+    _crashLoggerAppKey = crashLoggerAppKey;
+    if(_crashLoggerAppKey) {
+        _crashReporter =[RakeCrashReporter sharedInstance];
+        [_crashReporter startCrashReport];
+        if(_crashReporter.crashLog) {
+            [self trackCrashLog:_crashReporter.crashLog];
+            _crashReporter.crashLog = nil;
+        }
+        
+    } else {
+        _crashReporter = nil;
+    }
+}
 
 
 #pragma mark - UIApplication notifications
