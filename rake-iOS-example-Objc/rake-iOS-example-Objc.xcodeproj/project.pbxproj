@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		315E06241C50C720005CB28E /* Rake.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 315E06231C50C720005CB28E /* Rake.framework */; };
+		3161923A1C61D6EE0049CE85 /* CrashReporter.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 316192391C61D6EE0049CE85 /* CrashReporter.framework */; };
 		318272821C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m in Sources */ = {isa = PBXBuildFile; fileRef = 318272811C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m */; };
 		3182728D1C4CB7DF00CAC16B /* SystemConfiguration.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */; };
 		3182728F1C4CB7E600CAC16B /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3182728E1C4CB7E600CAC16B /* CoreTelephony.framework */; };
@@ -21,6 +22,7 @@
 
 /* Begin PBXFileReference section */
 		315E06231C50C720005CB28E /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = "../rake-iOS-Library/release/Rake.framework"; sourceTree = "<group>"; };
+		316192391C61D6EE0049CE85 /* CrashReporter.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = CrashReporter.framework; sourceTree = "<group>"; };
 		318272801C4CB10700CAC16B /* RakeClientTestSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientTestSentinelShuttle.h; sourceTree = "<group>"; };
 		318272811C4CB10700CAC16B /* RakeClientTestSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientTestSentinelShuttle.m; sourceTree = "<group>"; };
 		3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
@@ -45,6 +47,7 @@
 				3182728F1C4CB7E600CAC16B /* CoreTelephony.framework in Frameworks */,
 				315E06241C50C720005CB28E /* Rake.framework in Frameworks */,
 				3182728D1C4CB7DF00CAC16B /* SystemConfiguration.framework in Frameworks */,
+				3161923A1C61D6EE0049CE85 /* CrashReporter.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,6 +57,7 @@
 		3177B9F31C4CE7FF002523FF /* Framework */ = {
 			isa = PBXGroup;
 			children = (
+				316192391C61D6EE0049CE85 /* CrashReporter.framework */,
 				315E06231C50C720005CB28E /* Rake.framework */,
 				3182728E1C4CB7E600CAC16B /* CoreTelephony.framework */,
 				3182728C1C4CB7DF00CAC16B /* SystemConfiguration.framework */,

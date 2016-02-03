@@ -43,6 +43,21 @@
     [self.rake track: [shuttle toNSDictionary]];
 
     NSLog(@"Track");
+//    NSException *e =[NSException exceptionWithName:@"hihihi" reason:@"idknow" userInfo:nil];
+//    [e raise];
+//    CFRelease(NULL);
+//    [self performSelector:@selector(string) withObject:nil afterDelay:2.0];
+//    [self performSelector:@selector(badAccess) withObject:nil afterDelay:2.0];
+
 }
+
+
+- (void)badAccess
+{
+    void (*nullFunction)() = NULL;
+    
+    nullFunction();
+}
+
 
 @end

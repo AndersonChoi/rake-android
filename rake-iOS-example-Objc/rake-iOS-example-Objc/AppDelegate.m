@@ -7,7 +7,7 @@
 //
 
 #import "AppDelegate.h"
-
+#import <Rake/Rake.h>
 @interface AppDelegate ()
 
 @end
@@ -17,6 +17,9 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
     // Override point for customization after application launch.
+    [Rake sharedInstanceWithToken: @"your-rake-token" andUseDevServer: true].crashLoggerAppKey = @"b533c29199081f20e2ddd35a7ee59287";
+//    [Rake sharedInstance].crashLoggerAppKey = @"b533c29199081f20e2ddd35a7ee59287";
+
     return YES;
 }
 
