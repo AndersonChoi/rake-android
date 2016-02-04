@@ -993,6 +993,7 @@ static NSArray* defaultValueBlackList = nil;
     [self archiveEvents];
     [self archiveMetrics];
     [self archiveProperties];
+    RakeDebug(@"all archived!!!");
 }
 
 - (void)archiveEvents
