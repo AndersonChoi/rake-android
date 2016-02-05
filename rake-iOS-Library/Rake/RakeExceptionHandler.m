@@ -11,11 +11,14 @@
 #import <CrashReporter/CrashReporter.h>
 #import "RakeConfig.h"
 
-
 #if !defined(USE_PLCRASHREPORTER)
 #include <libkern/OSAtomic.h>
 #include <execinfo.h>
+void registerFatalSignals(void);
+void unregisterFatalSignals(void);
+void prevSignalHandlerCallback(int sig, siginfo_t *info, void *context);
 #endif
+
 
 @interface RakeExceptionHandler()
 
@@ -29,6 +32,8 @@
 
 @implementation RakeExceptionHandler
 #if !defined(USE_PLCRASHREPORTER)
+static NSMutableDictionary *prevSigActions;
+
 static uint32_t volatile isAlreadyExceptionOccured =0;
 static int fatal_signals[] =
 {
@@ -120,6 +125,7 @@ void rk_handleSignal(int sig, siginfo_t *info, void *context) {
                                forKey:@"UncaughtExceptionSignalKey"]];
     
     rk_handleUncaughtException(exception);
+    prevSignalHandlerCallback(sig, info, context);
 }
 
 
@@ -146,8 +152,18 @@ static void rk_handleUncaughtException(NSException *exception) {
     }
 }
 
+void prevSignalHandlerCallback(int sig, siginfo_t *info, void *context) {
+    
+    NSValue *prevSigaction = [prevSigActions objectForKey:[NSNumber numberWithInt:sig]];
+    if(prevSigaction) {
+        struct sigaction prev;
+        [prevSigaction getValue:&prev];
+        prev.sa_sigaction(sig,info,context);
+    }
+    
+}
 
-static void registerFatalSignals() {
+void registerFatalSignals() {
     struct sigaction sa;
     /* Configure action */
     memset(&sa, 0, sizeof(sa));
@@ -156,14 +172,24 @@ static void registerFatalSignals() {
     sigemptyset(&sa.sa_mask);
     /* Set new sigaction */
     for (int i =0 ;i<n_fatal_signals; i++) {
-        if (sigaction(fatal_signals[i], &sa, NULL) != 0) {
+        
+        struct sigaction prev;
+        memset(&prev, 0, sizeof(prev));
+        sigaction(fatal_signals[i], &sa, &prev);
+        //Save previous sigaction.
+        if(prev.sa_flags & SA_SIGINFO) {
+            NSValue *prevSigaction = [NSValue valueWithBytes:&prev objCType:@encode(struct sigaction)];
+            [prevSigActions setObject:prevSigaction forKey:[NSNumber numberWithInt:fatal_signals[i]]];
+        }
+        
+//        if (sigaction(fatal_signals[i], &sa, NULL) != 0) {
 //            int err = errno;
 //            NSAssert(0,"Signal registration for %s failed: %s", strsignal(fatal_signals[i]), strerror(err));
-        }
+//        }
     }
     
 }
-static void unregisterFatalSignals() {
+void unregisterFatalSignals() {
     struct sigaction sa;
     memset(&sa, 0, sizeof(sa));
     sa.sa_handler = SIG_DFL;
