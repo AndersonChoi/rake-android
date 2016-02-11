@@ -1,0 +1,11 @@
+framework module Rake {
+    umbrella header "Rake.h"
+    
+    export *
+    module * { export * }
+    
+    link framework "Foundation"
+    link framework "CoreTelephony"
+    link framework "SystemConfiguration"
+    link "c++"
+}
