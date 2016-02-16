@@ -7,6 +7,17 @@
 	objects = {
 
 /* Begin PBXAggregateTarget section */
+		315339881C72B97B006B9923 /* Documentation */ = {
+			isa = PBXAggregateTarget;
+			buildConfigurationList = 3153398B1C72B97B006B9923 /* Build configuration list for PBXAggregateTarget "Documentation" */;
+			buildPhases = (
+				3153398C1C72B9B8006B9923 /* ShellScript */,
+			);
+			dependencies = (
+			);
+			name = Documentation;
+			productName = Documentation;
+		};
 		318272681C4CA85300CAC16B /* Framework */ = {
 			isa = PBXAggregateTarget;
 			buildConfigurationList = 318272691C4CA85300CAC16B /* Build configuration list for PBXAggregateTarget "Framework" */;
@@ -14,6 +25,7 @@
 				3182726C1C4CA90000CAC16B /* ShellScript */,
 			);
 			dependencies = (
+				3153398E1C72BBE9006B9923 /* PBXTargetDependency */,
 				315E063A1C50ED02005CB28E /* PBXTargetDependency */,
 			);
 			name = Framework;
@@ -55,6 +67,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 318272681C4CA85300CAC16B;
 			remoteInfo = Framework;
+		};
+		3153398D1C72BBE9006B9923 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 74B5E3E348F48EF8C6D38BCA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 315339881C72B97B006B9923;
+			remoteInfo = Documentation;
 		};
 		315E06391C50ED02005CB28E /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -288,6 +307,9 @@
 					21362C1F1C1943E7007B42F5 = {
 						CreatedOnToolsVersion = 7.1.1;
 					};
+					315339881C72B97B006B9923 = {
+						CreatedOnToolsVersion = 7.2.1;
+					};
 					318272681C4CA85300CAC16B = {
 						CreatedOnToolsVersion = 7.2;
 					};
@@ -308,6 +330,7 @@
 				21362C1F1C1943E7007B42F5 /* RakeTests */,
 				21362C121C1943D5007B42F5 /* Rake */,
 				318272681C4CA85300CAC16B /* Framework */,
+				315339881C72B97B006B9923 /* Documentation */,
 			);
 		};
 /* End PBXProject section */
@@ -323,6 +346,19 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		3153398C1C72B9B8006B9923 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "headerdoc2html -o \"${SOURCE_ROOT}/../Documentation\" \"${SOURCE_ROOT}/Rake/Rake.h\"\ngatherheaderdoc \"${SOURCE_ROOT}/../Documentation\"\ncp -f \"${SOURCE_ROOT}/../README.md\" \"${SOURCE_ROOT}/../Documentation\"\ncp -f \"${SOURCE_ROOT}/../CHANGELOG.md\" \"${SOURCE_ROOT}/../Documentation\"\n\n";
+		};
 		318272671C4CA79B00CAC16B /* ShellScript */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -385,6 +421,11 @@
 			isa = PBXTargetDependency;
 			target = 318272681C4CA85300CAC16B /* Framework */;
 			targetProxy = 311551D01C5203260068D660 /* PBXContainerItemProxy */;
+		};
+		3153398E1C72BBE9006B9923 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 315339881C72B97B006B9923 /* Documentation */;
+			targetProxy = 3153398D1C72BBE9006B9923 /* PBXContainerItemProxy */;
 		};
 		315E063A1C50ED02005CB28E /* PBXTargetDependency */ = {
 			isa = PBXTargetDependency;
@@ -602,6 +643,20 @@
 			};
 			name = Release;
 		};
+		315339891C72B97B006B9923 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		3153398A1C72B97B006B9923 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
 		3182726A1C4CA85300CAC16B /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -662,6 +717,14 @@
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
+		};
+		3153398B1C72B97B006B9923 /* Build configuration list for PBXAggregateTarget "Documentation" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				315339891C72B97B006B9923 /* Debug */,
+				3153398A1C72B97B006B9923 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
 		};
 		318272691C4CA85300CAC16B /* Build configuration list for PBXAggregateTarget "Framework" */ = {
 			isa = XCConfigurationList;

@@ -17,11 +17,14 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
 @protocol RakeDelegate;
 
 /*!
- @class
- Rake API.
-
- @abstract
+ @header
+ Rake.h
+ @brief
  The primary interface for integrating Rake with your app.
+
+ @copyright
+ SKPlanet
+
  */
 @interface Rake : NSObject
 
@@ -133,6 +136,7 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  the API.
 
  @param apiToken        your project token
+ @param isDevServer     send to development Server
  */
 //+ (Rake *)sharedInstanceWithToken:(NSString *)apiToken;
 
@@ -313,10 +317,46 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  */
 - (void)archive;
 
+/*!
+ @method
+ @abstract
+ Creates a distinct_id alias from alias to original id.
+ @discussion
+ This method is used to map an identifier called an alias to the existing Rake
+ distinct id. This causes all events and people requests sent with the alias to be
+ mapped back to the original distinct id. The recommended usage pattern is to call
+ both createAlias: and identify: when the user signs up, and only identify: (with
+ their new user ID) when they log in. This will keep your signup funnels working
+ correctly.
+ <pre>
+ // This makes the current ID (an auto-generated GUID)
+ // and 'Alias' interchangeable distinct ids.
+ [rake createAlias:@"Alias"
+ forDistinctID:rake.distinctId];
+
+ </pre>
+ @param alias 		the new distinct_id that should represent original
+ @param distinctID 	the old distinct_id that alias will be mapped to
+ */
 - (void)createAlias:(NSString *)alias forDistinctID:(NSString *)distinctID;
 
 
+/*!
+ @method
+ 
+ @abstract
+ Get Rake version
+ 
+ */
+
 - (NSString *)libVersion;
+/*!
+ @method
+ 
+ @abstract
+ Get Rake version
+ 
+ */
 + (NSString *)libVersion;
 
 @end
