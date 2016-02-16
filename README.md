@@ -14,36 +14,33 @@
 ##Install
 ###Static Framework
  1. Rake Static Framework 를 다운로드 받으세요
- 2. Realm.framework 을 선택하여 Xcode 프로젝트의 File Navigation에 넣습니다. 이때, Copy items if needed 이 선택된지 확인하고, Finish 버튼을 누릅니다.
- 3. XCode 프로젝트 ->Tartget -> Build Settings -> Linking -> Other Linker Flags 에 -ObjC를 추가합니다 (Category 지원)
+ 2. Rake.framework 을 선택하여 Xcode 프로젝트의 File Navigation에 넣습니다. 이때, Copy items if needed 이 선택된지 확인하고, Finish 버튼을 누릅니다.
 
 ----------
 
 
-## Developement
+## Development Mode
 
-### Test
+andUseDevServer 를 true로 두면 Rake로그가 개발 서버로 전송 됩니다.
+```
+[Rake sharedInstanceWithToken: @"your-rake-token" andUseDevServer: true]
+```
+
+## CrashLogger
 
 테스트 실행을 위해서는, 먼저 iOS 시뮬레이터를 실행하고 해당 버전에 맞게 테스트 실행  
 버전에 맞지 않는 시뮬레이터가 켜져 있을 경우 타임아웃이 발생
 
 ```
-xcodebuild -workspace iphone.xcworkspace -scheme RakeTests -destination 'OS=9.1,name=iPhone 6s' clean test
+- (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions {
+    [Rake sharedInstanceWithToken: @"your-rake-token" andUseDevServer: true].crashLoggerAppKey = @"creportAppkey";
+
+    return YES;
+}
 ```
 
-### Continuous Testing
 
-사용할 시뮬레이터를 실행하고
 
-```
-METRIC_TOKEN_DEV= METRIC_TOKEN_LIVE= TEST_TOKEN_DEV= TEST_TOKEN_LIVE= gulp test-continuous --version=1.7.8
-```
-
-### Build
-
-```
-METRIC_TOKEN_DEV= METRIC_TOKEN_LIVE= TEST_TOKEN_DEV= TEST_TOKEN_LIVE= gulp build --version=1.7.8
-```
 
 ## License
 
@@ -51,5 +48,5 @@ METRIC_TOKEN_DEV= METRIC_TOKEN_LIVE= TEST_TOKEN_DEV= TEST_TOKEN_LIVE= gulp build
 
 - [Apache V2](http://www.apache.org/licenses/LICENSE-2.0.html)
 - [Mixpanel: iPhone](https://github.com/mixpanel/mixpanel-iphone)
+- [PLCrashReporter](https://www.plcrashreporter.org/)
 
-----------
