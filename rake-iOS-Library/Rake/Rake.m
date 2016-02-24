@@ -487,8 +487,14 @@ static NSArray* defaultValueBlackList = nil;
     [self track:@{@"distinct_id": distinctID, @"alias": alias}];
 }
 - (void)trackMetric:(RakeClientMetricSentinelShuttle *)trackMetric {
+
+    //user_defined_header
+    NSString *transactionID = [NSString stringWithFormat:@"%@_%F",self.distinctId,[[NSDate date] timeIntervalSince1970]];
+    [trackMetric transaction_id:transactionID];
+    NSString *appName = [[NSBundle mainBundle] bundleIdentifier];
+    [trackMetric app_package:appName];
+    [trackMetric service_token:self.apiToken];
     //Create Metric
-    
     [trackMetric max_track_count:@(MAX_TRACK_COUNT)];
     [trackMetric auto_flush_interval:@(self.flushInterval)];
     [trackMetric auto_flush_onoff:@"enable"];
@@ -496,9 +502,16 @@ static NSArray* defaultValueBlackList = nil;
     [trackMetric flush_method:@"TIMER"];
     [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
     [trackMetric rake_protocol_version:@"V1"];
-    
+ 
     NSString *apiToken = METRIC_TOKEN_LIVE;
-    if(self.isDevServer) apiToken = METRIC_TOKEN_DEV;
+    if(self.isDevServer) {
+        apiToken = METRIC_TOKEN_DEV;
+        [trackMetric env:@"DEV"];
+    } else {
+        [trackMetric env:@"LIVE"];
+    }
+    
+    
     [self track:[trackMetric toNSDictionary] ApiToken:apiToken Queue:_metricsQueue];
     
 }
