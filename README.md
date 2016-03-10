@@ -18,7 +18,6 @@
 - [Rake Android: App Example](https://github.com/sentinel-rake/rake-android-example)
 - [Rake Android: API](http://skpdi.github.io/rake-android/docs/SNAPSHOT/com/rake/android/rkmetrics/RakeAPI.html)
 
-## Supported OS Versions
 ## Development
 
 ### Build
