@@ -55,19 +55,24 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized int addEvent(final JSONObject json) {
         final String table = Table.EVENTS.getName();
 
-        Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
+        Integer result = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
-
                 Cursor c = null;
-                ContentValues cv = new ContentValues();
-                cv.put(EventContract.COLUMN_DATA, json.toString());
-                cv.put(EventContract.COLUMN_CREATED_AT, System.currentTimeMillis());
-                db.insert(table, null, cv);
 
-                c = db.rawQuery(getQuery(), null);
-                c.moveToFirst();
-                return c.getInt(0);
+                try {
+                    ContentValues cv = new ContentValues();
+                    cv.put(EventContract.COLUMN_DATA, json.toString());
+                    cv.put(EventContract.COLUMN_CREATED_AT, System.currentTimeMillis());
+                    db.insert(table, null, cv);
+
+                    c = db.rawQuery(getQuery(), null);
+                    c.moveToFirst();
+
+                    return c.getInt(0);
+                } finally { /** exception 은 Callback 에서 처리 */
+                   if (null != c) c.close();
+                }
             }
 
             @Override
@@ -87,7 +92,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized void removeEventById(final String lastId) {
         final String table = Table.EVENTS.getName();
 
-        execute(new SQLiteCallback<Void>() {
+        execute(new SQLiteUtil.Callback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(table, getQuery(), null);
@@ -109,7 +114,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized void removeEventByTime(final long time) {
         final String table = Table.EVENTS.getName();
 
-        execute(new SQLiteCallback<Void>() {
+        execute(new SQLiteUtil.Callback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(table, getQuery(), null);
@@ -131,7 +136,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * representing the events, or null if none could be successfully retrieved.
      */
     public synchronized ExtractedEvent getExtractEvent() {
-        ExtractedEvent event = executeAndReturnT(new SQLiteCallback<ExtractedEvent>() {
+        ExtractedEvent event = executeAndReturnT(new SQLiteUtil.Callback<ExtractedEvent>() {
             @Override
             public ExtractedEvent execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -151,8 +156,9 @@ public final class EventTableAdapter extends DatabaseAdapter {
                         catch (JSONException e) { Logger.t("Failed to convert String to JsonObject", e); }
                     }
 
-                /* if JSONException occurred, just throw out eventually returning null. */
-                } finally { if (null != c) c.close(); }
+                } finally { /** exception 은 Callback 에서 처리 */
+                    if (null != c) c.close();
+                }
 
                 // TODO static factory
                 ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);
