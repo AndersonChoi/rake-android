@@ -1,6 +1,7 @@
 package com.skplanet.rake.application;
 
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -51,6 +52,24 @@ public class MainActivity extends AppCompatActivity {
         initialize();
 
         TEXT_SIZE_1M = createLargeString();
+
+        /**
+         * set strict mode
+         *
+         * strict mode 모드는 API 9+, `detectLeakedCloableObjects()` 는 API 11+ 이므로
+         * QA 용 앱 배포 등 상황에 따라 테스트앱에서 API 8 지원이 필요할 경우 아래 코드를 제거할 것
+         */
+
+        StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
+                .detectAll()
+                .permitDiskReads()
+                .penaltyLog()
+                .build());
+        StrictMode.setVmPolicy(new StrictMode.VmPolicy.Builder()
+                .detectAll()
+                .penaltyLog()
+                .penaltyDeath()
+                .build());
     }
 
     private String createLargeString() {
