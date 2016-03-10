@@ -22,7 +22,7 @@ buildscript {
 
 import java.util.regex.Pattern
 
-version = '0.4.2-SNAPSHOT'
+version = '0.4.2'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -238,6 +238,7 @@ task updateRakeEnv(type: Copy) {
 
 gradle.projectsEvaluated { /* do something before compile */
     updateVersionInSource.execute()
+    /** TODO uploadArchive 시에는 reset 해주어야 함 */
     updateMetricToken.execute()
 }
 
