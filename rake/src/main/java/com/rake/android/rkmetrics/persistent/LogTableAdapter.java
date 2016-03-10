@@ -59,13 +59,18 @@ public final class LogTableAdapter extends DatabaseAdapter {
     public synchronized int getCount(final String token) {
         if (null == token) return -1;
 
-        Integer count = executeAndReturnT(new SQLiteCallback<Integer>() {
+        Integer count = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
-                Cursor c = db.rawQuery(getQuery(), null);
-                c.moveToFirst();
+                Cursor c = null;
 
-                return c.getInt(0);
+                try {
+                    c = db.rawQuery(getQuery(), null);
+                    c.moveToFirst();
+                    return c.getInt(0);
+                } finally { /** exception 은 Callback 에서 처리 */
+                    if (null != c) c.close();
+                }
             }
 
             @Override
@@ -85,7 +90,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
      * @param chunk should not be null
      */
     public synchronized void removeLogChunk(final LogChunk chunk) {
-        execute(new SQLiteCallback<Void>() {
+        execute(new SQLiteUtil.Callback<Void>() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(LogContract.TABLE_NAME, getQuery(), null);
@@ -108,7 +113,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
     }
 
     public synchronized void removeLogByTime(final Long time) {
-       execute(new SQLiteCallback<Void>() {
+       execute(new SQLiteUtil.Callback<Void>() {
            @Override
            public Void execute(SQLiteDatabase db) {
                db.delete(LogContract.TABLE_NAME, getQuery(), null);
@@ -128,21 +133,26 @@ public final class LogTableAdapter extends DatabaseAdapter {
             return - 1;
         }
 
-        Integer result = executeAndReturnT(new SQLiteCallback<Integer>() {
+        Integer result = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
                 Cursor c = null;
-                ContentValues values = new ContentValues();
-                values.put(LogContract.COLUMN_LOG, log.getJson().toString());
-                values.put(LogContract.COLUMN_CREATED_AT, System.currentTimeMillis());
-                values.put(LogContract.COLUMN_URL, log.getUrl());
-                values.put(LogContract.COLUMN_TOKEN, log.getToken());
-                db.insert(LogContract.TABLE_NAME, null, values);
 
-                c = db.rawQuery(getQuery(), null);
-                c.moveToFirst();
+                try {
+                    ContentValues values = new ContentValues();
+                    values.put(LogContract.COLUMN_LOG, log.getJson().toString());
+                    values.put(LogContract.COLUMN_CREATED_AT, System.currentTimeMillis());
+                    values.put(LogContract.COLUMN_URL, log.getUrl());
+                    values.put(LogContract.COLUMN_TOKEN, log.getToken());
+                    db.insert(LogContract.TABLE_NAME, null, values);
 
-                return c.getInt(0);
+                    c = db.rawQuery(getQuery(), null);
+                    c.moveToFirst();
+
+                    return c.getInt(0);
+                } finally { /** exception 은 Callback 에서 처리 */
+                   if (null != c) c.close();
+                }
             }
 
             @Override
@@ -160,7 +170,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
      */
     public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
-        List<LogChunk> chunks = executeAndReturnT(new SQLiteCallback<List<LogChunk>>() {
+        List<LogChunk> chunks = executeAndReturnT(new SQLiteUtil.Callback<List<LogChunk>>() {
             @Override
             public List<LogChunk> execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -177,7 +187,9 @@ public final class LogTableAdapter extends DatabaseAdapter {
 
                         if (null != log) logList.add(log);
                     }
-                } finally { if (null != c) c.close(); }
+                } finally { /** exception 은 Callback 에서 처리 */
+                    if (null != c) c.close();
+                }
 
                 List<LogChunk> chunks = LogChunk.create(lastId, logList);
 
@@ -198,6 +210,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
         return chunks;
     }
 
+    /** do not close Cursor in this method */
     private synchronized Log createLog(Cursor c) {
         Log l = null;
 

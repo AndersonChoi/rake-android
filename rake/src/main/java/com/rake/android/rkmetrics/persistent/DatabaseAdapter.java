@@ -43,7 +43,7 @@ public abstract class DatabaseAdapter {
     private static final Object lock = new Object();
 
     protected DatabaseAdapter(Context context) {
-        synchronized (lock) { /* prevent from creating multiple database helpers */
+        synchronized (lock) { /** prevent from creating multiple database helpers */
             if (null == dbHelper) dbHelper = new DatabaseHelper(context, DATABASE_NAME);
         }
     }
@@ -58,7 +58,7 @@ public abstract class DatabaseAdapter {
 
         public void dropDatabase() {
             close();
-            database.delete(); // delete the DB file from the file system completely.
+            database.delete(); /** delete the DB file from the file system completely. */
         }
 
         @Override
@@ -96,7 +96,8 @@ public abstract class DatabaseAdapter {
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
             }
 
-            /** Event 테이블을 바로 Log 테이블로 옮길 수 없기 때문에 라이브 로그라 가정하고
+            /**
+             * Event 테이블을 바로 Log 테이블로 옮길 수 없기 때문에 라이브 로그라 가정하고
              * Event 테이블 플러시를 위한 Flag 값을 설정
              */
             if (4 == oldVersion && 5 == newVersion)
@@ -108,17 +109,19 @@ public abstract class DatabaseAdapter {
         dbHelper.dropDatabase();
     }
 
-    protected void execute(SQLiteCallback callback) {
+    protected void execute(SQLiteUtil.Callback callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             callback.execute(db);
         } catch (SQLiteException e) {
             String message = String.format("execute failed with query: %s", callback.getQuery());
             Logger.e(message, e);
-            // We assume that in general, the results of a SQL exception are
-            // unrecoverable, and could be associated with an oversized or
-            // otherwise unusable DB. Better to bomb it and get back on track
-            // than to leave it junked up (and maybe filling up the disk.)
+            /**
+             * We assume that in general, the results of a SQL exception are
+             * unrecoverable, and could be associated with an oversized or
+             * otherwise unusable DB. Better to bomb it and get back on track
+             * than to leave it junked up (and maybe filling up the disk.)
+             */
             dbHelper.dropDatabase();
         } catch (Exception e) {
             Logger.e("Uncaught exception", e);
@@ -132,17 +135,19 @@ public abstract class DatabaseAdapter {
         return cursor.getString(cursor.getColumnIndex(columnIndex));
     }
 
-    protected <T> T executeAndReturnT(SQLiteCallback<T> callback) {
+    protected <T> T executeAndReturnT(SQLiteUtil.Callback<T> callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             return callback.execute(db);
         } catch (SQLiteException e) {
             String message = String.format("executeAndReturnT failed with query: %s", callback.getQuery());
             Logger.e(message, e);
-            // We assume that in general, the results of a SQL exception are
-            // unrecoverable, and could be associated with an oversized or
-            // otherwise unusable DB. Better to bomb it and get back on track
-            // than to leave it junked up (and maybe filling up the disk.)
+            /**
+             * We assume that in general, the results of a SQL exception are
+             * unrecoverable, and could be associated with an oversized or
+             * otherwise unusable DB. Better to bomb it and get back on track
+             * than to leave it junked up (and maybe filling up the disk.)
+             */
             dbHelper.dropDatabase();
             return null;
         } catch (Exception e) {

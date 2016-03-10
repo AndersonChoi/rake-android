@@ -16,7 +16,7 @@ public final class RakeConfig {
 
     // TODO: remove r0.5.0_c. it requires to modify server dep.
     // version number will be replaced automatically before compiling.
-    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.4.1";
+    public static final String RAKE_LIB_VERSION = "r0.5.0_c0.4.2";
 
     public static final String LOG_TAG_PREFIX = "RAKE";
 }
