@@ -39,7 +39,8 @@ andUseDevServer 를 true로 두면 Rake로그가 개발 서버로 전송 됩니�
 }
 ```
 
-
+## ATS Issue
+- [Refer this blog](http://www.neglectedpotential.com/2015/06/working-with-apples-application-transport-security/)
 
 
 ## License
