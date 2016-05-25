@@ -903,7 +903,7 @@ static NSArray* defaultValueBlackList = nil;
             [trackMetric status:@"DONE"];
         } else {
             NSLog(@"%@ %@ api no response Body", self, endpoint);
-            
+            [trackMetric status:@"ERROR"];
         }
         
         [queue removeObjectsInArray:batch];
