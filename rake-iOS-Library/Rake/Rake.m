@@ -19,7 +19,10 @@
 #import <RakeConfig.h>
 #import <RakeClientMetricSentinelShuttle.h>
 #import <AppCrashLoggerSentinelShuttle.h>
+
+#ifdef USE_PLCRASHREPORTER
 #import <RakeCrashReporter.h>
+#endif
 
 #ifdef RAKE_LOG
 #define RakeLog(...) NSLog(__VA_ARGS__)
@@ -61,7 +64,11 @@
 @property (nonatomic, strong) NSDateFormatter *baseDateFormatter;
 @property (nonatomic) BOOL isDevServer;
 @property (nonatomic, strong) NSDate *appStartDate;
+
+
+#ifdef USE_PLCRASHREPORTER
 @property (nonatomic, assign) RakeCrashReporter *crashReporter;
+#endif
 @end
 
 
@@ -1132,6 +1139,7 @@ static NSArray* defaultValueBlackList = nil;
     }
 }
 #pragma mark - Property
+#ifdef USE_PLCRASHREPORTER
 - (void)setCrashLoggerAppKey:(NSString *)crashLoggerAppKey {
     _crashLoggerAppKey = crashLoggerAppKey;
     if(_crashLoggerAppKey) {
@@ -1146,7 +1154,7 @@ static NSArray* defaultValueBlackList = nil;
         _crashReporter = nil;
     }
 }
-
+#endif
 
 #pragma mark - UIApplication notifications
 

@@ -26,7 +26,7 @@ andUseDevServer 를 true로 두면 Rake로그가 개발 서버로 전송 됩니�
 [Rake sharedInstanceWithToken: @"your-rake-token" andUseDevServer: true]
 ```
 
-## CrashLogger
+## CrashLogger(deprecated)
 
 테스트 실행을 위해서는, 먼저 iOS 시뮬레이터를 실행하고 해당 버전에 맞게 테스트 실행  
 버전에 맞지 않는 시뮬레이터가 켜져 있을 경우 타임아웃이 발생
