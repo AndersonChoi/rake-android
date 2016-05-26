@@ -845,7 +845,9 @@ static NSArray* defaultValueBlackList = nil;
 - (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint maxBatchSize:(NSUInteger)maxBatchSize
 {
     while ([queue count] > 0) {
-    
+
+        
+        //Flush 했다고 TrackMetric 전송하기 위한 메트릭
         RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
         [trackMetric endpoint:endpoint];
         [trackMetric action:@"flush"];
@@ -915,9 +917,12 @@ static NSArray* defaultValueBlackList = nil;
         
         [queue removeObjectsInArray:batch];
 
-        [trackMetric server_response_body:responseBody];
+//        NSLog(@"status::",[trackMetric valueForKey:@"_status" ]);
         if(queue == _eventsQueue) {
-            [self trackMetric:trackMetric];
+            if(![[trackMetric valueForKey:@"_status" ] isEqualToString:@"DONE"]) {
+                [trackMetric server_response_body:responseBody];
+                [self trackMetric:trackMetric];
+            }
             RakeDebug(@"_eventsQueue sent");
         } else {
             RakeDebug(@"_metricsQueue sent");
