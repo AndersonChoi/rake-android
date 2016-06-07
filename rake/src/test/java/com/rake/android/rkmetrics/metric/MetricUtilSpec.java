@@ -2,11 +2,10 @@ package com.rake.android.rkmetrics.metric;
 
 import android.app.Application;
 
-import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.FlushMethod;
-import com.rake.android.rkmetrics.network.ServerResponseMetric;
+import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 
 import static com.rake.android.rkmetrics.metric.MetricUtil.*;
@@ -20,8 +19,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
-
-import java.util.Arrays;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
@@ -70,15 +67,15 @@ public class MetricUtilSpec {
         assertThat(Status.values().length).isGreaterThan(0);
 
         for (Status s: Status.values()) {
-            ServerResponseMetric srm = createEmptySRM(s);
-            boolean b = recordFlushMetric(app, s, FlushType.MANUAL_FLUSH, 0L, l1, srm);
+            ServerResponse srm = createEmptySRM(s);
+            boolean b = recordFlushMetric(app, FlushType.MANUAL_FLUSH, 0L, l1, srm);
 
             assertThat(b).isFalse();
         }
     }
 
-    private ServerResponseMetric createEmptySRM(Status status) {
-        ServerResponseMetric srm = ServerResponseMetric.create("body", 0, 0L, FlushMethod.HTTP_URL_CONNECTION).setFlushStatus(status);
+    private ServerResponse createEmptySRM(Status status) {
+        ServerResponse srm = ServerResponse.create("body", 0, 0L, FlushMethod.HTTP_URL_CONNECTION).setFlushStatus(status);
         assertThat(srm).isNotNull();
         return srm;
     }
