@@ -12,7 +12,7 @@ import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.network.ServerResponseMetric;
+import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
@@ -42,7 +42,7 @@ public final class MetricUtil {
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "release/0.4.2";
+    public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-429/remove-flush-metric";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -109,58 +109,45 @@ public final class MetricUtil {
     }
 
     /** @return true if log was successfully persisted otherwise returns false */
-    public static boolean recordInstallMetric(Context context, InstallMetric metric) {
-        if (null == context || null == metric) {
-            Logger.e("Can't record InstallMetric using NULL args");
-            return false;
-        }
-
-        /** operationTime, env, endpoint, databaseVersion 값은 RakeAPI.getInstance 에서 이미 얻어왔으므로
-            persistedLogCount, expiredLogCount 값만 여기서 기록 */
-
-        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(metric.getServiceToken());
-        // TODO expiredLogCount?
-
-        metric.setPersistedLogCount(persistedLogCount);
-        return recordMetric(context, metric);
-    }
-
-    /** @return true if log was successfully persisted otherwise returns false */
     public static boolean recordFlushMetric(Context context,
-                                            Status status,
                                             FlushType flushType,
                                             long operationTime,
                                             LogChunk chunk,
-                                            ServerResponseMetric resMetric){
+                                            ServerResponse response){
 
-        if (null == context || null == chunk || null == resMetric || null == status) {
+        if (null == context
+                || null == chunk
+                || null == response
+                || null == response.getFlushStatus()) {
             Logger.e("Can't record FlushMetric using NULL args");
             return false;
         }
 
         /** 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
-        if (MetricUtil.isMetricToken(chunk.getToken()))
-            return false;
+        if (MetricUtil.isMetricToken(chunk.getToken())) return false;
+
+        /** Error Response 일 경우에만 기록 RAKE-429 */
+        if (!response.isErrorResponse()) return false;
 
         FlushMetric metric = new FlushMetric();
 
-        Header header = Header.create(context, Action.FLUSH, status, chunk.getToken());
+        Header header = Header.create(context, Action.FLUSH, response.getFlushStatus(), chunk.getToken());
 
         /** set HEADER */
         metric.setHeader(header);
 
         /** set COMMON BODY */
-        metric.setExceptionInfo(resMetric.getExceptionInfo());
+        metric.setExceptionInfo(response.getExceptionInfo());
 
         metric.setFlushType(flushType)
                 .setEndpoint(chunk.getUrl())
                 .setOperationTime(operationTime)
                 .setLogCount(Long.valueOf(chunk.getCount()))
                 .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
-                .setServerResponseBody(resMetric.getResponseBody())
-                .setServerResponseCode(Long.valueOf(resMetric.getResponseCode()))
-                .setServerResponseTime(resMetric.getServerResponseTime())
-                .setFlushMethod(resMetric.getFlushMethod());
+                .setServerResponseBody(response.getResponseBody())
+                .setServerResponseCode(Long.valueOf(response.getResponseCode()))
+                .setServerResponseTime(response.getServerResponseTime())
+                .setFlushMethod(response.getFlushMethod());
 
         return recordMetric(context, metric);
     }

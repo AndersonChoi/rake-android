@@ -16,7 +16,7 @@ import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.RakeProtocolV1;
-import com.rake.android.rkmetrics.network.ServerResponseMetric;
+import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
@@ -222,7 +222,7 @@ final class MessageLoop {
             avgFlushFrequency = totalFlushTime / newFlushCount;
 
             long seconds = avgFlushFrequency / 1000;
-            Logger.t("[METRIC] Avg flush frequency approximately " + seconds + " seconds.");
+            Logger.t("[SCHEDULE] Avg flush frequency approximately " + seconds + " seconds.");
         }
 
         lastFlushTime = now;
@@ -256,11 +256,6 @@ final class MessageLoop {
 
         /** Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송 */
         private void flush(FlushType flushType) {
-            if (null == flushType) {
-                Logger.e("Can't flush with an empty FlushType");
-                return;
-            }
-
             updateFlushFrequency();
 
             List<LogChunk> chunks = LogTableAdapter.getInstance(appContext)
@@ -272,56 +267,48 @@ final class MessageLoop {
                 long startAt = System.nanoTime();
 
                 /** network operation */
-                ServerResponseMetric responseMetric = send(chunk);
+                ServerResponse response = send(chunk);
 
                 long endAt = System.nanoTime();
 
-                if (null == responseMetric || null == responseMetric.getFlushStatus()) {
-                    Logger.e("ServerResponseMetric or ServerResponseMetric.getFlushStatus() can't be NULL");
-                    // TODO unknown state
+                if (null == response || null == response.getFlushStatus()) {
+                    Logger.e("ServerResponse or ServerResponse.getFlushStatus() can't be NULL");
                     LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     return;
                 }
 
                 Long operationTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
-                Status status = responseMetric.getFlushStatus();
 
                 /**
                  * - 전송된 데이터를 삭제해도 되는지(DONE),
                  * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
                  * - 복구 가능한 예외인지 (RETRY) 판단 후 실행
                  */
-                switch (status) {
+                switch (response.getFlushStatus()) {
                     case DONE:
-                    case DROP:
-                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
-                        break;
-                    case RETRY:
-                        // TODO flush database, RAKE-383, RAKE-381
-                        if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code);
-                        break;
-                    default:
-                        // TODO: UnknownRakeStateException logging
-                        Logger.e("Unknown FlushStatus");
-                        return;
+                    case DROP: LogTableAdapter.getInstance(appContext).removeLogChunk(chunk); break;
+                    case RETRY: if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code); break; // TODO flush database, RAKE-383, RAKE-381
+                    default: Logger.e("Unknown FlushStatus"); return;
                 }
 
-                /** 메트릭 전송용 토큰이 아닌 경우에만 */
-                if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                    /** Network, Database 연산에 대해 report */
-                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table where token = %s",
-                            chunk.getCount(), LogTableAdapter.LogContract.TABLE_NAME, chunk.getToken());
-                    Logger.t(message);
+                /** Network, Database 연산에 대해 report */
+                Logger.t(String.format(
+                        "[SQLite] Extracting %d rows from the [%s] table where token = %s",
+                        chunk.getCount(),
+                        LogTableAdapter.LogContract.TABLE_NAME,
+                        chunk.getToken())
+                );
 
-                    RakeProtocolV1.reportResponse(responseMetric.getResponseBody(), responseMetric.getResponseCode());
+                RakeProtocolV1.reportResponse(
+                        response.getResponseBody(),
+                        response.getResponseCode()
+                );
 
-                    /** `flush` 메트릭을 기록 */
-                    MetricUtil.recordFlushMetric(appContext, status, flushType, operationTime, chunk, responseMetric);
-                }
+                MetricUtil.recordFlushMetric(appContext, flushType, operationTime, chunk, response);
             }
         }
 
-        private ServerResponseMetric send(LogChunk chunk) {
+        private ServerResponse send(LogChunk chunk) {
 
             if (null == chunk) {
                 Logger.e("Can't flush using null args");
@@ -336,8 +323,12 @@ final class MessageLoop {
             }
 
             // TODO: add token to URI
-            ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
-                    chunk.getUrl(), chunk.getChunk(), FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
+            ServerResponse responseMetric = HttpRequestSender.handleResponse(
+                    chunk.getUrl(),
+                    chunk.getChunk(),
+                    FlushMethod.getProperFlushMethod(),
+                    HttpRequestSender.procedure
+            );
 
             return responseMetric;
         }
@@ -354,22 +345,28 @@ final class MessageLoop {
                 final String log = event.getLog();
                 final String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
 
-                /* assume that RakeAPI runs with Env.LIVE option */
+                /** assume that RakeAPI runs with Env.LIVE option */
                 String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
                 Logger.t(message);
 
-                ServerResponseMetric responseMetric = HttpRequestSender.handleResponse(
-                        url, log, FlushMethod.getProperFlushMethod(), HttpRequestSender.procedure);
+                ServerResponse responseMetric = HttpRequestSender.handleResponse(
+                        url,
+                        log,
+                        FlushMethod.getProperFlushMethod(),
+                        HttpRequestSender.procedure
+                );
 
                 if (null == responseMetric) {
-                    Logger.e("ServerResponseMetric can't be null");
+                    Logger.e("ServerResponse can't be null");
                     return;
                 }
 
                 Status status = responseMetric.getFlushStatus();
 
-                RakeProtocolV1.reportResponse
-                        (responseMetric.getResponseBody(), responseMetric.getResponseCode());
+                RakeProtocolV1.reportResponse(
+                        responseMetric.getResponseBody(),
+                        responseMetric.getResponseCode()
+                );
 
                 if (DONE == status || DROP == status) {
                     // Unrecoverable failure. DROP it.
