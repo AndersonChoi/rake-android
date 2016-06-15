@@ -42,7 +42,7 @@ public final class MetricUtil {
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-429/remove-flush-metric";
+    public static final String BUILD_CONSTANT_BRANCH = "release/0.4.3";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
