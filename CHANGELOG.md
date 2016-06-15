@@ -1,5 +1,12 @@
 # Change Log
 
+## [0.4.3](https://github.com/skpdi/rake-android/tree/0.4.3) (2016-06-15)
+[Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.2...0.4.3)
+
+**Implemented enhancements:**
+
+- Remove flush metric [\#4](https://github.com/skpdi/rake-android/pull/4) ([1ambda](https://github.com/1ambda))
+
 ## [0.4.2](https://github.com/skpdi/rake-android/tree/0.4.2) (2016-03-10)
 [Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.1...0.4.2)
 
