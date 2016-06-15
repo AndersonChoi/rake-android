@@ -34,7 +34,7 @@ public class HttpRequestSenderSpec {
     /** DROP cases */
 
     public void assertFlushStatusReturnedFromHandleResponse(Throwable e, Status status) {
-        ServerResponseMetric metric = HttpRequestSender.handleResponse(
+        ServerResponse metric = HttpRequestSender.handleResponse(
                 null, null, FlushMethod.HTTP_URL_CONNECTION, createProcedureThrowingException(e));
 
         assertThat(metric.getFlushStatus()).isEqualTo(status);
@@ -163,7 +163,7 @@ public class HttpRequestSenderSpec {
     public HttpRequestProcedure createProcedureThrowingException(final Throwable e) {
         return new HttpRequestProcedure() {
             @Override
-            public ServerResponseMetric execute(String url, String log, FlushMethod flushMethod) throws Throwable {
+            public ServerResponse execute(String url, String log, FlushMethod flushMethod) throws Throwable {
                 throw e;
             }
         };

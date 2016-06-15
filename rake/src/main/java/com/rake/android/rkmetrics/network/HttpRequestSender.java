@@ -38,7 +38,9 @@ final public class HttpRequestSender {
 
     public static HttpRequestProcedure procedure = new HttpRequestProcedure() {
         @Override
-        public ServerResponseMetric execute(String url, String log, FlushMethod flushMethod) throws Exception {
+        public ServerResponse execute(String url,
+                                      String log,
+                                      FlushMethod flushMethod) throws Exception {
             if (null == url) throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
             if (null == log) throw new UnknownRakeStateException("log can't be NULL in HttpRequestProcedure.execute");
             if (null == flushMethod) throw new UnknownRakeStateException("flushMethod can't be NULL in HttpRequestProcedure.execute");
@@ -51,41 +53,41 @@ final public class HttpRequestSender {
         }
     };
 
-    public static ServerResponseMetric handleResponse(String url, String log, FlushMethod flushMethod, HttpRequestProcedure callback) {
+    public static ServerResponse handleResponse(String url,
+                                                String log,
+                                                FlushMethod flushMethod,
+                                                HttpRequestProcedure callback) {
 
         Status flushStatus = DROP;
-        ServerResponseMetric responseMetric = null;
+        ServerResponse responseMetric = null;
 
         try {
             responseMetric = callback.execute(url, log, flushMethod);
         } catch(UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (GeneralSecurityException e) {
             Logger.e("SSL error (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (MalformedURLException e) {
             Logger.e("Malformed url (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         }  catch (ProtocolException e) {
             Logger.e("Invalid protocol (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (IOException e) {
             Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponseMetric.createErrorMetric(e, RETRY, flushMethod);
+            return ServerResponse.createErrorResponse(e, RETRY, flushMethod);
         } catch (OutOfMemoryError e) {
             Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponseMetric.createErrorMetric(e, RETRY, flushMethod);
+            return ServerResponse.createErrorResponse(e, RETRY, flushMethod);
         } catch (Exception e) {
             Logger.e("Uncaught exception (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (Throwable e) {
             Logger.e("Uncaught throwable (DROP)", e);
-            return ServerResponseMetric.createErrorMetric(e, DROP, flushMethod);
+            return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         }
-
-        if (null == responseMetric) return ServerResponseMetric.createErrorMetric(
-                new UnknownRakeStateException("ServerResponseMetric can't be NULL"), DROP, flushMethod);
 
         flushStatus = RakeProtocolV1.interpretResponse(
                 responseMetric.getResponseBody(), responseMetric.getResponseCode());
@@ -99,8 +101,8 @@ final public class HttpRequestSender {
      * @throws ProtocolException
      * @throws IOException
      */
-    public static ServerResponseMetric sendHttpUrlStreamRequest(String endPoint,
-                                                                String encodedData)
+    public static ServerResponse sendHttpUrlStreamRequest(String endPoint,
+                                                          String encodedData)
             throws MalformedURLException, UnsupportedEncodingException, ProtocolException, IOException {
 
         URL url;
@@ -113,7 +115,6 @@ final public class HttpRequestSender {
         int responseCode = 0;
         String responseBody = null;
         long operationTime = 0L;
-        Throwable t = null;
 
         try {
             url = new URL(endPoint);
@@ -157,7 +158,7 @@ final public class HttpRequestSender {
             if (null != conn) conn.disconnect();
         }
 
-        return ServerResponseMetric.create(responseBody, responseCode, operationTime, HTTP_URL_CONNECTION);
+        return ServerResponse.create(responseBody, responseCode, operationTime, HTTP_URL_CONNECTION);
     }
 
     /**
@@ -165,8 +166,8 @@ final public class HttpRequestSender {
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static ServerResponseMetric sendHttpClientRequest(String endPoint,
-                                                             String requestMessage)
+    public static ServerResponse sendHttpClientRequest(String endPoint,
+                                                       String requestMessage)
             throws UnsupportedEncodingException, GeneralSecurityException, IOException {
         String responseBody = null;
         int responseCode = 0;
@@ -184,7 +185,7 @@ final public class HttpRequestSender {
 
         if (null == response || null == response.getEntity()) {
             Logger.d("HttpResponse or HttpEntity is null. Retry later");
-            return ServerResponseMetric.createErrorMetric(
+            return ServerResponse.createErrorResponse(
                     new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY, HTTP_CLIENT);
         }
 
@@ -192,7 +193,7 @@ final public class HttpRequestSender {
         responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
         responseCode = response.getStatusLine().getStatusCode();
 
-        return ServerResponseMetric.create(responseBody, responseCode, responseTime, HTTP_CLIENT);
+        return ServerResponse.create(responseBody, responseCode, responseTime, HTTP_CLIENT);
     }
 
     public static HttpClient createHttpsClient() throws GeneralSecurityException {
