@@ -291,14 +291,6 @@ final class MessageLoop {
                     default: Logger.e("Unknown FlushStatus"); return;
                 }
 
-                /** Network, Database 연산에 대해 report */
-                Logger.t(String.format(
-                        "[SQLite] Extracting %d rows from the [%s] table where token = %s",
-                        chunk.getCount(),
-                        LogTableAdapter.LogContract.TABLE_NAME,
-                        chunk.getToken())
-                );
-
                 RakeProtocolV1.reportResponse(
                         response.getResponseBody(),
                         response.getResponseCode()
@@ -315,12 +307,12 @@ final class MessageLoop {
                 return null;
             }
 
-            /** Metric Token 일 경우 로깅을 하지 않음 */
-            if (MetricUtil.isNotMetricToken(chunk.getToken())) {
-                String message = String.format("[NETWORK] Sending %d log to %s where token = %s",
-                        chunk.getCount(), chunk.getUrl(), chunk.getToken());
-                Logger.t(message);
-            }
+            Logger.t(String.format(
+                            "[NETWORK] Sending %d log to %s where token = %s",
+                            chunk.getCount(),
+                            chunk.getUrl(),
+                            chunk.getToken())
+            );
 
             // TODO: add token to URI
             ServerResponse responseMetric = HttpRequestSender.handleResponse(
