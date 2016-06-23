@@ -94,8 +94,9 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  @discussion
   If set crashLoggerAppKey , CrashLogger will start.
  */
+#ifdef USE_PLCRASHREPORTER
 @property (nonatomic, copy) NSString *crashLoggerAppKey;
-
+#endif
 @property (atomic) BOOL showNetworkActivityIndicator;
 
 

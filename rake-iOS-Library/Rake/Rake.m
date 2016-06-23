@@ -522,6 +522,7 @@ static NSArray* defaultValueBlackList = nil;
     [self track:[trackMetric toNSDictionary] ApiToken:apiToken Queue:_metricsQueue];
     
 }
+#ifdef USE_PLCRASHREPORTER
 - (void)trackCrashLog:(AppCrashLoggerSentinelShuttle *)crashLog {
     
     NSString *apiToken = CRASHLOGGER_TOKEN_LIVE;
@@ -533,6 +534,7 @@ static NSArray* defaultValueBlackList = nil;
     [self track:[crashLog toNSDictionary] ApiToken:apiToken Queue:_eventsQueue];
     
 }
+#endif
 - (void)track:(NSDictionary *)properties  {
     @try {
         [self track:properties ApiToken:self.apiToken Queue:_eventsQueue];
