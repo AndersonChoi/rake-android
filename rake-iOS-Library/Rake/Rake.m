@@ -18,9 +18,9 @@
 #import <RakeExceptionHandler.h>
 #import <RakeConfig.h>
 #import <RakeClientMetricSentinelShuttle.h>
-#import <AppCrashLoggerSentinelShuttle.h>
 
 #ifdef USE_PLCRASHREPORTER
+#import <AppCrashLoggerSentinelShuttle.h>
 #import <RakeCrashReporter.h>
 #endif
 
@@ -351,7 +351,7 @@ static NSArray* defaultValueBlackList = nil;
     }
 
 
-    [p setValue:[Rake wifiAvailable]?@"WIFI" : @"NOT WIFI" forKey:@"network_type"];
+//    [p setValue:[Rake wifiAvailable]?@"WIFI" : @"NOT WIFI" forKey:@"network_type"];
 
 
     [p setValue:[self IDFV] forKey:@"device_id"];
@@ -638,7 +638,7 @@ static NSArray* defaultValueBlackList = nil;
         p[@"token"] = apiToken;
         p[@"local_time"] = [_localDateFormatter stringFromDate:now];
         p[@"base_time"] = [_baseDateFormatter stringFromDate:now];
-
+        
         // 4. add properties
         NSMutableDictionary *e = [[NSMutableDictionary alloc]init];
         if(isPropertiesFromSentinel){
@@ -942,40 +942,46 @@ static NSArray* defaultValueBlackList = nil;
 
 - (void)reachabilityChanged:(SCNetworkReachabilityFlags)flags
 {
-    dispatch_async(self.serialQueue, ^{
+    // this should be run in the serial queue. the reason we don't dispatch_async here
+    // is because it's only ever called by the reachability callback, which is already
+    // set to run on the serial queue. see SCNetworkReachabilitySetDispatchQueue in init
+    NSMutableDictionary *properties = [self.automaticProperties mutableCopy];
+    if (properties) {
         BOOL wifi = (flags & kSCNetworkReachabilityFlagsReachable) && !(flags & kSCNetworkReachabilityFlagsIsWWAN);
-        self.automaticProperties[@"network_type"] = wifi ? @"WIFI" : @"NOT WIFI";
-    });
+        properties[@"network_type"] = wifi ? @"WIFI" : @"NOT WIFI";
+        self.automaticProperties = [properties copy];
+        RakeDebug(@"%@ reachability changed, wifi=%d", self, wifi);
+    }
 }
 
-+ (BOOL)wifiAvailable
-{
-    struct sockaddr_in sockAddr;
-    bzero(&sockAddr, sizeof(sockAddr));
-    sockAddr.sin_len = sizeof(sockAddr);
-    sockAddr.sin_family = AF_INET;
-
-    SCNetworkReachabilityRef nrRef = SCNetworkReachabilityCreateWithAddress(NULL, (struct sockaddr *)&sockAddr);
-    SCNetworkReachabilityFlags flags;
-    BOOL didRetrieveFlags = SCNetworkReachabilityGetFlags(nrRef, &flags);
-    if (!didRetrieveFlags) {
-        RakeDebug(@"%@ unable to fetch the network reachablity flags", self);
-    }
-
-    CFRelease(nrRef);
-
-    if (!didRetrieveFlags || (flags & kSCNetworkReachabilityFlagsReachable) != kSCNetworkReachabilityFlagsReachable) {
-        // unable to connect to a network (no signal or airplane mode activated)
-        return NO;
-    }
-
-    if ((flags & kSCNetworkReachabilityFlagsIsWWAN) == kSCNetworkReachabilityFlagsIsWWAN) {
-        // only a cellular network connection is available.
-        return NO;
-    }
-
-    return YES;
-}
+//+ (BOOL)wifiAvailable
+//{
+//    struct sockaddr_in sockAddr;
+//    bzero(&sockAddr, sizeof(sockAddr));
+//    sockAddr.sin_len = sizeof(sockAddr);
+//    sockAddr.sin_family = AF_INET;
+//
+//    SCNetworkReachabilityRef nrRef = SCNetworkReachabilityCreateWithAddress(NULL, (struct sockaddr *)&sockAddr);
+//    SCNetworkReachabilityFlags flags;
+//    BOOL didRetrieveFlags = SCNetworkReachabilityGetFlags(nrRef, &flags);
+//    if (!didRetrieveFlags) {
+//        RakeDebug(@"%@ unable to fetch the network reachablity flags", self);
+//    }
+//
+//    CFRelease(nrRef);
+//
+//    if (!didRetrieveFlags || (flags & kSCNetworkReachabilityFlagsReachable) != kSCNetworkReachabilityFlagsReachable) {
+//        // unable to connect to a network (no signal or airplane mode activated)
+//        return NO;
+//    }
+//
+//    if ((flags & kSCNetworkReachabilityFlagsIsWWAN) == kSCNetworkReachabilityFlagsIsWWAN) {
+//        // only a cellular network connection is available.
+//        return NO;
+//    }
+//
+//    return YES;
+//}
 
 
 - (NSURLRequest *)apiRequestWithEndpoint:(NSString *)endpoint andBody:(NSString *)body
