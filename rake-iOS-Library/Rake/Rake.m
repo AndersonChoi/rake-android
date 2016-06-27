@@ -171,15 +171,15 @@ static NSArray* defaultValueBlackList = nil;
 
         // wifi reachability
         BOOL reachabilityOk = NO;
-        if ((self.reachability = SCNetworkReachabilityCreateWithName(NULL, "api.rake.com")) != NULL) {
+        if ((_reachability = SCNetworkReachabilityCreateWithName(NULL, "api.rake.com")) != NULL) {
             SCNetworkReachabilityContext context = {0, (__bridge void*)self, NULL, NULL, NULL};
-            if (SCNetworkReachabilitySetCallback(self.reachability, RakeReachabilityCallback, &context)) {
-                if (SCNetworkReachabilitySetDispatchQueue(self.reachability, self.serialQueue)) {
+            if (SCNetworkReachabilitySetCallback(_reachability, RakeReachabilityCallback, &context)) {
+                if (SCNetworkReachabilitySetDispatchQueue(_reachability, self.serialQueue)) {
                     reachabilityOk = YES;
                     RakeDebug(@"%@ successfully set up reachability callback", self);
                 } else {
                     // cleanup callback if setting dispatch queue failed
-                    SCNetworkReachabilitySetCallback(self.reachability, NULL, NULL);
+                    SCNetworkReachabilitySetCallback(_reachability, NULL, NULL);
                 }
             }
         }
@@ -239,11 +239,18 @@ static NSArray* defaultValueBlackList = nil;
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];
-    if (self.reachability) {
-        SCNetworkReachabilitySetCallback(self.reachability, NULL, NULL);
-        SCNetworkReachabilitySetDispatchQueue(self.reachability, NULL);
-        self.reachability = nil;
+    if (_reachability != NULL) {
+        if (!SCNetworkReachabilitySetCallback(_reachability, NULL, NULL)) {
+            NSLog(@"%@ error unsetting reachability callback", self);
+        }
+        if (!SCNetworkReachabilitySetDispatchQueue(_reachability, NULL)) {
+            NSLog(@"%@ error unsetting reachability dispatch queue", self);
+        }
+        CFRelease(_reachability);
+        _reachability = NULL;
+        RakeDebug(@"released reachability");
     }
+    
 }
 
 - (NSString *)description
