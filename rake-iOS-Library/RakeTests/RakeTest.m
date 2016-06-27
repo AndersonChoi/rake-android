@@ -30,7 +30,7 @@
 - (void)testRakeWithShuttle {
     
     RakeClientTestSentinelShuttle *shuttle = [[RakeClientTestSentinelShuttle alloc] init];
-    
+    [shuttle user_id:@"hi_test_uid"];
     [shuttle ab_test_group: @"1"];
     
     [self.rake track: [shuttle toNSDictionary]];

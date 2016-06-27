@@ -890,8 +890,10 @@ static NSArray* defaultValueBlackList = nil;
         
         // if network is off, or timeout occurred
         if (error) {
-            [trackMetric status:@"RETRY"];
-            [self trackMetric:trackMetric];
+            if(queue == _eventsQueue) {
+                [trackMetric status:@"RETRY"];
+                [self trackMetric:trackMetric];
+            }
             NSLog(@"%@ network failure: %@", self, error);
             break;
         }
@@ -901,9 +903,11 @@ static NSArray* defaultValueBlackList = nil;
         [trackMetric server_response_code:@(statusCode)];
         [trackMetric status:@"ERROR"];
         if (statusCode == 500) {
+            if(queue == _eventsQueue) {
+                [trackMetric status:@"RETRY"];
+                [self trackMetric:trackMetric];
+            }
             NSLog(@"%@ internal server error: %ld", self, (long)statusCode);
-            [trackMetric status:@"RETRY"];
-            [self trackMetric:trackMetric];
             break;
         } else if(statusCode == 400) {
             NSLog(@"%@ server return BAD Request: %ld", self, (long)statusCode);
@@ -1091,7 +1095,7 @@ static NSArray* defaultValueBlackList = nil;
     NSString *filePath = [self metricFilePath];
     @try {
         self.metricsQueue = [NSKeyedUnarchiver unarchiveObjectWithFile:filePath];
-        RakeDebug(@"%@ unarchived events data: %@", self, self.eventsQueue);
+        RakeDebug(@"%@ unarchived metric data: %@", self, self.eventsQueue);
     }
     @catch (NSException *exception) {
         NSLog(@"%@ unable to unarchive events data, starting fresh", self);
