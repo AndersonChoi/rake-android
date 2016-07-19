@@ -95,7 +95,6 @@
 		21362C241C1943E7007B42F5 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		21362C2B1C194511007B42F5 /* Rake.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Rake.h; sourceTree = "<group>"; };
 		21362C2C1C19451A007B42F5 /* Rake.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Rake.m; sourceTree = "<group>"; };
-		21362C311C194532007B42F5 /* Rake-Prefix.pch */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "Rake-Prefix.pch"; sourceTree = "<group>"; };
 		3110FA891C572F1F00E847BD /* MetricTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MetricTest.m; sourceTree = "<group>"; };
 		311551D31C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientMetricSentinelShuttle.h; sourceTree = "<group>"; };
 		311551D41C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientMetricSentinelShuttle.m; sourceTree = "<group>"; };
@@ -105,17 +104,10 @@
 		315E063D1C51BD34005CB28E /* MemoryLeakTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = MemoryLeakTest.m; sourceTree = "<group>"; };
 		315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeExceptionHandler.h; sourceTree = "<group>"; };
 		315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeExceptionHandler.m; sourceTree = "<group>"; };
-		31618EB21C6078D00049CE85 /* RakeCrashReporter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeCrashReporter.h; sourceTree = "<group>"; };
-		31618EB31C6078D00049CE85 /* RakeCrashReporter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeCrashReporter.m; sourceTree = "<group>"; };
-		31618EBA1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeCrashLoggerTextFormatter.h; sourceTree = "<group>"; };
-		31618EBB1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeCrashLoggerTextFormatter.m; sourceTree = "<group>"; };
-		3168E42D1C6C654500612825 /* module.modulemap */ = {isa = PBXFileReference; lastKnownFileType = "sourcecode.module-map"; path = module.modulemap; sourceTree = "<group>"; };
 		3177B9F61C4CEE93002523FF /* RakeTest.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeTest.m; sourceTree = "<group>"; };
 		3177B9FB1C4CF133002523FF /* Rake.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Rake.framework; path = release/Rake.framework; sourceTree = "<group>"; };
 		318272911C4CBC7100CAC16B /* SystemConfiguration.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SystemConfiguration.framework; path = System/Library/Frameworks/SystemConfiguration.framework; sourceTree = SDKROOT; };
 		318272931C4CBC7700CAC16B /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
-		31EDFEBA1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AppCrashLoggerSentinelShuttle.h; sourceTree = "<group>"; };
-		31EDFEBB1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AppCrashLoggerSentinelShuttle.m; sourceTree = "<group>"; };
 		74B5E1591E2E68F812541002 /* RakeClientTestSentinelShuttle.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeClientTestSentinelShuttle.h; sourceTree = "<group>"; };
 		74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RakeConfig.h; sourceTree = "<group>"; };
 		74B5E860F9EAE64D3DC181E6 /* RakeClientTestSentinelShuttle.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = RakeClientTestSentinelShuttle.m; sourceTree = "<group>"; };
@@ -145,11 +137,8 @@
 		21362C141C1943D5007B42F5 /* Rake */ = {
 			isa = PBXGroup;
 			children = (
-				31EDFEBA1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.h */,
-				31EDFEBB1C5EF644005B17FC /* AppCrashLoggerSentinelShuttle.m */,
 				311551D31C520ADE0068D660 /* RakeClientMetricSentinelShuttle.h */,
 				311551D41C520ADE0068D660 /* RakeClientMetricSentinelShuttle.m */,
-				21362C311C194532007B42F5 /* Rake-Prefix.pch */,
 				21362C2B1C194511007B42F5 /* Rake.h */,
 				21362C2C1C19451A007B42F5 /* Rake.m */,
 				74B5E28B1097C64DBD78D1F6 /* RakeConfig.h */,
@@ -157,10 +146,6 @@
 				315E06361C50EA1D005CB28E /* Base64.m */,
 				315E06E61C51EC20005CB28E /* RakeExceptionHandler.h */,
 				315E06E71C51EC20005CB28E /* RakeExceptionHandler.m */,
-				31618EB21C6078D00049CE85 /* RakeCrashReporter.h */,
-				31618EB31C6078D00049CE85 /* RakeCrashReporter.m */,
-				31618EBA1C619A190049CE85 /* RakeCrashLoggerTextFormatter.h */,
-				31618EBB1C619A190049CE85 /* RakeCrashLoggerTextFormatter.m */,
 			);
 			path = Rake;
 			sourceTree = "<group>";
@@ -208,7 +193,6 @@
 		74B5E930E5A00D942233636A = {
 			isa = PBXGroup;
 			children = (
-				3168E42D1C6C654500612825 /* module.modulemap */,
 				21362C141C1943D5007B42F5 /* Rake */,
 				21362C211C1943E7007B42F5 /* RakeTests */,
 				74B5E9BF1F587C1EC494BE7D /* Products */,
