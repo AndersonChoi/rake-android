@@ -37,18 +37,9 @@
 }
 - (IBAction)actionBtnTrack:(id)sender {
     RakeClientTestSentinelShuttle* shuttle = [[RakeClientTestSentinelShuttle alloc] init];
-    
-    [shuttle setBodyOf_home___with_stacktrace:@" " exception_type:@" " push_notification_id:@" " user_id:@" " oauth_provider:@" " oauth_token:@" " job_advertisement_id:@" " repository:@" " branch:@" " code_text:@" " issue_id:@" " title:@" " comment_text:@" " pull_request_id:@" " target_branch:@" " ab_test_group:@"1"];
-    
+    [shuttle setBodyOf__PUSH_START_with_push_notification_id:@"NotiID"];
     [self.rake track: [shuttle toNSDictionary]];
-
     NSLog(@"Track");
-//    NSException *e =[NSException exceptionWithName:@"hihihi" reason:@"idknow" userInfo:nil];
-//    [e raise];
-//    CFRelease(NULL);
-//    [self performSelector:@selector(string) withObject:nil afterDelay:2.0];
-//    [self performSelector:@selector(badAccess) withObject:nil afterDelay:2.0];
-
 }
 
 

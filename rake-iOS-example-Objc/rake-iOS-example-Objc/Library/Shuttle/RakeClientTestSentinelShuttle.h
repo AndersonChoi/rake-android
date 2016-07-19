@@ -69,21 +69,21 @@
 
 - (RakeClientTestSentinelShuttle*) event:(NSString *) event;
 
-- (RakeClientTestSentinelShuttle*) session_id:(NSString *) session_id;
+- (RakeClientTestSentinelShuttle*) session_id:(NSNumber *) session_id;
 
 - (RakeClientTestSentinelShuttle*) log_source:(NSString *) log_source;
 
-- (RakeClientTestSentinelShuttle*) reserved1:(NSString *) reserved1;
+- (RakeClientTestSentinelShuttle*) transaction_id:(NSString *) transaction_id;
 
-- (RakeClientTestSentinelShuttle*) reserved2:(NSString *) reserved2;
+- (RakeClientTestSentinelShuttle*) app_package:(NSString *) app_package;
 
-- (RakeClientTestSentinelShuttle*) reserved3:(NSString *) reserved3;
+- (RakeClientTestSentinelShuttle*) reserved1:(NSNumber *) reserved1;
 
-- (RakeClientTestSentinelShuttle*) reserved4:(NSString *) reserved4;
+- (RakeClientTestSentinelShuttle*) reserved2:(NSNumber *) reserved2;
 
-- (RakeClientTestSentinelShuttle*) container_id:(NSString *) container_id;
+- (RakeClientTestSentinelShuttle*) reserved3:(NSNumber *) reserved3;
 
-- (RakeClientTestSentinelShuttle*) element_id:(NSString *) element_id;
+- (RakeClientTestSentinelShuttle*) reserved4:(NSNumber *) reserved4;
 
 - (RakeClientTestSentinelShuttle*) stacktrace:(NSString *) stacktrace;
 
@@ -105,7 +105,7 @@
 
 - (RakeClientTestSentinelShuttle*) code_text:(NSString *) code_text;
 
-- (RakeClientTestSentinelShuttle*) issue_id:(NSString *) issue_id;
+- (RakeClientTestSentinelShuttle*) issue_id:(NSNumber *) issue_id;
 
 - (RakeClientTestSentinelShuttle*) title:(NSString *) title;
 
@@ -119,358 +119,50 @@
 
 
 
-- (RakeClientTestSentinelShuttle*) setBodyOf__LOGOUT_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
+- (RakeClientTestSentinelShuttle*) setBodyOf__ERROR_with_stacktrace:(NSString *) stacktrace
+exception_type:(NSString *) exception_type;
+- (RakeClientTestSentinelShuttle*) setBodyOf__LOGOUT;
+- (RakeClientTestSentinelShuttle*) setBodyOf__PUSH_START_with_push_notification_id:(NSString *) push_notification_id;
+- (RakeClientTestSentinelShuttle*) setBodyOf_auth__LOGIN_with_user_id:(NSString *) user_id;
+- (RakeClientTestSentinelShuttle*) setBodyOf_oauth__LOGIN_with_oauth_provider:(NSString *) oauth_provider
+oauth_token:(NSString *) oauth_token;
+- (RakeClientTestSentinelShuttle*) setBodyOf_landing___with_ab_test_group:(NSString *) ab_test_group;
+- (RakeClientTestSentinelShuttle*) setBodyOf_signup__;
+- (RakeClientTestSentinelShuttle*) setBodyOf_signup__SIGNUP_with_user_id:(NSString *) user_id;
+- (RakeClientTestSentinelShuttle*) setBodyOf_home___with_job_advertisement_id:(NSString *) job_advertisement_id
 ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf__PUSH_START_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository___with_repository:(NSString *) repository;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository__STAR_with_repository:(NSString *) repository;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository__FORK_with_repository:(NSString *) repository;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository__WATCH_with_repository:(NSString *) repository;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch___with_repository:(NSString *) repository
+branch:(NSString *) branch;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__CREATE_with_repository:(NSString *) repository
+branch:(NSString *) branch;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__COMMIT_with_repository:(NSString *) repository
 branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_auth__LOGIN_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
+code_text:(NSString *) code_text;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__DELETE_with_repository:(NSString *) repository
+branch:(NSString *) branch;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue___with_repository:(NSString *) repository
+branch:(NSString *) branch;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__CREATE_with_repository:(NSString *) repository
 branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_oauth__LOGIN_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
+issue_id:(NSNumber *) issue_id;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__COMMENT_with_repository:(NSString *) repository
 branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_landing___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
+issue_id:(NSNumber *) issue_id
+title:(NSString *) title;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__CLOSE_with_repository:(NSString *) repository
 branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_signup___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
+issue_id:(NSNumber *) issue_id
+comment_text:(NSString *) comment_text;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_pull_request__CREATE_with_repository:(NSString *) repository
+branch:(NSString *) branch;
+- (RakeClientTestSentinelShuttle*) setBodyOf_repository_pull_request__MERGE_with_repository:(NSString *) repository
 branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
 pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_signup__SIGNUP_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_home___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository__STAR_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository__FORK_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository__WATCH_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__CREATE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__COMMIT_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch__DELETE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue___with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__CREATE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__COMMENT_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_branch_issue__CLOSE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_pull_request__CREATE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
-- (RakeClientTestSentinelShuttle*) setBodyOf_repository_pull_request__MERGE_with_stacktrace:(NSString *) stacktrace
-exception_type:(NSString *) exception_type
-push_notification_id:(NSString *) push_notification_id
-user_id:(NSString *) user_id
-oauth_provider:(NSString *) oauth_provider
-oauth_token:(NSString *) oauth_token
-job_advertisement_id:(NSString *) job_advertisement_id
-repository:(NSString *) repository
-branch:(NSString *) branch
-code_text:(NSString *) code_text
-issue_id:(NSString *) issue_id
-title:(NSString *) title
-comment_text:(NSString *) comment_text
-pull_request_id:(NSString *) pull_request_id
-target_branch:(NSString *) target_branch
-ab_test_group:(NSString *) ab_test_group;
+target_branch:(NSString *) target_branch;
 
 
 // 10 public util functions
