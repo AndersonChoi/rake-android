@@ -15,6 +15,7 @@ import org.apache.http.conn.scheme.PlainSocketFactory;
 import org.apache.http.conn.scheme.Scheme;
 import org.apache.http.conn.scheme.SchemeRegistry;
 import org.apache.http.conn.ssl.SSLSocketFactory;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.conn.tsccm.ThreadSafeClientConnManager;
 import org.apache.http.params.BasicHttpParams;
@@ -89,8 +90,7 @@ final public class HttpRequestSender {
             return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         }
 
-        flushStatus = RakeProtocolV1.interpretResponse(
-                responseMetric.getResponseBody(), responseMetric.getResponseCode());
+        flushStatus = RakeProtocolV2.interpretResponse(responseMetric.getResponseCode());
 
         return responseMetric.setFlushStatus(flushStatus);
     }
@@ -102,7 +102,7 @@ final public class HttpRequestSender {
      * @throws IOException
      */
     public static ServerResponse sendHttpUrlStreamRequest(String endPoint,
-                                                          String encodedData)
+                                                          String requestBody)
             throws MalformedURLException, UnsupportedEncodingException, ProtocolException, IOException {
 
         URL url;
@@ -119,12 +119,12 @@ final public class HttpRequestSender {
         try {
             url = new URL(endPoint);
             conn = (HttpURLConnection) url.openConnection();
-            String requestBody = RakeProtocolV1.buildHttpUrlConnectionRequestBody(encodedData);
 
             conn.setReadTimeout(SOCKET_TIMEOUT);
             conn.setConnectTimeout(CONNECTION_TIMEOUT);
             conn.setChunkedStreamingMode(0);
             conn.setRequestProperty("Accept-Encoding", "identity"); /* disable default gzip */
+            conn.setRequestProperty("Content-Type","application/json");
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -132,7 +132,7 @@ final public class HttpRequestSender {
             long startAt = System.nanoTime();
 
             os = conn.getOutputStream();
-            writer = new BufferedWriter(new OutputStreamWriter(os, RakeProtocolV1.CHAR_ENCODING));
+            writer = new BufferedWriter(new OutputStreamWriter(os, RakeProtocolV2.CHAR_ENCODING));
             writer.write(requestBody);
             writer.flush();
 
@@ -167,14 +167,15 @@ final public class HttpRequestSender {
      * @throws IOException
      */
     public static ServerResponse sendHttpClientRequest(String endPoint,
-                                                       String requestMessage)
+                                                       String requestBody)
             throws UnsupportedEncodingException, GeneralSecurityException, IOException {
         String responseBody = null;
         int responseCode = 0;
         long responseTime = 0L;
 
-        HttpEntity requestEntity = RakeProtocolV1.buildHttpClientRequestBody(requestMessage);
+        StringEntity requestEntity = new StringEntity(requestBody);
         HttpPost httppost = new HttpPost(endPoint);
+        httppost.setHeader("Content-type", "application/json");
         httppost.setEntity(requestEntity);
         HttpClient client = createHttpsClient();
 

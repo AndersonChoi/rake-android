@@ -136,10 +136,10 @@ public class RakeAPISpec {
     public void test_Endpoint_changed() {
         /** ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
 
-        String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";
-        String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/track";
-        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/track";
-        String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/track";
+        String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+        String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/putlog/client";
+        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
+        String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/putlog/client";
 
         assertThat(CHARGED.getURI(Env.DEV)).isEqualTo(CHARGED_ENDPOINT_DEV);
         assertThat(CHARGED.getURI(Env.LIVE)).isEqualTo(CHARGED_ENDPOINT_LIVE);

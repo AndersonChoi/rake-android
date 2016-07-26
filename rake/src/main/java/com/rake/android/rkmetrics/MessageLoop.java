@@ -15,7 +15,7 @@ import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.FlushMethod;
-import com.rake.android.rkmetrics.network.RakeProtocolV1;
+import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
@@ -42,7 +42,6 @@ final class MessageLoop {
     public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
     public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
     public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
-    public static final long INITIAL_EVENT_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
 
     private static long autoFlushInterval = DEFAULT_FLUSH_INTERVAL;
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
@@ -54,7 +53,6 @@ final class MessageLoop {
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER (5),
-        FLUSH_EVENT_TABLE(6), /* to support the legacy table `Event` */
         RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
@@ -241,10 +239,6 @@ final class MessageLoop {
             LogTableAdapter.getInstance(appContext)
                     .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
-            /* flush legacy table `events` */
-            if (DatabaseAdapter.upgradedFrom4To5)
-                sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, INITIAL_EVENT_FLUSH_DELAY);
-
             sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
@@ -291,7 +285,7 @@ final class MessageLoop {
                     default: Logger.e("Unknown FlushStatus"); return;
                 }
 
-                RakeProtocolV1.reportResponse(
+                RakeProtocolV2.reportResponse(
                         response.getResponseBody(),
                         response.getResponseCode()
                 );
@@ -307,16 +301,22 @@ final class MessageLoop {
                 return null;
             }
 
+            String url = new StringBuilder()
+                    .append(chunk.getUrl())
+                    .append("/")
+                    .append(chunk.getToken())
+                    .toString();
+
             Logger.t(String.format(
                             "[NETWORK] Sending %d log to %s where token = %s",
                             chunk.getCount(),
-                            chunk.getUrl(),
+                            url,
                             chunk.getToken())
             );
 
             // TODO: add token to URI
             ServerResponse responseMetric = HttpRequestSender.handleResponse(
-                    chunk.getUrl(),
+                    url,
                     chunk.getChunk(),
                     FlushMethod.getProperFlushMethod(),
                     HttpRequestSender.procedure
@@ -328,48 +328,6 @@ final class MessageLoop {
         /**
          * Database Version 4 까지 사용하던 `event` 테이블을 플러시, 0.4.0 초과 버전부터 삭제할 것
          */
-        private void flushEventTable() {
-            updateFlushFrequency();
-            ExtractedEvent event = EventTableAdapter.getInstance(appContext).getExtractEvent();
-
-            if (event != null) {
-                String lastId = event.getLastId();
-                final String log = event.getLog();
-                final String url = Endpoint.CHARGED.getURI(RakeAPI.Env.LIVE);
-
-                /** assume that RakeAPI runs with Env.LIVE option */
-                String message = String.format("[NETWORK] Sending %d events to %s", event.getLogCount(), url);
-                Logger.t(message);
-
-                ServerResponse responseMetric = HttpRequestSender.handleResponse(
-                        url,
-                        log,
-                        FlushMethod.getProperFlushMethod(),
-                        HttpRequestSender.procedure
-                );
-
-                if (null == responseMetric) {
-                    Logger.e("ServerResponse can't be null");
-                    return;
-                }
-
-                Status status = responseMetric.getFlushStatus();
-
-                RakeProtocolV1.reportResponse(
-                        responseMetric.getResponseBody(),
-                        responseMetric.getResponseCode()
-                );
-
-                if (DONE == status || DROP == status) {
-                    // Unrecoverable failure. DROP it.
-                    EventTableAdapter.getInstance(appContext).removeEventById(lastId);
-                } else if (RETRY == status) {
-                    sendEmptyMessageDelayed(FLUSH_EVENT_TABLE.code, autoFlushInterval);
-                } else {
-                    Logger.e("Invalid TransmissionResult: " + status);
-                }
-            }
-        }
 
         @Override
         public void handleMessage(Message msg) {
@@ -387,19 +345,19 @@ final class MessageLoop {
                     if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
                         sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
                     }
-
-                } else if (command == FLUSH_EVENT_TABLE) {
-                    flushEventTable();
                 } else if (command == MANUAL_FLUSH) {
                     flush(FlushType.MANUAL_FLUSH);
+
                 } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
                     flush(FlushType.AUTO_FLUSH_BY_COUNT);
+
                 } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
                     /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 autoFlushInterval 만큼 반복 */
                     if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
                         sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
 
                     flush(FlushType.AUTO_FLUSH_BY_TIMER);
+
                 } else if (command == KILL_WORKER) {
                     Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                     synchronized (handlerLock) {

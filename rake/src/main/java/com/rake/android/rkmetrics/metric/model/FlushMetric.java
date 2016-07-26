@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.metric.model;
 
 import com.rake.android.rkmetrics.network.FlushMethod;
-import com.rake.android.rkmetrics.network.RakeProtocolV1;
+import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
@@ -75,7 +75,7 @@ public final class FlushMetric extends Body {
                 .server_response_code(server_response_code)
                 .server_response_time(server_response_time)
                 .flush_method(flush_method)
-                .rake_protocol_version(RakeProtocolV1.RAKE_PROTOCOL_VERSION);
+                .rake_protocol_version(RakeProtocolV2.RAKE_PROTOCOL_VERSION);
 
         return shuttle.toJSONObject();
     }
