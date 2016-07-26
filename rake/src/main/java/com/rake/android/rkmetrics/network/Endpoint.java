@@ -9,10 +9,10 @@ public enum Endpoint {
     CHARGED("CHARGED"),
     FREE("FREE");
 
-    public final static String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/track";
-    public final static String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/track";
-    public final static String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/track";
-    public final static String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/track";
+    public final static String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+    public final static String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/putlog/client";
+    public final static String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
+    public final static String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/putlog/client";
 
     public final static Endpoint DEFAULT = CHARGED;
 
