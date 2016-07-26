@@ -20,7 +20,7 @@ android {
     defaultConfig {
         applicationId "com.skplanet.rake.application"
         minSdkVersion 11
-        targetSdkVersion 23
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
