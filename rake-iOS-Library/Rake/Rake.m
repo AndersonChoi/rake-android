@@ -51,6 +51,7 @@
 @property (atomic, copy) NSString *distinctId;
 
 @property (nonatomic, copy) NSString *apiToken;
+@property (nonatomic, copy) NSString *metricToken;
 @property (atomic, strong) NSDictionary *superProperties;
 @property (nonatomic, strong) NSMutableDictionary *automaticProperties; // mutable because we update $wifi when reachability changes
 @property (nonatomic, strong) NSTimer *timer;
@@ -110,11 +111,14 @@ static NSArray* defaultValueBlackList = nil;
     dispatch_once(&onceToken, ^{
         sharedInstance = [[super alloc] initWithToken:apiToken andFlushInterval:60];
         sharedInstance.isDevServer = isDevServer;
+
         if(isDevServer){
             [sharedInstance setServerURL:DEV_SERVER_URL];
+            [sharedInstance setMetricToken:METRIC_TOKEN_DEV];
             sharedInstance.flushInterval = 10;
         } else {
             [sharedInstance setServerURL:LIVE_SERVER_URL];
+            [sharedInstance setMetricToken:METRIC_TOKEN_LIVE];
         }
         defaultValueBlackList = @[];
     });
@@ -230,9 +234,11 @@ static NSArray* defaultValueBlackList = nil;
     Rake *ret = [self initWithToken:apiToken andFlushInterval:isDevServer];
     if(isDevServer){
         [ret setServerURL:DEV_SERVER_URL];
+        [ret setMetricToken:METRIC_TOKEN_DEV];
         ret.flushInterval = 5;
     } else {
         [ret setServerURL:LIVE_SERVER_URL];
+        [ret setMetricToken:METRIC_TOKEN_LIVE];
     }
     return ret;
 }
@@ -436,17 +442,8 @@ static NSArray* defaultValueBlackList = nil;
 
 - (NSString *)encodeAPIData:(NSArray *)array
 {
-    NSString *b64String = @"";
     NSData *data = [self JSONSerializeObject:array];
-    if (data) {
-        b64String = [Base64 rk_base64EncodedString:data];
-        b64String = (id)CFBridgingRelease(CFURLCreateStringByAddingPercentEscapes(kCFAllocatorDefault,
-                                                                                  (__bridge CFStringRef)b64String,
-                                                                                  NULL,
-                                                                                  CFSTR("!*'();:@&=+$,/?%#[]"),
-                                                                                  kCFStringEncodingUTF8));
-    }
-    return b64String;
+    return [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
 }
 
 #pragma mark - Tracking
@@ -517,16 +514,13 @@ static NSArray* defaultValueBlackList = nil;
     [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
     [trackMetric rake_protocol_version:@"V1"];
  
-    NSString *apiToken = METRIC_TOKEN_LIVE;
     if(self.isDevServer) {
-        apiToken = METRIC_TOKEN_DEV;
         [trackMetric env:@"DEV"];
     } else {
         [trackMetric env:@"LIVE"];
     }
     
-    
-    [self track:[trackMetric toNSDictionary] ApiToken:apiToken Queue:_metricsQueue];
+    [self track:[trackMetric toNSDictionary] ApiToken:self.metricToken Queue:_metricsQueue];
     
 }
 #ifdef USE_PLCRASHREPORTER
@@ -661,7 +655,7 @@ static NSArray* defaultValueBlackList = nil;
             [e setObject:p forKey:@"properties"];
         }
 
-        RakeLog(@"%@ queueing event: %@", self, e);
+        RakeDebug(@"%@ queueing event: %@", self, e);
 
         [queue addObject:e];
         if ([queue count] > MAX_TRACK_COUNT) {
@@ -844,11 +838,11 @@ static NSArray* defaultValueBlackList = nil;
 
 - (void)flushEvents
 {
-    [self flushQueue:_eventsQueue endpoint:@"/track/" maxBatchSize:50];
+    [self flushQueue:_eventsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.apiToken] maxBatchSize:50];
 }
 - (void)flushMetrics
 {
-    [self flushQueue:_metricsQueue endpoint:@"/track/" maxBatchSize:5];
+    [self flushQueue:_metricsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.metricToken] maxBatchSize:5];
 }
 
 - (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint maxBatchSize:(NSUInteger)maxBatchSize
@@ -865,9 +859,8 @@ static NSArray* defaultValueBlackList = nil;
         NSArray *batch = [queue subarrayWithRange:NSMakeRange(0, batchSize)];
 
         NSString *requestData = [self encodeAPIData:batch];
-        NSString *postBody = [NSString stringWithFormat:@"compress=plain&data=%@", requestData];
         RakeDebug(@"%@ flushing %lu of %lu to %@: %@", self, (unsigned long)[batch count], (unsigned long)[queue count], endpoint, queue);
-        NSURLRequest *request = [self apiRequestWithEndpoint:endpoint andBody:postBody];
+        NSURLRequest *request = [self apiRequestWithEndpoint:endpoint andBody:requestData];
         NSError *error = nil;
 
         [self updateNetworkActivityIndicator:YES];
@@ -905,6 +898,8 @@ static NSArray* defaultValueBlackList = nil;
         if (statusCode == 500) {
             if(queue == _eventsQueue) {
                 [trackMetric status:@"RETRY"];
+                NSString *responseBody = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+                [trackMetric server_response_body:responseBody];
                 [self trackMetric:trackMetric];
             }
             NSLog(@"%@ internal server error: %ld", self, (long)statusCode);
@@ -915,24 +910,21 @@ static NSArray* defaultValueBlackList = nil;
 
         NSLog(@"response code: %ld", (long)statusCode);
         NSString *responseBody = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        NSLog(@"response body %d", [responseBody intValue]);
+        NSLog(@"response body %@", responseBody);
 
-        if ([responseBody intValue] == -1) {
-            NSLog(@"%@ %@ api rejected some items", self, endpoint);
-            [trackMetric status:@"DROP"];
-        } else if ([responseBody intValue] == 1) {
+        if ([responseBody isEqualToString:@"OK"]) {
             NSLog(@"%@ %@ api accepted items", self, endpoint);
             [trackMetric status:@"DONE"];
         } else {
-            NSLog(@"%@ %@ api no response Body", self, endpoint);
-            [trackMetric status:@"ERROR"];
+            NSLog(@"%@ %@ api rejected some items", self, endpoint);
+            [trackMetric status:@"DROP"];
         }
         
         [queue removeObjectsInArray:batch];
 
 //        NSLog(@"status::",[trackMetric valueForKey:@"_status" ]);
         if(queue == _eventsQueue) {
-            if(![[trackMetric valueForKey:@"_status" ] isEqualToString:@"DONE"]) {
+            if(statusCode != 200) {
                 [trackMetric server_response_body:responseBody];
                 [self trackMetric:trackMetric];
             }
@@ -1000,8 +992,9 @@ static NSArray* defaultValueBlackList = nil;
     NSURL *URL = [NSURL URLWithString:[self.serverURL stringByAppendingString:endpoint]];
     NSMutableURLRequest *request = [NSMutableURLRequest requestWithURL:URL];
     [request setValue:@"gzip" forHTTPHeaderField:@"Accept-Encoding"];
-//    [request setValue:@"gzip" forHTTPHeaderField:@"Content-Encoding"];
-
+    [request setValue:@"application/json" forHTTPHeaderField:@"Content-Type"];
+    //    [request setValue:@"gzip" forHTTPHeaderField:@"Content-Encoding"];
+    
     [request setHTTPMethod:@"POST"];
     [request setHTTPBody:[body dataUsingEncoding:NSUTF8StringEncoding]];
     RakeDebug(@"%@ http request: %@?%@", self, URL, body);
