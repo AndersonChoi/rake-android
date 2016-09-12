@@ -1229,7 +1229,9 @@ static NSArray* defaultValueBlackList = nil;
 - (void)applicationWillTerminate:(NSNotification *)notification
 {
     RakeDebug(@"%@ will applicationWillTerminate", self);
-    [self archive];
+    dispatch_async(_serialQueue, ^{
+        [self archive];
+    });
 }
 
 @end
