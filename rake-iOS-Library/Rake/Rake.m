@@ -263,16 +263,21 @@ static NSArray* defaultValueBlackList = nil;
 {
     return [NSString stringWithFormat:@"<Rake: %p %@>", self, self.apiToken];
 }
-
 - (NSString *)deviceModel
 {
+    NSString *results = nil;
     size_t size;
     sysctlbyname("hw.machine", NULL, &size, NULL, 0);
     char answer[size];
     sysctlbyname("hw.machine", answer, &size, NULL, 0);
-    NSString *results = @(answer);
+    if (size) {
+        results = @(answer);
+    } else {
+        RakeLog(@"Failed fetch hw.machine from sysctl.");
+    }
     return results;
 }
+
 
 
 - (NSString *)IFA
@@ -818,6 +823,7 @@ static NSArray* defaultValueBlackList = nil;
         @try {
             [self flushEvents];
             [self flushMetrics];
+            [self archive];
         }
         @catch (NSException *exception) {
             RakeClientMetricSentinelShuttle *trackMetric = [[RakeClientMetricSentinelShuttle alloc] init];
