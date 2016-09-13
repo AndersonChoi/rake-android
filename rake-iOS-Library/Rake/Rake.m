@@ -1044,7 +1044,7 @@ static NSArray* defaultValueBlackList = nil;
     NSString *filePath = [self eventsFilePath];
     NSMutableArray *eventsQueueCopy = [NSMutableArray arrayWithArray:[self.eventsQueue copy]];
     RakeDebug(@"%@ archiving events data to %@: %@", self, filePath, eventsQueueCopy);
-    if (![NSKeyedArchiver archiveRootObject:eventsQueueCopy toFile:filePath]) {
+    if(![self archiveObject:eventsQueueCopy withFilePath:filePath]) {
         NSLog(@"%@ unable to archive events data", self);
     }
 }
@@ -1054,7 +1054,7 @@ static NSArray* defaultValueBlackList = nil;
     NSString *filePath = [self metricFilePath];
     NSMutableArray *metricsQueueCopy = [NSMutableArray arrayWithArray:[self.metricsQueue copy]];
     RakeDebug(@"%@ archiving metrics data to %@: %@", self, filePath, metricsQueueCopy);
-    if (![NSKeyedArchiver archiveRootObject:metricsQueueCopy toFile:filePath]) {
+    if(![self archiveObject:metricsQueueCopy withFilePath:filePath]) {
         NSLog(@"%@ unable to archive events data", self);
     }
 }
@@ -1068,10 +1068,39 @@ static NSArray* defaultValueBlackList = nil;
     [p setValue:self.superProperties forKey:@"superProperties"];
 
     RakeDebug(@"%@ archiving properties data to %@: %@", self, filePath, p);
-    if (![NSKeyedArchiver archiveRootObject:p toFile:filePath]) {
+    if(![self archiveObject:p withFilePath:filePath]) {
         NSLog(@"%@ unable to archive properties data", self);
     }
 }
+
+- (BOOL)archiveObject:(id)object withFilePath:(NSString *)filePath {
+    @try {
+        if (![NSKeyedArchiver archiveRootObject:object toFile:filePath]) {
+            return NO;
+        }
+    } @catch (NSException* exception) {
+        NSAssert(@"Got exception: %@, reason: %@. You can only send to Rake values that inherit from NSObject and implement NSCoding.", exception.name, exception.reason);
+        return NO;
+    }
+    
+    [self addSkipBackupAttributeToItemAtPath:filePath];
+    return YES;
+}
+//for preventing files from being backed up to iCloud
+- (BOOL)addSkipBackupAttributeToItemAtPath:(NSString *)filePathString
+{
+    NSURL *URL = [NSURL fileURLWithPath: filePathString];
+    assert([[NSFileManager defaultManager] fileExistsAtPath: [URL path]]);
+    
+    NSError *error = nil;
+    BOOL success = [URL setResourceValue: [NSNumber numberWithBool: YES]
+                                  forKey: NSURLIsExcludedFromBackupKey error: &error];
+    if (!success) {
+        NSLog(@"Error excluding %@ from backup %@", [URL lastPathComponent], error);
+    }
+    return success;
+}
+
 
 - (void)unarchiveAndFlush {
     // unarchive events from disk
