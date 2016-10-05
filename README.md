@@ -13,7 +13,7 @@
 
 ##Install
 ###Static Framework
- 1. Rake Static Framework 를 다운로드 받으세요 [1.8.4](https://github.com/skpdi/rake-iphone/raw/master/Framework/Rake1.8.4.zip)
+ 1. Rake Static Framework 를 다운로드 받으세요 [1.8.5](https://github.com/skpdi/rake-iphone/raw/master/Framework/Rake1.8.5.zip)
  2. Rake.framework 을 선택하여 Xcode 프로젝트의 File Navigation에 넣습니다. 이때, Copy items if needed 이 선택된지 확인하고, Finish 버튼을 누릅니다.
 
 ----------
