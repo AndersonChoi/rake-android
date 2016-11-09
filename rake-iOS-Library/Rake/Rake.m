@@ -844,11 +844,11 @@ static NSArray* defaultValueBlackList = nil;
 
 - (void)flushEvents
 {
-    [self flushQueue:_eventsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.apiToken] maxBatchSize:100];
+    [self flushQueue:_eventsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.apiToken] maxBatchSize:50];
 }
 - (void)flushMetrics
 {
-    [self flushQueue:_metricsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.metricToken] maxBatchSize:100];
+    [self flushQueue:_metricsQueue endpoint:[NSString stringWithFormat:@"/putlog/client/%@",self.metricToken] maxBatchSize:10];
 }
 
 - (void)flushQueue:(NSMutableArray *)queue endpoint:(NSString *)endpoint maxBatchSize:(NSUInteger)maxBatchSize
