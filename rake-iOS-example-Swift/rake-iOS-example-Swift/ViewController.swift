@@ -11,12 +11,12 @@ class ViewController: UIViewController {
 
     @IBOutlet weak var btnTrack: UIButton!
     @IBOutlet weak var btnFlush: UIButton!
-    let rake = Rake.sharedInstanceWithToken("your-rake-token", andUseDevServer: true)
+    let rake = Rake.sharedInstance(withToken: "your-rake-token", andUseDevServer: true)
     
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view, typically from a nib.
-        print("rake libversion :\(rake.libVersion())")
+        print("rake libversion :\(rake?.libVersion())")
 
     }
 
@@ -26,15 +26,15 @@ class ViewController: UIViewController {
     }
 
 
-    @IBAction func actionBtnTrack(sender: AnyObject) {
+    @IBAction func actionBtnTrack(_ sender: AnyObject) {
         let shuttle = RakeClientTestSentinelShuttle()
-        shuttle.ab_test_group("1")
-        rake.track(shuttle.toNSDictionary())
+        shuttle?.ab_test_group("1")
+        rake?.track(shuttle?.toNSDictionary())
         print("track")
         
     }
-    @IBAction func actionBtnFlush(sender: AnyObject) {
-        rake.flush()
+    @IBAction func actionBtnFlush(_ sender: AnyObject) {
+        rake?.flush()
         print("flush")
     }
 }
