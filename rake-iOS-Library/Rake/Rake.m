@@ -14,7 +14,6 @@
 #import <SystemConfiguration/SystemConfiguration.h>
 
 #import <Rake.h>
-#import <Base64.h>
 #import <RakeExceptionHandler.h>
 #import <RakeConfig.h>
 #import <RakeClientMetricSentinelShuttle.h>
