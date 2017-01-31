@@ -516,7 +516,7 @@ static NSArray* defaultValueBlackList = nil;
     [trackMetric flush_method:@"HttpClient"];
     [trackMetric flush_method:@"TIMER"];
     [trackMetric flush_type:@"AUTO_FLUSH_BY_TIMER"];
-    [trackMetric rake_protocol_version:@"V1"];
+    [trackMetric rake_protocol_version:@"V2"];
  
     if(self.isDevServer) {
         [trackMetric env:@"DEV"];
