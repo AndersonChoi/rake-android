@@ -3,11 +3,11 @@ language: android
 android:
   components:
     - build-tools-19.1.0
-    - build-tools-23.0.0
+    - build-tools-24.0.2
     - sysimg-19
-    - sysimg-23
+    - sysimg-24
     - android-19
-    - android-23
+    - android-24
     - extra-android-support
     - extra-android-m2repository
     - extra-google-m2repository
