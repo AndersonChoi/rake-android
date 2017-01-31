@@ -2,6 +2,7 @@ language: android
 
 android:
   components:
+    - tools
     - build-tools-19.1.0
     - build-tools-24.0.2
     - sysimg-19
