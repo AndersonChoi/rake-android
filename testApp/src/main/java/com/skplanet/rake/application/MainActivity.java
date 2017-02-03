@@ -12,6 +12,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 
+import com.facebook.stetho.Stetho;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
@@ -35,6 +36,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Stetho.initialize(
+                Stetho.newInitializerBuilder(this)
+                        .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
+                        .enableWebKitInspector(Stetho.defaultInspectorModulesProvider(this))
+                        .build());
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -87,13 +95,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initialize() {
         Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
-        btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                install(RakeAPI.Env.DEV);
-            }
-        });
-
         btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
