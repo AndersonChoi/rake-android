@@ -1,7 +1,6 @@
 package com.rake.android.rkmetrics;
 
 import com.rake.android.rkmetrics.util.functional.Function0;
-import com.rake.android.rkmetrics.util.functional.Function1;
 
 import java.util.UUID;
 

@@ -1,9 +1,5 @@
 package com.rake.android.rkmetrics.config;
 
-import com.rake.android.rkmetrics.util.TimeUtil;
-
-import java.util.TimeZone;
-
 /**
  * Stores global configuration options for the Rake library.
  * May be overridden to achieve custom behavior.

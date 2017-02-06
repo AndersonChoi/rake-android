@@ -7,9 +7,9 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 
 import com.facebook.stetho.Stetho;
@@ -17,10 +17,6 @@ import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MainActivity extends AppCompatActivity {
@@ -82,7 +78,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private String createLargeString() {
-
 
         StringBuilder sb = new StringBuilder();
 

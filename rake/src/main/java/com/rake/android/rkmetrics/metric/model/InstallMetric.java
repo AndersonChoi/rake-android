@@ -1,7 +1,6 @@
 package com.rake.android.rkmetrics.metric.model;
 
 import com.rake.android.rkmetrics.RakeAPI;
-import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 

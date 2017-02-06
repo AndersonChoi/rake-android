@@ -1,6 +1,5 @@
 package com.rake.android.rkmetrics.persistent;
 
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 public class SQLiteUtil {
