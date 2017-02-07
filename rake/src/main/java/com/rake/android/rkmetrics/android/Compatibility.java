@@ -1,6 +1,8 @@
 package com.rake.android.rkmetrics.android;
 
 import android.os.Build;
+import android.util.SparseArray;
+
 import com.rake.android.rkmetrics.util.Logger;
 
 import java.lang.reflect.Field;
@@ -16,13 +18,13 @@ public final class Compatibility {
         JELLY_BEAN(16),
         KITKAT(19),
         LOLLIPOP(21),
-        M(22);
+        MARSHMALLOW(23);
 
-        private static final Map<Integer, APILevel> lookup = new HashMap<Integer, APILevel>();
+        private static final SparseArray<APILevel> lookup = new SparseArray<APILevel>();
 
         static {
             for(APILevel apiLevel : APILevel.values()) {
-                lookup.put(apiLevel.getLevel(), apiLevel);
+                lookup.append(apiLevel.getLevel(), apiLevel);
             }
         }
 

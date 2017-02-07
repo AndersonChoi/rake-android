@@ -1,38 +1,38 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.MessageLoop.Command.*;
-import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.*;
-import static com.rake.android.rkmetrics.metric.MetricUtil.*;
-import static com.rake.android.rkmetrics.metric.model.Status.*;
-
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
 
+import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
+import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
-import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.FlushMethod;
+import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
-import com.rake.android.rkmetrics.network.HttpRequestSender;
-import com.rake.android.rkmetrics.persistent.DatabaseAdapter;
 import com.rake.android.rkmetrics.persistent.EventTableAdapter;
-import com.rake.android.rkmetrics.persistent.ExtractedEvent;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.util.Logger;
-import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
+
+import static com.rake.android.rkmetrics.MessageLoop.Command.AUTO_FLUSH_BY_COUNT;
+import static com.rake.android.rkmetrics.MessageLoop.Command.AUTO_FLUSH_BY_TIMER;
+import static com.rake.android.rkmetrics.MessageLoop.Command.KILL_WORKER;
+import static com.rake.android.rkmetrics.MessageLoop.Command.MANUAL_FLUSH;
+import static com.rake.android.rkmetrics.MessageLoop.Command.TRACK;
+import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.ON;
+import static com.rake.android.rkmetrics.metric.MetricUtil.EMPTY_TOKEN;
 
 /**
  * Manage communication of events with the internal database and the Rake servers (Singleton)
@@ -250,6 +250,11 @@ final class MessageLoop {
 
         /** Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송 */
         private void flush(FlushType flushType) {
+            if(SystemInformation.isDozeModeEnabled(appContext)){
+                Logger.d("Doze mode is enabled. Network is not available now, so flush() will not be executed. ");
+                return;
+            }
+
             updateFlushFrequency();
 
             List<LogChunk> chunks = LogTableAdapter.getInstance(appContext)
