@@ -20,11 +20,11 @@ public final class Compatibility {
         LOLLIPOP(21),
         MARSHMALLOW(23);
 
-        private static final SparseArray<APILevel> lookup = new SparseArray<APILevel>();
+        private static final HashMap<Integer, APILevel> lookup = new HashMap<Integer, APILevel>();
 
         static {
             for(APILevel apiLevel : APILevel.values()) {
-                lookup.append(apiLevel.getLevel(), apiLevel);
+                lookup.put(apiLevel.getLevel(), apiLevel);
             }
         }
 
