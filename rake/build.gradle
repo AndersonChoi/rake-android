@@ -22,7 +22,7 @@ buildscript {
 
 import java.util.regex.Pattern
 
-version = '0.4.4'
+version = '0.4.5'
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -84,12 +84,12 @@ String FILLED_RAKE_ENV = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
  */
 
 android {
-    compileSdkVersion 19
-    buildToolsVersion '19.1.0'
+    compileSdkVersion 24
+    buildToolsVersion '24.0.2'
 
     defaultConfig {
         minSdkVersion 9
-        targetSdkVersion 19
+        targetSdkVersion 24
         versionCode 1
         versionName "1.0"
     }
@@ -105,6 +105,9 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
     }
+
+    // targetSdkVersion이 23 이상부터 apache http client 제거됨. 따라서 legacy library 사용 옵션 추가
+    useLibrary 'org.apache.http.legacy'
 }
 
 dependencies {

@@ -7,7 +7,9 @@ import com.rake.android.rkmetrics.util.StringUtil;
 import com.rake.android.rkmetrics.util.TimeUtil;
 import com.rake.android.rkmetrics.util.UnknownRakeStateException;
 
-import org.apache.http.*;
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.HttpVersion;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ClientConnectionManager;
@@ -23,13 +25,23 @@ import org.apache.http.params.HttpConnectionParams;
 import org.apache.http.params.HttpParams;
 import org.apache.http.params.HttpProtocolParams;
 
-import java.io.*;
-import java.net.*;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.ProtocolException;
+import java.net.URL;
 import java.security.GeneralSecurityException;
 
-import static com.rake.android.rkmetrics.metric.model.Status.*;
-import static com.rake.android.rkmetrics.network.FlushMethod.*;
+import static com.rake.android.rkmetrics.metric.model.Status.DROP;
+import static com.rake.android.rkmetrics.metric.model.Status.RETRY;
+import static com.rake.android.rkmetrics.network.FlushMethod.HTTP_CLIENT;
+import static com.rake.android.rkmetrics.network.FlushMethod.HTTP_URL_CONNECTION;
 
 final public class HttpRequestSender {
     public static final int CONNECTION_TIMEOUT = 3000;

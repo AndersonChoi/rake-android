@@ -13,6 +13,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+@Deprecated // 0.4.0 버전부터 사용하지 않음. 0.4.0 미만 버전에서 업그레이드시 하위 호환을 위해 남김
 public final class EventTableAdapter extends DatabaseAdapter {
 
     public static class EventContract implements BaseColumns {

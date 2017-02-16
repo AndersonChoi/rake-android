@@ -1,11 +1,5 @@
 package com.rake.android.rkmetrics.android;
 
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
-
-import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
-import com.rake.android.rkmetrics.util.Logger;
-
-
 import android.Manifest;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -14,6 +8,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Build;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
@@ -21,8 +17,9 @@ import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
 
-import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
+import com.rake.android.rkmetrics.util.Logger;
+
 import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -31,14 +28,19 @@ import java.util.TimeZone;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
+
 /**
  * Gather android system dependent information
  */
 public final class SystemInformation { /** singleton */
 
-    /** constructors */
+    /**
+     * constructors
+     */
 
-    private SystemInformation() {}
+    private SystemInformation() {
+    }
 
     private SystemInformation(Context context) {
         this.context = context;
@@ -88,7 +90,9 @@ public final class SystemInformation { /** singleton */
         if (null == deviceId) deviceId = PROPERTY_VALUE_UNKNOWN;
     }
 
-    /** instance members */
+    /**
+     * instance members
+     */
 
     private Context context;
     private Boolean hasNFC;
@@ -99,7 +103,9 @@ public final class SystemInformation { /** singleton */
     private String deviceId;
     private String appBuildDate; /* for dev environment */
 
-    /** static members */
+    /**
+     * static members
+     */
 
     private static SystemInformation instance;
 
@@ -164,7 +170,7 @@ public final class SystemInformation { /** singleton */
     }
 
     private PackageInfo getPackageInfo(PackageManager manager, String packageName)
-        throws NameNotFoundException {
+            throws NameNotFoundException {
         return manager.getPackageInfo(packageName, 0);
     }
 
@@ -184,7 +190,7 @@ public final class SystemInformation { /** singleton */
             buildDate = formatter.format(new Date(time));
 
             zf.close();
-        } catch(Exception e) {
+        } catch (Exception e) {
             Logger.e("Can't get Build Date from classes.dex"); /* trivial, DO NOT print stacktrace */
         }
 
@@ -232,5 +238,19 @@ public final class SystemInformation { /** singleton */
         }
 
         return packageName;
+    }
+
+    public static boolean isDozeModeEnabled(Context context) {
+        if (context == null) {
+            return false;
+        }
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            // Marshmallow 버전 미만은 Doze Mode가 없음. 따라서 항상 false.
+            return false;
+        }
+
+        PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        return powerManager.isDeviceIdleMode();
     }
 }

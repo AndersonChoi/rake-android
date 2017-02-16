@@ -7,19 +7,16 @@ import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.Button;
 
+import com.facebook.stetho.Stetho;
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
-import org.apache.commons.io.IOUtils;
-
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,6 +32,13 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Stetho.initialize(
+                Stetho.newInitializerBuilder(this)
+                        .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
+                        .enableWebKitInspector(Stetho.defaultInspectorModulesProvider(this))
+                        .build());
+
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -75,7 +79,6 @@ public class MainActivity extends AppCompatActivity {
 
     private String createLargeString() {
 
-
         StringBuilder sb = new StringBuilder();
 
         for(int i = 0; i <= 12000; i++) {
@@ -87,13 +90,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void initialize() {
         Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
-        btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                install(RakeAPI.Env.DEV);
-            }
-        });
-
         btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {

@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.util;
 
-import com.rake.android.rkmetrics.config.RakeConfig;
-
 import java.io.Closeable;
 import java.io.IOException;
 
