@@ -1,5 +1,11 @@
 # Change Log
 
+## [0.4.5](https://github.com/skpdi/rake-android/tree/0.4.5) (2017-02-16)
+[Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.4...0.4.5)
+
+## [0.4.4](https://github.com/skpdi/rake-android/tree/0.4.4) (2016-07-26)
+[Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.3...0.4.4)
+
 ## [0.4.3](https://github.com/skpdi/rake-android/tree/0.4.3) (2016-06-15)
 [Full Changelog](https://github.com/skpdi/rake-android/compare/0.4.2...0.4.3)
 
