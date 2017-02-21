@@ -23,12 +23,12 @@
 ### Build
 
 ```gradle
-> METRIC_TOKEN_LIVE= METRIC_TOKEN_DEV= gradle clean build
+> METRIC_TOKEN_LIVE={TOKEN} METRIC_TOKEN_DEV={TOKEN} ./gradlew clean build
 ```
 
 ### Android Studio on OSX
 
-Android Studio 사용시, gradle 이 환경변수를 읽지 못하므로 다음과 같이 터미널에 세팅
+Android Studio 사용시, gradle 이 환경변수를 읽지 못하므로 다음과 같이 터미널에 세팅한 후 IDE 실행
  
 ```
 > launchctl setenv METRIC_TOKEN_LIVE {TOKEN}  

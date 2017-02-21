@@ -239,6 +239,7 @@ final class MessageLoop {
             LogTableAdapter.getInstance(appContext)
                     .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
+            // MessageHandler 생성시 AUTO_FLUSH_BY_TIMER 메시지 전송
             sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
