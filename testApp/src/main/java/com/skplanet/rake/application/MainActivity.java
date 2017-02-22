@@ -2,13 +2,9 @@ package com.skplanet.rake.application;
 
 import android.os.Bundle;
 import android.os.StrictMode;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 
@@ -19,7 +15,7 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
 import java.util.concurrent.atomic.AtomicLong;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static RakeAPI devRake;
     private static RakeAPI liveRake;
@@ -33,6 +29,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
+        // 디버깅을 위한 stetho 연동(chrome으로 DB, SharedPreference 조회)
         Stetho.initialize(
                 Stetho.newInitializerBuilder(this)
                         .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
@@ -40,19 +37,13 @@ public class MainActivity extends AppCompatActivity {
                         .build());
 
         setContentView(R.layout.activity_main);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        setSupportActionBar((Toolbar) findViewById(R.id.toolbar));
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
+        // 디버깅을 위한 로그 출력 활성
         RakeAPI.setLogging(RakeAPI.Logging.ENABLE);
+
+        // 버튼 UI 초기화
         initialize();
 
         TEXT_SIZE_1M = createLargeString();
@@ -63,7 +54,6 @@ public class MainActivity extends AppCompatActivity {
          * strict mode 모드는 API 9+, `detectLeakedCloableObjects()` 는 API 11+ 이므로
          * QA 용 앱 배포 등 상황에 따라 테스트앱에서 API 8 지원이 필요할 경우 아래 코드를 제거할 것
          */
-
         StrictMode.setThreadPolicy(new StrictMode.ThreadPolicy.Builder()
                 .detectAll()
                 .permitDiskReads()
@@ -81,7 +71,7 @@ public class MainActivity extends AppCompatActivity {
 
         StringBuilder sb = new StringBuilder();
 
-        for(int i = 0; i <= 12000; i++) {
+        for (int i = 0; i <= 12000; i++) {
             sb.append("1234567890");
         }
 
@@ -89,100 +79,92 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initialize() {
+        // Test용 버튼 Initialization
+
+        /** DEV */
         Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
-        btnInstallDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                install(RakeAPI.Env.DEV);
-            }
-        });
+        btnInstallDevRake.setOnClickListener(this);
 
         Button btnTrackDevRake = (Button) findViewById(R.id.btnTrackDevRake);
-        btnTrackDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                track(RakeAPI.Env.DEV);
-            }
-        });
+        btnTrackDevRake.setOnClickListener(this);
 
         Button btnFlushDevRake = (Button) findViewById(R.id.btnFlushDevRake);
-        btnFlushDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                flush(RakeAPI.Env.DEV);
-            }
-        });
+        btnFlushDevRake.setOnClickListener(this);
 
-        Button btnSetFreeEndpointDevRake =
-                (Button) findViewById(R.id.btnSetFreeEndpointDevRake);
-        btnSetFreeEndpointDevRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                setFreeEndpoint(RakeAPI.Env.DEV);
-            }
-        });
+        Button btnSetFreeEndpointDevRake = (Button) findViewById(R.id.btnSetFreeEndpointDevRake);
+        btnSetFreeEndpointDevRake.setOnClickListener(this);
 
         /** LIVE */
         Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
-        btnInstallLiveRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                install(RakeAPI.Env.LIVE);
-            }
-        });
+        btnInstallLiveRake.setOnClickListener(this);
 
         Button btnTrackLiveRake = (Button) findViewById(R.id.btnTrackLiveRake);
-        btnTrackLiveRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                track(RakeAPI.Env.LIVE);
-            }
-        });
+        btnTrackLiveRake.setOnClickListener(this);
 
         Button btnFlushLiveRake = (Button) findViewById(R.id.btnFlushLiveRake);
-        btnFlushLiveRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                flush(RakeAPI.Env.LIVE);
-            }});
+        btnFlushLiveRake.setOnClickListener(this);
 
-        Button btnSetFreeEndpointLiveRake =
-                (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
-        btnSetFreeEndpointLiveRake.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                setFreeEndpoint(RakeAPI.Env.LIVE);
-            }
-        });
+        Button btnSetFreeEndpointLiveRake = (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
+        btnSetFreeEndpointLiveRake.setOnClickListener(this);
 
         /** GLOBAL */
-        Button btnSetAutoFlushON =
-                (Button) findViewById(R.id.btnSetAutoFlushON);
-        btnSetAutoFlushON.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                RakeAPI.setAutoFlush(RakeAPI.AutoFlush.ON);
-            }
-        });
+        Button btnSetAutoFlushON = (Button) findViewById(R.id.btnSetAutoFlushON);
+        btnSetAutoFlushON.setOnClickListener(this);
 
-        Button btnSetAutoFlushOFF =
-                (Button) findViewById(R.id.btnSetAutoFlushOFF);
-        btnSetAutoFlushOFF.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        Button btnSetAutoFlushOFF = (Button) findViewById(R.id.btnSetAutoFlushOFF);
+        btnSetAutoFlushOFF.setOnClickListener(this);
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            // onClick() operations for Dev Environment
+            case R.id.btnInstallDevRake:
+                install(RakeAPI.Env.DEV);
+                break;
+            case R.id.btnTrackDevRake:
+                track(RakeAPI.Env.DEV);
+                break;
+            case R.id.btnFlushDevRake:
+                flush(RakeAPI.Env.DEV);
+                break;
+            case R.id.btnSetFreeEndpointDevRake:
+                setFreeEndpoint(RakeAPI.Env.DEV);
+                break;
+
+            // onClick() operations for Live Environment
+            case R.id.btnInstallLiveRake:
+                install(RakeAPI.Env.LIVE);
+                break;
+            case R.id.btnTrackLiveRake:
+                track(RakeAPI.Env.LIVE);
+                break;
+            case R.id.btnFlushLiveRake:
+                flush(RakeAPI.Env.LIVE);
+                break;
+            case R.id.btnSetFreeEndpointLiveRake:
+                setFreeEndpoint(RakeAPI.Env.LIVE);
+                break;
+
+            // onClick() operations for GLOBAL
+            case R.id.btnSetAutoFlushON:
+                RakeAPI.setAutoFlush(RakeAPI.AutoFlush.ON);
+                break;
+            case R.id.btnSetAutoFlushOFF:
                 RakeAPI.setAutoFlush(RakeAPI.AutoFlush.OFF);
-            }
-        });
+                break;
+
+            default:
+                break;
+        }
     }
 
     private void install(RakeAPI.Env env) {
         String token = getToken(env);
         if (RakeAPI.Env.DEV == env) {
-            devRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
-        }
-        else {
-            liveRake =  RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+            devRake = RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+        } else {
+            liveRake = RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
         }
     }
 
@@ -197,7 +179,7 @@ public class MainActivity extends AppCompatActivity {
         String count = group.toString();
 
         shuttle.ab_test_group(count);
-//        shuttle.code_text(TEXT_SIZE_1M);
+//        shuttle.code_text(TEXT_SIZE_1M);  // 대용량 사이즈 로그 전송 테스트용
 
         getRakeInstance(env).track(shuttle.toJSONObject());
         Log.d(TAG, String.format("Counter: %s", count));
@@ -208,34 +190,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private RakeAPI getRakeInstance(RakeAPI.Env env) {
-        if (RakeAPI.Env.DEV == env) return devRake;
-        else return liveRake;
+        if (RakeAPI.Env.DEV == env) {
+            return devRake;
+        }
+
+        return liveRake;
     }
 
     private String getToken(RakeAPI.Env env) {
-        if (RakeAPI.Env.DEV == env) return Token.DEV_TOKEN;
-        else return Token.LIVE_TOKEN;
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+        if (RakeAPI.Env.DEV == env) {
+            return Token.DEV_TOKEN;
         }
-
-        return super.onOptionsItemSelected(item);
+        return Token.LIVE_TOKEN;
     }
 }
