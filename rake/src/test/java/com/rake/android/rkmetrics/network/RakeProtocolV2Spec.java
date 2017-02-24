@@ -15,7 +15,7 @@ import java.util.List;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
-public class RakeProtocolV1Spec {
+public class RakeProtocolV2Spec {
 
     @Test
     public void isValidResponse_should_return_DONE_when_responseBody_starts_with_1_and_responseCode_is_200() {

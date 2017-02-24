@@ -1,15 +1,12 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.network.Endpoint.*;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
-import com.rake.android.rkmetrics.RakeAPI.Env;
+import android.app.Application;
+
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
+import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.util.functional.Function0;
-import com.rake.android.rkmetrics.util.functional.Function1;
-
-import android.app.Application;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,11 +17,14 @@ import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
 import java.util.Date;
-import java.util.IllegalFormatException;
 import java.util.Iterator;
 
-import static org.assertj.core.api.Assertions.*;
-import static com.rake.android.rkmetrics.TestUtil.*;
+import static com.rake.android.rkmetrics.TestUtil.failWhenSuccess;
+import static com.rake.android.rkmetrics.TestUtil.genToken;
+import static com.rake.android.rkmetrics.network.Endpoint.CHARGED;
+import static com.rake.android.rkmetrics.network.Endpoint.FREE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.DEFAULT_PROPERTY_NAMES;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
@@ -36,7 +36,7 @@ public class RakeAPISpec {
             "exampleToken",
             RakeAPI.Env.DEV,
             RakeAPI.Logging.ENABLE
-            );
+    );
 
     @Test()
     public void getInstance_should_throw_IllegalArgumentException_given_null_arg() {
@@ -136,15 +136,36 @@ public class RakeAPISpec {
     public void test_Endpoint_changed() {
         /** ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
 
-        String CHARGED_ENDPOINT_DEV  = "https://pg.rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_DEV     = "https://pg.rake.skplanet.com:8553/log/putlog/client";
+        String CHARGED_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+        String FREE_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8553/log/putlog/client";
         String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_LIVE    = "https://rake.skplanet.com:8553/log/putlog/client";
+        String FREE_ENDPOINT_LIVE = "https://rake.skplanet.com:8553/log/putlog/client";
 
         assertThat(CHARGED.getURI(Env.DEV)).isEqualTo(CHARGED_ENDPOINT_DEV);
         assertThat(CHARGED.getURI(Env.LIVE)).isEqualTo(CHARGED_ENDPOINT_LIVE);
         assertThat(FREE.getURI(Env.DEV)).isEqualTo(FREE_ENDPOINT_DEV);
         assertThat(FREE.getURI(Env.LIVE)).isEqualTo(FREE_ENDPOINT_LIVE);
+    }
+
+    @Test
+    public void test_setFreeEndpointPort() {
+        String CHARGED_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+        String FREE_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8553/log/putlog/client";
+        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
+        String FREE_ENDPOINT_LIVE = "https://rake.skplanet.com:8553/log/putlog/client";
+
+
+        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        r1.setFreeEndpointPort(8663);
+
+        assertThat(CHARGED_ENDPOINT_DEV).isEqualTo(CHARGED.getURI(Env.DEV));
+        assertThat(CHARGED_ENDPOINT_LIVE).isEqualTo(CHARGED.getURI(Env.LIVE));
+
+        assertThat(FREE_ENDPOINT_DEV).isNotEqualTo(FREE.getURI(Env.DEV));
+        assertThat(FREE_ENDPOINT_LIVE).isNotEqualTo(FREE.getURI(Env.LIVE));
+
+        // restore for the next test cases
+        r1.setFreeEndpointPort(8553);
     }
 
     @Test

@@ -31,7 +31,9 @@ import static com.rake.android.rkmetrics.metric.model.Status.*;
 @Config(sdk = 19, manifest = Config.NONE)
 public class HttpRequestSenderSpec {
 
-    /** DROP cases */
+    /**
+     * DROP cases
+     */
 
     public void assertFlushStatusReturnedFromHandleResponse(Throwable e, Status status) {
         ServerResponse metric = HttpRequestSender.handleResponse(
@@ -43,99 +45,101 @@ public class HttpRequestSenderSpec {
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_UnsupportedEncodingException() {
-        Throwable e= new UnsupportedEncodingException("");
+        Throwable e = new UnsupportedEncodingException("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_GeneralSecurityException() {
-        Throwable e= new GeneralSecurityException("");
+        Throwable e = new GeneralSecurityException("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_MalformedURLException() {
-        Throwable e= new MalformedURLException("");
+        Throwable e = new MalformedURLException("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_ProtocolException() {
-        Throwable e= new ProtocolException("");
+        Throwable e = new ProtocolException("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_UnknownRakeStateException() {
-        Throwable e= new UnknownRakeStateException("");
+        Throwable e = new UnknownRakeStateException("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_Exception() {
-        Throwable e= new Exception("");
+        Throwable e = new Exception("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
     @Test
     public void handleException_should_mark_DROP_given_procedure_throw_Throwable() {
-        Throwable e= new Throwable("");
+        Throwable e = new Throwable("");
         assertFlushStatusReturnedFromHandleResponse(e, DROP);
     }
 
-    /** RETRY cases */
+    /**
+     * RETRY cases
+     */
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_IOException() {
-        Throwable e= new IOException("");
+        Throwable e = new IOException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     public void handleException_should_mark_RETRY_given_procedure_throw_UnknownHostException() {
-        Throwable e= new UnknownHostException("");
+        Throwable e = new UnknownHostException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SocketTimeoutException() {
-        Throwable e= new SocketTimeoutException("");
+        Throwable e = new SocketTimeoutException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLException() {
-        Throwable e= new SSLException("");
+        Throwable e = new SSLException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLHandshakeException() {
-        Throwable e= new SSLHandshakeException("");
+        Throwable e = new SSLHandshakeException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SSLProtocolException() {
-        Throwable e= new SSLProtocolException("");
+        Throwable e = new SSLProtocolException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_BindException() {
-        Throwable e= new BindException("");
+        Throwable e = new BindException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_ConnectException() {
-        Throwable e= new ConnectException("");
+        Throwable e = new ConnectException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
     @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_SocketException() {
-        Throwable e= new SocketException("");
+        Throwable e = new SocketException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 

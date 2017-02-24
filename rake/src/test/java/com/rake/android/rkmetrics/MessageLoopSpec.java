@@ -1,7 +1,6 @@
 package com.rake.android.rkmetrics;
 
 import com.rake.android.rkmetrics.MessageLoop.Command;
-import static com.rake.android.rkmetrics.MessageLoop.Command.*;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -13,7 +12,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)

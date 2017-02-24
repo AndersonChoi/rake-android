@@ -1,14 +1,8 @@
 package com.rake.android.rkmetrics.shuttle;
 
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.*;
-
 import android.app.Application;
-import android.util.Log;
 
 import com.rake.android.rkmetrics.TestUtil;
-
-import static org.assertj.core.api.Assertions.*;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -17,6 +11,46 @@ import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
+
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.DEFAULT_PROPERTY_NAMES;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.EMPTY_FIELD_VALUE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_BODY;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_PROPERTIES;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_SENTINEL_META;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_ENCRYPTION_FIELDS;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_FIELD_ORDER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_PROJECT_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_SCHEMA_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.SENTINEL_META_FIELD_NAMES;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.createValidShuttle;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.extractMeta;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasDefaultProps;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasKey;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasMeta;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasMetaFields;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasProps;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasValue;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.isShuttle;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.mergeProps;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.BODY_NAME_BRANCH;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.BODY_NAME_CODE_TEXT;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.BODY_NAME_ISSUE_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.BODY_NAME_REPOSITORY;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADER_NAME_APP_PACKAGE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADER_NAME_LOG_SOURCE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADER_NAME_SESSION_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADER_NAME_TRANSACTION_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.assertShuttleGeneratorVersion;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.assertShuttleSchemaVersion;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getDefaultPropsForTest;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getMergedPropsWithEmptySuperPropsForTest;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getShuttleWithMissingField;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getTestShuttle;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)
@@ -27,15 +61,15 @@ public class ShuttleProfilerSpec {
 
     /**
      * - null 이거나
-     *
+     * <p>
      * - `sentinel_meta`
      * - `_$body`,
-     *
+     * <p>
      * - `seitinel_meta._$encryptionFields`
      * - `seitinel_meta._$projectId`
      * - `seitinel_meta._$schemaId`
      * - `seitinel_meta._$fieldOrder`
-     *
+     * <p>
      * 가 없을 경우 Shuttle 이 아닌 것으로 판단
      */
 
@@ -118,7 +152,8 @@ public class ShuttleProfilerSpec {
         assertThat(j4).isNull();
     }
 
-    @Test /** IMPORTANT TEST: FULL test */
+    @Test
+    /** IMPORTANT TEST: FULL test */
     public void createValidShuttle_should_return_validShuttle() throws JSONException {
         /**
          * validShuttle 은
@@ -190,7 +225,8 @@ public class ShuttleProfilerSpec {
         hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
-    @Test /** IMPORTANT TEST */
+    @Test
+    /** IMPORTANT TEST */
     public void mergeProps_should_preserve_defaultProps() throws JSONException {
         /**
          * 사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
@@ -212,7 +248,8 @@ public class ShuttleProfilerSpec {
         hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
     }
 
-    @Test /** IMPORTANT TEST */
+    @Test
+    /** IMPORTANT TEST */
     public void mergeProps_should_return_props_which_has_body_and_defaultProps() throws JSONException {
         /**
          * mergeProps() 의 결과는,
@@ -231,7 +268,8 @@ public class ShuttleProfilerSpec {
         assertThat(hasDefaultProps(props, null)).isTrue();
     }
 
-    @Test /** IMPORTANT TEST */
+    @Test
+    /** IMPORTANT TEST */
     public void mergeProps_should_not_merge_super_props_if_fieldOrder_does_not_have_it() throws JSONException {
         assertShuttleSchemaVersion();
 
@@ -243,7 +281,7 @@ public class ShuttleProfilerSpec {
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
-            fieldOrder.get(invalidPropName+ "_invalid"); /* not existing prop name */
+            fieldOrder.get(invalidPropName + "_invalid"); /* not existing prop name */
             failBecauseExceptionWasNotThrown(JSONException.class);
         } catch (JSONException e) { /* ignore, success case */ }
 
@@ -254,7 +292,8 @@ public class ShuttleProfilerSpec {
         assertThat(props.has(invalidPropName)).isFalse();
     }
 
-    @Test /** IMPORTANT TEST */
+    @Test
+    /** IMPORTANT TEST */
     public void mergeProps_should_not_merge_default_props_if_fieldOrder_does_not_have_it() throws JSONException {
         assertShuttleSchemaVersion();
 
@@ -267,7 +306,7 @@ public class ShuttleProfilerSpec {
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
-            fieldOrder.get(invalidPropName+ "_invalid"); /* not existing prop name */
+            fieldOrder.get(invalidPropName + "_invalid"); /* not existing prop name */
             failBecauseExceptionWasNotThrown(JSONException.class);
         } catch (JSONException e) { /* ignore, success case */ }
 
@@ -280,8 +319,8 @@ public class ShuttleProfilerSpec {
 
     /**
      * case 1 - superProps 가 비었을 경우 userProps 가 무조건 덮어 씀,
-     *          userProps 가 "" (EMPTY STRING) 여도 키가 보존되야 함
-     *
+     * userProps 가 "" (EMPTY STRING) 여도 키가 보존되야 함
+     * <p>
      * case 2 - superProps 가 있고 userProps 가 "" 라면 superProps 가 유지 됨
      **/
     @Test /* RAKE-389 */
@@ -331,9 +370,9 @@ public class ShuttleProfilerSpec {
 
         assertThat(EMPTY_FIELD_VALUE).isEqualTo("");
         String exampleTransactionId;                     /* case A, empty value  */
-        String exampleLogSource  = EMPTY_FIELD_VALUE;   /* case B, String type */
+        String exampleLogSource = EMPTY_FIELD_VALUE;   /* case B, String type */
         String exampleAppPackage = null;                 /* case B, String type */
-        Long exampleSessionId    = null;                 /* case C, Long type */
+        Long exampleSessionId = null;                 /* case C, Long type */
 
         JSONObject userProps = getTestShuttle()
                 .log_source(exampleLogSource)
@@ -364,9 +403,9 @@ public class ShuttleProfilerSpec {
         assertShuttleSchemaVersion();
 
         String exampleRepository;       /* case A */
-        String exampleBranch    = "";   /* case B */
-        String exampleCodeText  = null; /* case C */
-        Long exampleIssueId  = null;    /* case D */
+        String exampleBranch = "";   /* case B */
+        String exampleCodeText = null; /* case C */
+        Long exampleIssueId = null;    /* case D */
 
         JSONObject userProps = getTestShuttle()
                 .branch(exampleBranch)
