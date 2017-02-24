@@ -71,8 +71,7 @@ final public class HttpRequestSender {
                                                 FlushMethod flushMethod,
                                                 HttpRequestProcedure callback) {
 
-        Status flushStatus = DROP;
-        ServerResponse responseMetric = null;
+        ServerResponse responseMetric;
 
         try {
             responseMetric = callback.execute(url, log, flushMethod);
@@ -102,7 +101,7 @@ final public class HttpRequestSender {
             return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         }
 
-        flushStatus = RakeProtocolV2.interpretResponse(responseMetric.getResponseCode());
+        Status flushStatus = RakeProtocolV2.interpretResponse(responseMetric.getResponseCode());
 
         return responseMetric.setFlushStatus(flushStatus);
     }

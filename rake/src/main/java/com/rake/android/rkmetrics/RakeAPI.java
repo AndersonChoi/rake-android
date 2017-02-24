@@ -2,7 +2,29 @@ package com.rake.android.rkmetrics;
 
 
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_MODEL;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LANGUAGE_CODE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LOCAL_TIME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_MANUFACTURER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_NETWORK_TYPE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_HEIGHT;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_RESOLUTION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_WIDTH;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_WIFI;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_OS_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.createValidShuttle;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -21,7 +43,11 @@ import com.rake.android.rkmetrics.util.TimeUtil;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
 
 public final class RakeAPI {
 
@@ -223,8 +249,8 @@ public final class RakeAPI {
     public void track(JSONObject shuttle) {
         Date now = new Date();
 
-        JSONObject superProps = null;
-        JSONObject defaultProps = null;
+        JSONObject superProps;
+        JSONObject defaultProps;
 
         /* 최종 소비자 API 예외 처리 */
         try {
@@ -245,7 +271,6 @@ public final class RakeAPI {
         } catch (Exception e) { /* might be JSONException */
             MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
             Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
-            return;
         }
     }
 
@@ -399,12 +424,9 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
         defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION);
         defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
-        defaultProps.put(PROPERTY_NAME_OS_VERSION,
-                Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
-        defaultProps.put(PROPERTY_NAME_MANUFACTURER,
-                Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
-        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL,
-                Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
+        defaultProps.put(PROPERTY_NAME_OS_VERSION, Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
+        defaultProps.put(PROPERTY_NAME_MANUFACTURER, Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
+        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL, Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
         defaultProps.put(PROPERTY_NAME_DEVICE_ID, sys.getDeviceId());
 
         DisplayMetrics displayMetrics = sys.getDisplayMetrics();
@@ -424,20 +446,16 @@ public final class RakeAPI {
         if (Env.DEV == env && null != appBuildDate)
             appVersionName += "_" + sys.getAppBuildDate();
 
-        defaultProps.put(PROPERTY_NAME_APP_VERSION,
-                appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
+        defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
 
         String carrier = sys.getCurrentNetworkOperator();
-        defaultProps.put(PROPERTY_NAME_CARRIER_NAME,
-                (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
+        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
 
         Boolean isWifi = sys.isWifiConnected();
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi == null) ?
-                PROPERTY_VALUE_UNKNOWN : (isWifi.booleanValue() == true) ?
-                PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI);
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi == null) ? PROPERTY_VALUE_UNKNOWN : (isWifi.booleanValue() == true)
+                ? PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI);
 
-        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE,
-                context.getResources().getConfiguration().locale.getCountry());
+        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, context.getResources().getConfiguration().locale.getCountry());
 
         return defaultProps;
     }
