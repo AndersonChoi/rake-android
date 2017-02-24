@@ -7,6 +7,7 @@
 //
 
 #import <XCTest/XCTest.h>
+#import "RakeConfig.h"
 #import "Rake.h"
 #import "RakeClientTestSentinelShuttle.h"
 @interface RakeTest : XCTestCase
@@ -51,5 +52,12 @@
 //        // Put the code you want to measure the time of here.
 //    }];
 //}
+
+- (void)testPortChanged{
+    NSInteger port = 8663;
+    [self.rake setServerPort:port];
+    
+    XCTAssertNotEqual([self.rake serverURL], DEV_SERVER_URL);
+}
 
 @end
