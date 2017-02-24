@@ -241,6 +241,34 @@ static NSArray* defaultValueBlackList = nil;
     }
     return ret;
 }
+
+// 무과금 port 설정 API 구현
+- (void)setServerPort:(NSInteger)port {
+    if(port < 0){
+        RakeDebug(@"setServerPort: invalid port number (%ld)", (long)port);
+        return;
+    }
+    
+    // regex로 기존 url에서 port 정보만 찾아낸다.
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(:\\d+\\/)" options:NSRegularExpressionCaseInsensitive error:nil];
+    NSUInteger numberOfMatching = [regex numberOfMatchesInString:self.serverURL options:0 range:NSMakeRange(0, [self.serverURL length])];
+    
+    // port 정보가 없다면 별도 수정하지 않는다.
+    if(numberOfMatching == 0){
+        RakeDebug(@"setServerPort: no port value in URL.");
+        return;
+    }
+    
+    NSString *strPort = [NSString stringWithFormat:@"%@%ld%@", @":", (long)port, @"/"];
+    
+    // port 정보가 있다면 해당 부분을 전달받은 port parameter로 수정한다.
+    NSString *serverURLModified = [regex stringByReplacingMatchesInString:self.serverURL options:0 range:NSMakeRange(0, [self.serverURL length]) withTemplate:strPort];
+
+    self.serverURL = serverURLModified;
+    RakeDebug(@"setServerPort: Server port is changed = %@", self.serverURL);
+}
+
+
 - (void)dealloc
 {
     [[NSNotificationCenter defaultCenter] removeObserver:self];

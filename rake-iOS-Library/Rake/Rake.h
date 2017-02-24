@@ -173,6 +173,20 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  */
 - (instancetype)initWithToken:(NSString *)apiToken andFlushInterval:(NSUInteger)flushInterval;
 
+/*!
+ @method
+ 
+ @abstract
+ Changes current server url string's port value with the given port number.
+ 
+ @discussion
+ If there is a port number in the current server url, this will change the port 
+ number with he new one. This is created for some apps to help sending their logs
+ to specific port of Rake server.
+ 
+ @param port            port number
+ */
+- (void)setServerPort:(NSInteger)port;
 
 /*!
  @method
