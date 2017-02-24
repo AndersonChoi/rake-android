@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Build;
 import android.util.DisplayMetrics;
+
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
@@ -28,8 +29,15 @@ public final class RakeAPI {
         DISABLE("DISABLE"), ENABLE("ENABLE");
 
         private String mode;
-        Logging(String mode) { this.mode = mode; }
-        @Override public String toString() { return mode; }
+
+        Logging(String mode) {
+            this.mode = mode;
+        }
+
+        @Override
+        public String toString() {
+            return mode;
+        }
     }
 
     /**
@@ -41,9 +49,15 @@ public final class RakeAPI {
         DEV("DEV");
 
         private final String env;
-        Env(String env) { this.env = env; }
 
-        @Override public String toString() { return this.env; }
+        Env(String env) {
+            this.env = env;
+        }
+
+        @Override
+        public String toString() {
+            return this.env;
+        }
     }
 
     public enum AutoFlush {
@@ -51,7 +65,10 @@ public final class RakeAPI {
         OFF("OFF");
 
         private final String value;
-        AutoFlush(String value) { this.value = value; }
+
+        AutoFlush(String value) {
+            this.value = value;
+        }
 
         @Override
         public String toString() {
@@ -99,11 +116,9 @@ public final class RakeAPI {
      *                RakeAPI will send log to <strong>development server</strong> ({@code pg.rake.skplanet.com})
      *                If {@link com.rake.android.rkmetrics.RakeAPI.Env#LIVE} used,
      *                RakeAPI will send log to <strong>live server </strong> ({@code rake.skplanet.com})
-     *
      * @param logging Logging.ENABLE or Logging.DISABLE
-     *
      * @throws IllegalArgumentException if one of the parameters is NULL
-     * @throws IllegalStateException if uncaught exception occurred while initializing
+     * @throws IllegalStateException    if uncaught exception occurred while initializing
      */
 
     public static RakeAPI getInstance(Context context, String token, Env env, Logging logging) {
@@ -126,9 +141,9 @@ public final class RakeAPI {
     }
 
     private static RakeAPI _getInstance(Context context,
-                                      String token,
-                                      Env env,
-                                      Logging logging) {
+                                        String token,
+                                        Env env,
+                                        Logging logging) {
 
         setLogging(logging);
 
@@ -177,7 +192,9 @@ public final class RakeAPI {
         MessageLoop.setAutoFlushOption(autoFlush);
     }
 
-    public static AutoFlush getAutoFlush() { return MessageLoop.getAutoFlushOption(); }
+    public static AutoFlush getAutoFlush() {
+        return MessageLoop.getAutoFlushOption();
+    }
 
     private static String createTag(String prefix, String token, Env e, Endpoint ep) {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
@@ -250,7 +267,7 @@ public final class RakeAPI {
 
     /**
      * Change end point
-     *
+     * <p>
      * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
      * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
      *
@@ -267,6 +284,28 @@ public final class RakeAPI {
     }
 
     /**
+     * Change Rake server URL's port value.<br/>
+     * If you have to send logs through non-charging server port, use this API.<br/>
+     * <strong>This only changes current instance's port value</strong>.
+     * <p>
+     *
+     * @param port non-charging port number (get it from admin)
+     */
+    public void setFreeEndpointPort(int port) {
+        if (port < 0) {
+            Logger.w("Invalid port value. (" + port + ")");
+            return;
+        }
+
+        Endpoint freeEndpoint = Endpoint.FREE;
+        if (freeEndpoint.changeURLPort(port)) {
+            setEndpoint(freeEndpoint);
+        } else {
+            Logger.d("No port value in the Rake server URL. URL is not changed.");
+        }
+    }
+
+    /**
      * Get current end point
      *
      * @return endpoint
@@ -278,9 +317,12 @@ public final class RakeAPI {
 
     /**
      * Get token
+     *
      * @return String
      */
-    public String getToken() { return token; }
+    public String getToken() {
+        return token;
+    }
 
     /**
      * Enable or disable logging.
@@ -311,7 +353,9 @@ public final class RakeAPI {
 
     public void unregisterSuperProperty(String superPropertyName) {
         Logger.d(tag, "unregisterSuperProperty");
-        synchronized (superProperties) { superProperties.remove(superPropertyName); }
+        synchronized (superProperties) {
+            superProperties.remove(superPropertyName);
+        }
         storeSuperProperties();
     }
 
@@ -412,7 +456,7 @@ public final class RakeAPI {
     }
 
     private static String createSharedPrefPropertyKey(String token) {
-       return "super_properties_for_" + token;
+        return "super_properties_for_" + token;
     }
 
     private void storeSuperProperties() {
@@ -422,7 +466,7 @@ public final class RakeAPI {
         Logger.d(tag, "Storing Super Properties " + props);
         SharedPreferences.Editor prefsEditor = storedPreferences.edit();
         prefsEditor.putString(prefKey, props);
-        prefsEditor.commit();   // synchronous
+        prefsEditor.apply();   // synchronous
     }
 
     void clearPreferences() {
@@ -430,7 +474,7 @@ public final class RakeAPI {
         // and waiting People Analytics properties. Will have no effect
         // on MessageLoop which was already queued to send
         SharedPreferences.Editor prefsEdit = storedPreferences.edit();
-        prefsEdit.clear().commit();
+        prefsEdit.clear().apply();
         readSuperProperties();
     }
 }
