@@ -17,9 +17,9 @@ public class StringUtil {
     public static String inputStreamToString(final InputStream stream) throws IOException {
         BufferedReader br = new BufferedReader(new InputStreamReader(stream));
         StringBuilder sb = new StringBuilder();
-        String line = null;
+        String line;
         while ((line = br.readLine()) != null) {
-            sb.append(line + "\n");
+            sb.append(line).append("\n");
         }
         br.close();
         return sb.toString();

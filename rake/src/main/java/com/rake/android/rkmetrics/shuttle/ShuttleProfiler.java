@@ -88,7 +88,7 @@ public class ShuttleProfiler {
 
         if (null == shuttle || null == field || null == comparator) return false;
 
-        Object value = null;
+        Object value;
 
         try {
             JSONObject _$body = shuttle.toJSONObject().getJSONObject(FIELD_NAME_BODY);
@@ -108,7 +108,7 @@ public class ShuttleProfiler {
 
         if (null == shuttle || null == field || null == expected) return false;
 
-        String value = null;
+        String value;
 
         try {
             JSONObject _$body = shuttle.toJSONObject().getJSONObject(FIELD_NAME_BODY);
@@ -117,9 +117,8 @@ public class ShuttleProfiler {
             return false;
         }
 
-        if (null == value /* JSON.null */ || !expected.equals(value)) return false;
+        return !(null == value /* JSON.null */ || !expected.equals(value));
 
-        return true;
     }
 
     public static boolean hasHeaderValue(RakeClientMetricSentinelShuttle shuttle,
@@ -128,7 +127,7 @@ public class ShuttleProfiler {
 
         if (null == shuttle || null == field || null == expected) return false;
 
-        String value = null;
+        String value;
 
         try {
             value = shuttle.toJSONObject().getString(field);
@@ -136,9 +135,8 @@ public class ShuttleProfiler {
             return false;
         }
 
-        if (null == value /* JSON.null */ || !expected.equals(value)) return false;
+        return !(null == value /* JSON.null */ || !expected.equals(value));
 
-        return true;
     }
 
     public static boolean hasValue(JSONObject props, String depth1Key,
@@ -150,7 +148,7 @@ public class ShuttleProfiler {
 
         boolean hasValue = true;
 
-        String found = null;
+        String found;
         String key = depth1Key;
 
         try {
@@ -177,7 +175,7 @@ public class ShuttleProfiler {
     public static boolean hasKey(JSONObject json, String depth1Key, String depth2Key) {
         if (null == json || null == depth1Key) return false;
 
-        boolean hasKey = false;
+        boolean hasKey;
 
         try {
             Object value = json.get(depth1Key);

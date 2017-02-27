@@ -67,7 +67,7 @@ public final class SystemInformation { /** singleton */
         Boolean foundTelephony = null;
 
         try {
-            Method hasSystemFeatureMethod = null;
+            Method hasSystemFeatureMethod;
             hasSystemFeatureMethod = packageManagerClass.getMethod("hasSystemFeature", String.class);
 
             if (null != hasSystemFeatureMethod) {
@@ -226,7 +226,7 @@ public final class SystemInformation { /** singleton */
         if (null == context) return ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
         final PackageManager pm = context.getApplicationContext().getPackageManager();
-        ApplicationInfo ai = null;
+        ApplicationInfo ai;
 
         String packageName = ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 

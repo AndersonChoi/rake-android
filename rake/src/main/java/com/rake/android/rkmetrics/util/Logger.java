@@ -10,7 +10,7 @@ final public class Logger {
     public static RakeAPI.Logging loggingMode = RakeAPI.Logging.DISABLE;
 
     public Logger() throws InstantiationException { throw new InstantiationException("default constructor of Logger is not supported"); }
-    private static boolean isEnabled() { return (RakeAPI.Logging.ENABLE == loggingMode) ? true : false; }
+    private static boolean isEnabled() { return (RakeAPI.Logging.ENABLE == loggingMode); }
 
     public static int v(String msg) {
         return v(LOG_TAG_PREFIX, msg);

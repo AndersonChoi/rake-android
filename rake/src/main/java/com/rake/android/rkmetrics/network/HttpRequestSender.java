@@ -180,9 +180,9 @@ final public class HttpRequestSender {
     public static ServerResponse sendHttpClientRequest(String endPoint,
                                                        String requestBody)
             throws UnsupportedEncodingException, GeneralSecurityException, IOException {
-        String responseBody = null;
-        int responseCode = 0;
-        long responseTime = 0L;
+        String responseBody;
+        int responseCode;
+        long responseTime;
 
         StringEntity requestEntity = new StringEntity(requestBody);
         HttpPost httppost = new HttpPost(endPoint);

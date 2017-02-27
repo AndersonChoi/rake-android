@@ -199,7 +199,7 @@ final class MessageLoop {
         thread.setPriority(Thread.MIN_PRIORITY);
         thread.start();
 
-        Handler handler = null;
+        Handler handler;
 
         try {
             handler = handlerQueue.take();
@@ -307,11 +307,7 @@ final class MessageLoop {
                 return null;
             }
 
-            String url = new StringBuilder()
-                    .append(chunk.getUrl())
-                    .append("/")
-                    .append(chunk.getToken())
-                    .toString();
+            String url = chunk.getUrl() + "/" + chunk.getToken();
 
             Logger.t(String.format(
                             "[NETWORK] Sending %d log to %s where token = %s",
