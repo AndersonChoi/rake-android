@@ -181,8 +181,8 @@ FOUNDATION_EXPORT const unsigned char RakeVersionString[];
  
  @discussion
  If there is a port number in the current server url, this will change the port 
- number with he new one. This is created for some apps to help sending their logs
- to specific port of Rake server.
+ number with the new one. This is created for some apps to help sending their logs
+ to specific non-charging port of Rake server.
  
  @param port            port number
  */
