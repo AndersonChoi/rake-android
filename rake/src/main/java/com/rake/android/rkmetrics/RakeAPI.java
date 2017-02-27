@@ -197,7 +197,7 @@ public final class RakeAPI {
     }
 
     /**
-     * Set flush interval
+     * Set flush interval.
      *
      * @param milliseconds flush interval (milliseconds)
      */
@@ -206,10 +206,20 @@ public final class RakeAPI {
         MessageLoop.setAutoFlushInterval(milliseconds);
     }
 
+    /**
+     * Get flush interval.
+     *
+     * @return flush interval (milliseconds)
+     */
     public static long getFlushInterval() {
         return MessageLoop.getAutoFlushInterval();
     }
 
+    /**
+     * Enable/disable auto flush. (Default : AutoFlush.ON)
+     *
+     * @param autoFlush AutoFlush.ON/OFF
+     */
     public static void setAutoFlush(AutoFlush autoFlush) {
         AutoFlush old = MessageLoop.getAutoFlushOption();
         String message = String.format("Set auto-flush option from %s to %s", old.name(), autoFlush.name());
@@ -218,6 +228,11 @@ public final class RakeAPI {
         MessageLoop.setAutoFlushOption(autoFlush);
     }
 
+    /**
+     * Get auto flush enabled or not.
+     *
+     * @return AutoFlush.ON/OFF
+     */
     public static AutoFlush getAutoFlush() {
         return MessageLoop.getAutoFlushOption();
     }
@@ -359,6 +374,7 @@ public final class RakeAPI {
         Logger.loggingMode = loggingMode;
     }
 
+    @Deprecated
     public void registerSuperProperties(JSONObject superProperties) {
         Logger.d(tag, "registerSuperProperties");
 
@@ -376,6 +392,10 @@ public final class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * as of 0.4.0
+     */
+    @Deprecated
     public void unregisterSuperProperty(String superPropertyName) {
         Logger.d(tag, "unregisterSuperProperty");
         synchronized (superProperties) {
@@ -384,6 +404,10 @@ public final class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * as of 0.4.0
+     */
+    @Deprecated
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
         Logger.d(tag, "registerSuperPropertiesOnce");
 
@@ -403,6 +427,10 @@ public final class RakeAPI {
         storeSuperProperties();
     }
 
+    /**
+     * as of 0.4.0
+     */
+    @Deprecated
     public synchronized void clearSuperProperties() {
         Logger.d(tag, "clearSuperProperties");
         superProperties = new JSONObject();
