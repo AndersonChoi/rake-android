@@ -229,9 +229,9 @@ public final class RakeAPI {
     }
 
     /**
-     * Get auto flush enabled or not.
+     * Get auto flush is enabled or not.
      *
-     * @return AutoFlush.ON/OFF
+     * @return AutoFlush.ON or AutoFlush.OFF
      */
     public static AutoFlush getAutoFlush() {
         return MessageLoop.getAutoFlushOption();
@@ -257,7 +257,7 @@ public final class RakeAPI {
 
     /**
      * Save JSONObject created using Shuttle.toJSONObject() into SQLite.
-     * RakeAPI will flush immediately if RakeAPI.Env.DEV is set see {@link #flush()}
+     * RakeAPI will flush immediately if RakeAPI.Env.DEV is set. See {@link #flush()}
      *
      * @param shuttle pass Shuttle.toJSONObject();
      */
@@ -306,12 +306,12 @@ public final class RakeAPI {
 
 
     /**
-     * Change end point
+     * Change end point.
      * <p>
      * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
      * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
      *
-     * @param endpoint
+     * @param endpoint Endpoint.CHARGED or Endpoint.FREE
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
      */
     public void setEndpoint(Endpoint endpoint) {
@@ -324,9 +324,9 @@ public final class RakeAPI {
     }
 
     /**
-     * Change Rake server URL's port value.<br/>
-     * If you have to send logs through non-charging server port, use this API.<br/>
-     * <strong>This only changes current instance's port value</strong>.
+     * Change server url's port value of "Endpoint.FREE" <br/>
+     * If you have to send logs through specific non-charging server port, use this API.<br/>
+     * <strong>This only changes current instance's port value.(Endpoint.FREE)</strong>.
      * <p>
      *
      * @param port non-charging port number (get it from admin)
@@ -346,7 +346,7 @@ public final class RakeAPI {
     }
 
     /**
-     * Get current end point
+     * Get current instance's end point.
      *
      * @return endpoint
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
@@ -356,9 +356,9 @@ public final class RakeAPI {
     }
 
     /**
-     * Get token
+     * Get current instance's token.
      *
-     * @return String
+     * @return token
      */
     public String getToken() {
         return token;
@@ -374,6 +374,9 @@ public final class RakeAPI {
         Logger.loggingMode = loggingMode;
     }
 
+    /**
+     * @deprecated as of 0.4.0
+     */
     @Deprecated
     public void registerSuperProperties(JSONObject superProperties) {
         Logger.d(tag, "registerSuperProperties");
@@ -393,7 +396,7 @@ public final class RakeAPI {
     }
 
     /**
-     * as of 0.4.0
+     * @deprecated as of 0.4.0
      */
     @Deprecated
     public void unregisterSuperProperty(String superPropertyName) {
@@ -405,7 +408,7 @@ public final class RakeAPI {
     }
 
     /**
-     * as of 0.4.0
+     * @deprecated as of 0.4.0
      */
     @Deprecated
     public void registerSuperPropertiesOnce(JSONObject superProperties) {
@@ -428,7 +431,7 @@ public final class RakeAPI {
     }
 
     /**
-     * as of 0.4.0
+     * @deprecated as of 0.4.0
      */
     @Deprecated
     public synchronized void clearSuperProperties() {
