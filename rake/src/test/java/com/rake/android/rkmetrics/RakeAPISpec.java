@@ -156,7 +156,7 @@ public class RakeAPISpec {
 
 
         RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
-        r1.setFreeEndpointPort(8663);
+        r1.setServerPort(8663);
 
         assertThat(CHARGED_ENDPOINT_DEV).isEqualTo(CHARGED.getURI(Env.DEV));
         assertThat(CHARGED_ENDPOINT_LIVE).isEqualTo(CHARGED.getURI(Env.LIVE));
@@ -165,7 +165,7 @@ public class RakeAPISpec {
         assertThat(FREE_ENDPOINT_LIVE).isNotEqualTo(FREE.getURI(Env.LIVE));
 
         // restore for the next test cases
-        r1.setFreeEndpointPort(8553);
+        r1.setServerPort(8553);
     }
 
     @Test

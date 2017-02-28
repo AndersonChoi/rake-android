@@ -306,14 +306,20 @@ public final class RakeAPI {
 
 
     /**
+     * @deprecated
      * Change end point.
      * <p>
      * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
      * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
      *
+     * <br/><br/>
+     * This API will be deprecate in next version.
+     * If you want to send logs through specific non-charging server port, call {@link #setServerPort(int)} method.
+     *
      * @param endpoint Endpoint.CHARGED or Endpoint.FREE
      * @see {@link com.rake.android.rkmetrics.network.Endpoint}
      */
+    @Deprecated
     public void setEndpoint(Endpoint endpoint) {
         Endpoint old = this.endpoint;
         this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
@@ -324,14 +330,14 @@ public final class RakeAPI {
     }
 
     /**
-     * Change server url's port value of "Endpoint.FREE" <br/>
+     * Change server url's port value. <br/>
      * If you have to send logs through specific non-charging server port, use this API.<br/>
      * <strong>This only changes current instance's port value.(Endpoint.FREE)</strong>.
      * <p>
      *
      * @param port non-charging port number (get it from admin)
      */
-    public void setFreeEndpointPort(int port) {
+    public void setServerPort(int port) {
         if (port < 0) {
             Logger.w("Invalid port value. (" + port + ")");
             return;
@@ -339,7 +345,12 @@ public final class RakeAPI {
 
         Endpoint freeEndpoint = Endpoint.FREE;
         if (freeEndpoint.changeURLPort(port)) {
-            setEndpoint(freeEndpoint);
+            Endpoint old = this.endpoint;
+            this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
+            this.endpoint = freeEndpoint;
+
+            String message = String.format("Changed endpoint from %s to %s", old, endpoint);
+            Logger.d(tag, message);
         } else {
             Logger.d("No port value in the Rake server URL. URL is not changed.");
         }
