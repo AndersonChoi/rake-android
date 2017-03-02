@@ -1,6 +1,6 @@
 /* 아래의 변수들은 컴파일 시작 전 빌드타임에 치환되는 변수들로 변경시 gulpfile.js 도 변경해야 함*/
 #define RAKE_LIB_VERSION @"r0.5.0_c1.8.6"
-#define RAKE_LIB_BUILD_DATE @"2017-02-28 16:02:38"
+#define RAKE_LIB_BUILD_DATE @"2017-03-02 16:02:38"
 #define BUILD_BRANCH @"master"
 #define METRIC_TOKEN_DEV @"df234e764a5e4c3beaa7831d5b8ad353149495ac"
 #define METRIC_TOKEN_LIVE @"d839ca7a5875c8ac304d465bfcfd78d95b4726eb"
