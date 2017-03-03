@@ -338,8 +338,8 @@ public final class RakeAPI {
      * @param port non-charging port number (get it from admin)
      */
     public void setServerPort(int port) {
-        if (port < 0) {
-            Logger.w("Invalid port value. (" + port + ")");
+        if (port < 0 || port > 65535) {
+            Logger.w("Invalid port value (" + port + "). Port value should be 0~65535.");
             return;
         }
 
