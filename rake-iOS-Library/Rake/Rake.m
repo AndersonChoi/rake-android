@@ -244,8 +244,8 @@ static NSArray* defaultValueBlackList = nil;
 
 // 무과금 port 설정 API 구현
 - (void)setServerPort:(NSInteger)port {
-    if(port < 0){
-        RakeDebug(@"setServerPort: invalid port number (%ld)", (long)port);
+    if(port < 0 || port > 65535){
+        RakeDebug(@"setServerPort: invalid port number (%ld). Port number should be 0~65535.", (long)port);
         return;
     }
     
