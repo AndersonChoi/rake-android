@@ -15,6 +15,9 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
 import java.util.concurrent.atomic.AtomicLong;
 
+/**
+ * This example is made for the purpose of internal test.
+ * */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static RakeAPI devRake;

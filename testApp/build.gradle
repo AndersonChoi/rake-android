@@ -54,6 +54,5 @@ dependencies {
     compile 'com.facebook.stetho:stetho:1.4.2'
 
     // when you develop something on :rake module, enable "compile project..." and disable "compile files..."
-    compile files('libs/rake-android-0.4.6.jar')
-//    compile project(':rake')
+    compile project(':rake')
 }
