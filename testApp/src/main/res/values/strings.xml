@@ -5,12 +5,12 @@
     <string name="btnInstallDevRake">Install (Dev)</string>
     <string name="btnTrackDevRake">Track (Dev)</string>
     <string name="btnFlushDevRake">Flush (Dev)</string>
-    <string name="btnSetFreeEndpointDevRake">Set Free Endpoint (Dev)</string>
+    <string name="btnSetServerPortDevRake">Set Server Port (Dev)</string>
 
     <string name="btnInstallLiveRake">Install (Live)</string>
     <string name="btnTrackLiveRake">Track (Live)</string>
     <string name="btnFlushLiveRake">Flush (Live)</string>
-    <string name="btnSetFreeEndpointLiveRake">Set Free Endpoint (Live)</string>
+    <string name="btnSetServerPortLiveRake">Set Server Port (Live)</string>
 
     <string name="btnSetAutoFlushON">AutoFlush ON</string>
     <string name="btnSetAutoFlushOFF">AutoFlush OFF</string>

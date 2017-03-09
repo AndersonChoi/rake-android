@@ -1,23 +1,27 @@
 package com.skplanet.rake.application;
 
+import android.content.DialogInterface;
 import android.os.Bundle;
 import android.os.StrictMode;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.InputType;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
 
 import com.facebook.stetho.Stetho;
 import com.rake.android.rkmetrics.RakeAPI;
-import com.rake.android.rkmetrics.network.Endpoint;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
 
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * This example is made for the purpose of internal test.
- * */
+ */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     private static RakeAPI devRake;
@@ -94,8 +98,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button btnFlushDevRake = (Button) findViewById(R.id.btnFlushDevRake);
         btnFlushDevRake.setOnClickListener(this);
 
-        Button btnSetFreeEndpointDevRake = (Button) findViewById(R.id.btnSetFreeEndpointDevRake);
-        btnSetFreeEndpointDevRake.setOnClickListener(this);
+        Button btnSetServerPortDevRake = (Button) findViewById(R.id.btnSetServerPortDevRake);
+        btnSetServerPortDevRake.setOnClickListener(this);
 
         /** LIVE */
         Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
@@ -107,8 +111,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Button btnFlushLiveRake = (Button) findViewById(R.id.btnFlushLiveRake);
         btnFlushLiveRake.setOnClickListener(this);
 
-        Button btnSetFreeEndpointLiveRake = (Button) findViewById(R.id.btnSetFreeEndpointLiveRake);
-        btnSetFreeEndpointLiveRake.setOnClickListener(this);
+        Button btnSetServerPortLiveRake = (Button) findViewById(R.id.btnSetServerPortLiveRake);
+        btnSetServerPortLiveRake.setOnClickListener(this);
 
         /** GLOBAL */
         Button btnSetAutoFlushON = (Button) findViewById(R.id.btnSetAutoFlushON);
@@ -131,8 +135,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnFlushDevRake:
                 flush(RakeAPI.Env.DEV);
                 break;
-            case R.id.btnSetFreeEndpointDevRake:
-                setFreeEndpoint(RakeAPI.Env.DEV);
+            case R.id.btnSetServerPortDevRake:
+                setServerPort(RakeAPI.Env.DEV);
                 break;
 
             // onClick() operations for Live Environment
@@ -145,8 +149,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             case R.id.btnFlushLiveRake:
                 flush(RakeAPI.Env.LIVE);
                 break;
-            case R.id.btnSetFreeEndpointLiveRake:
-                setFreeEndpoint(RakeAPI.Env.LIVE);
+            case R.id.btnSetServerPortLiveRake:
+                setServerPort(RakeAPI.Env.LIVE);
                 break;
 
             // onClick() operations for GLOBAL
@@ -188,8 +192,29 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         Log.d(TAG, String.format("Counter: %s", count));
     }
 
-    private void setFreeEndpoint(RakeAPI.Env env) {
-        getRakeInstance(env).setEndpoint(Endpoint.FREE);
+    private void setServerPort(final RakeAPI.Env env) {
+        final EditText editPort = new EditText(this);
+        editPort.setInputType(InputType.TYPE_CLASS_NUMBER);
+        editPort.setHint("Put port number.");
+
+        new AlertDialog.Builder(this)
+                .setTitle("SET SERVER PORT NUMBER")
+                .setView(editPort)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (editPort.getText().toString().equals("")) {
+                            Toast.makeText(MainActivity.this, "Port value is empty.", Toast.LENGTH_SHORT).show();
+                            return;
+                        }
+
+                        int port = Integer.parseInt(editPort.getText().toString());
+                        getRakeInstance(env).setServerPort(port);
+                    }
+                })
+                .create()
+                .show();
+
     }
 
     private RakeAPI getRakeInstance(RakeAPI.Env env) {
