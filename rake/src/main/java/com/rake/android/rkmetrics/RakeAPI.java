@@ -35,7 +35,6 @@ import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
-import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
@@ -47,6 +46,8 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 public final class RakeAPI {
@@ -101,6 +102,40 @@ public final class RakeAPI {
             return this.value;
         }
     }
+
+    public static class Endpoint {
+        static final String ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+        static final String ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
+
+        private String uri = ENDPOINT_LIVE;
+
+        public Endpoint(Env env) {
+            uri = (env == Env.DEV ? ENDPOINT_DEV : ENDPOINT_LIVE);
+        }
+
+        public String getURI() {
+            return uri;
+        }
+
+        boolean changeURIPort(int port) {
+            Pattern pattern = Pattern.compile(":\\d+/");
+            Matcher m = pattern.matcher(uri);
+
+            String portFound = null;
+            while (m.find()) {
+                portFound = m.group();
+            }
+
+            if (portFound == null) {
+                // no port value in the uri
+                return false;
+            }
+
+            uri = uri.replace(portFound, ":" + port + "/");
+            return true;
+        }
+    }
+
 
     // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
@@ -160,7 +195,7 @@ public final class RakeAPI {
         try {
             return _getInstance(context, token, env, logging);
         } catch (Exception e) { /* should not be here */
-            MetricUtil.recordInstallErrorMetric(context, env, Endpoint.DEFAULT.getURI(env), token, e);
+            MetricUtil.recordInstallErrorMetric(context, env, new Endpoint(env).getURI(), token, e);
             Logger.e("Failed to return RakeAPI instance");
             throw new IllegalStateException("Failed to create RakeAPI instance");
         }
@@ -185,7 +220,7 @@ public final class RakeAPI {
             RakeAPI rake = instances.get(appContext);
 
             if (rake == null) {
-                Endpoint endpoint = Endpoint.DEFAULT;
+                Endpoint endpoint = new Endpoint(env);
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             } else {
@@ -274,7 +309,7 @@ public final class RakeAPI {
 
             JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
 
-            String uri = endpoint.getURI(env);
+            String uri = endpoint.getURI();
             Log log = Log.create(uri, token, validShuttle);
 
             if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
@@ -304,31 +339,6 @@ public final class RakeAPI {
         }
     }
 
-
-    /**
-     * @deprecated
-     * Change end point.
-     * <p>
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#CHARGED}
-     * - {@link com.rake.android.rkmetrics.network.Endpoint#FREE}
-     *
-     * <br/><br/>
-     * This API will be deprecate in next version.
-     * If you want to send logs through specific non-charging server port, call {@link #setServerPort(int)} method.
-     *
-     * @param endpoint Endpoint.CHARGED or Endpoint.FREE
-     * @see {@link com.rake.android.rkmetrics.network.Endpoint}
-     */
-    @Deprecated
-    public void setEndpoint(Endpoint endpoint) {
-        Endpoint old = this.endpoint;
-        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
-        this.endpoint = endpoint;
-
-        String message = String.format("Changed endpoint from %s to %s", old, endpoint);
-        Logger.d(tag, message);
-    }
-
     /**
      * Change server url's port value. <br/>
      * If you have to send logs through specific non-charging server port, use this API.<br/>
@@ -343,13 +353,10 @@ public final class RakeAPI {
             return;
         }
 
-        Endpoint freeEndpoint = Endpoint.FREE;
-        if (freeEndpoint.changeURLPort(port)) {
-            Endpoint old = this.endpoint;
+        Endpoint old = this.endpoint;
+        if (this.endpoint.changeURIPort(port)) {
             this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
-            this.endpoint = freeEndpoint;
-
-            String message = String.format("Changed endpoint from %s to %s", old, endpoint);
+            String message = String.format("Changed endpoint from %s to %s", old.getURI(), endpoint.getURI());
             Logger.d(tag, message);
         } else {
             Logger.d("No port value in the Rake server URL. URL is not changed.");
@@ -357,13 +364,12 @@ public final class RakeAPI {
     }
 
     /**
-     * Get current instance's end point.
+     * Get current instance's server url.
      *
-     * @return endpoint
-     * @see {@link com.rake.android.rkmetrics.network.Endpoint}
+     * @return url
      */
-    public Endpoint getEndpoint() {
-        return endpoint;
+    public String getServerURL() {
+        return this.endpoint.getURI();
     }
 
     /**

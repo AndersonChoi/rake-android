@@ -5,7 +5,6 @@ import android.app.Application;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
-import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.util.functional.Function0;
 
 import org.json.JSONException;
@@ -21,8 +20,6 @@ import java.util.Iterator;
 
 import static com.rake.android.rkmetrics.TestUtil.failWhenSuccess;
 import static com.rake.android.rkmetrics.TestUtil.genToken;
-import static com.rake.android.rkmetrics.network.Endpoint.CHARGED;
-import static com.rake.android.rkmetrics.network.Endpoint.FREE;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.DEFAULT_PROPERTY_NAMES;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -100,72 +97,26 @@ public class RakeAPISpec {
     }
 
     @Test
-    public void Env_Live_시_라이브서버_과금_URL_로_세팅되어야함() {
-        Env e = Env.DEV;
-        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), e, Logging.ENABLE);
-        assertThat(Endpoint.CHARGED_ENDPOINT_DEV).isEqualTo(r.getEndpoint().getURI(e));
-    }
-
-    @Test
-    public void Env_Dev_시_개발서버_과금_URL_로_세팅되어야함() {
-        Env e = Env.LIVE;
-        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), e, Logging.ENABLE);
-        assertThat(Endpoint.CHARGED_ENDPOINT_LIVE).isEqualTo(r.getEndpoint().getURI(e));
-    }
-
-    @Test
     public void 복수의_Env_를_지원해야함() {
         RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
         RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.LIVE, Logging.ENABLE);
-    }
 
-    @Test
-    public void setEndpoint() {
-        Env e1 = Env.DEV;
-        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), e1, Logging.ENABLE);
-        r1.setEndpoint(FREE);
-        assertThat(Endpoint.FREE_ENDPOINT_DEV).isEqualTo(r1.getEndpoint().getURI(e1));
-
-        Env e2 = Env.LIVE;
-        RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), e2, Logging.ENABLE);
-        r2.setEndpoint(FREE);
-        assertThat(Endpoint.FREE_ENDPOINT_LIVE).isEqualTo(r2.getEndpoint().getURI(e2));
-    }
-
-    @Test
-    public void test_Endpoint_changed() {
-        /** ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
-
-        String CHARGED_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8553/log/putlog/client";
-        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_LIVE = "https://rake.skplanet.com:8553/log/putlog/client";
-
-        assertThat(CHARGED.getURI(Env.DEV)).isEqualTo(CHARGED_ENDPOINT_DEV);
-        assertThat(CHARGED.getURI(Env.LIVE)).isEqualTo(CHARGED_ENDPOINT_LIVE);
-        assertThat(FREE.getURI(Env.DEV)).isEqualTo(FREE_ENDPOINT_DEV);
-        assertThat(FREE.getURI(Env.LIVE)).isEqualTo(FREE_ENDPOINT_LIVE);
+        assertThat(r1.getServerURL()).isNotEqualTo(r2.getServerURL());
     }
 
     @Test
     public void test_setFreeEndpointPort() {
-        String CHARGED_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8553/log/putlog/client";
-        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
-        String FREE_ENDPOINT_LIVE = "https://rake.skplanet.com:8553/log/putlog/client";
+        String CHARGED_ENDPOINT_DEV = "https://pg.rake.skplanet.com:8663/log/putlog/client";
+        String CHARGED_ENDPOINT_LIVE = "https://rake.skplanet.com:8663/log/putlog/client";
 
 
         RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
         r1.setServerPort(8663);
 
-        assertThat(CHARGED_ENDPOINT_DEV).isEqualTo(CHARGED.getURI(Env.DEV));
-        assertThat(CHARGED_ENDPOINT_LIVE).isEqualTo(CHARGED.getURI(Env.LIVE));
-
-        assertThat(FREE_ENDPOINT_DEV).isNotEqualTo(FREE.getURI(Env.DEV));
-        assertThat(FREE_ENDPOINT_LIVE).isNotEqualTo(FREE.getURI(Env.LIVE));
+        assertThat(CHARGED_ENDPOINT_DEV).isEqualTo(r1.getServerURL());
 
         // restore for the next test cases
-        r1.setServerPort(8553);
+        r1.setServerPort(8443);
     }
 
     @Test

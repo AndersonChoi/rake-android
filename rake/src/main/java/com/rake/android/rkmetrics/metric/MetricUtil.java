@@ -11,7 +11,6 @@ import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
@@ -30,19 +29,20 @@ import java.util.Date;
  */
 public final class MetricUtil {
 
-    private MetricUtil() {}
+    private MetricUtil() {
+    }
 
     /**
      * 소스 코드에 LIVE TOKEN 을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다
      * `build.gradle` 과 `MetricUtilTokenSpec.java` 를 참조할 것
-     *
+     * <p>
      * 후에 `release` 브랜치에서 LIVE TOKEN 이 기록되었는지 크로스 체크를 위해 BUILD_CONSTANT_BRANCH 값을 이용한다.
      * `release` 브랜치일 경우에만 BUILD_CONSTANT_ENV 값이 Env.LIVE 이고 나머지의 경우에는 Env.DEV 여야 한다.
-     *
+     * <p>
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "develop";
+    public static final String BUILD_CONSTANT_BRANCH = "refactoring";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -51,7 +51,7 @@ public final class MetricUtil {
     public static final String EMPTY_TOKEN = null;
 
     public static String getURI() {
-        return Endpoint.CHARGED.getURI(BUILD_CONSTANT_ENV);
+        return new RakeAPI.Endpoint(BUILD_CONSTANT_ENV).getURI();
     }
 
     public static String createTransactionId() {
@@ -76,7 +76,9 @@ public final class MetricUtil {
         return BUILD_CONSTANT_METRIC_TOKEN.equals(token);
     }
 
-    /** @return true if log was successfully persisted otherwise returns false */
+    /**
+     * @return true if log was successfully persisted otherwise returns false
+     */
     public static boolean recordErrorMetric(Context context, Action action, String token, Throwable e) {
         if (null == context) {
             Logger.e("Can't record ErrorStatusMetric using NULL args");
@@ -108,12 +110,14 @@ public final class MetricUtil {
         return recordMetric(context, metric);
     }
 
-    /** @return true if log was successfully persisted otherwise returns false */
+    /**
+     * @return true if log was successfully persisted otherwise returns false
+     */
     public static boolean recordFlushMetric(Context context,
                                             FlushType flushType,
                                             long operationTime,
                                             LogChunk chunk,
-                                            ServerResponse response){
+                                            ServerResponse response) {
 
         if (null == context
                 || null == chunk
