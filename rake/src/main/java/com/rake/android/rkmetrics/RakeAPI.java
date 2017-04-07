@@ -456,12 +456,7 @@ public final class RakeAPI {
         superProperties = new JSONObject();
     }
 
-    public static JSONObject getDefaultProps(Context context,
-                                             Env env,
-                                             String token,
-                                             Date now) throws JSONException {
-
-        SystemInformation sys = SystemInformation.getInstance(context);
+    public static JSONObject getDefaultProps(Context context, Env env, String token, Date now) throws JSONException {
 
         JSONObject defaultProps = new JSONObject();
 
@@ -475,9 +470,9 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_OS_VERSION, Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
         defaultProps.put(PROPERTY_NAME_MANUFACTURER, Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
         defaultProps.put(PROPERTY_NAME_DEVICE_MODEL, Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
-        defaultProps.put(PROPERTY_NAME_DEVICE_ID, sys.getDeviceId());
+        defaultProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(context));
 
-        DisplayMetrics displayMetrics = sys.getDisplayMetrics();
+        DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(context);
         int displayWidth = displayMetrics.widthPixels;
         int displayHeight = displayMetrics.heightPixels;
         StringBuilder resolutionBuilder = new StringBuilder();
@@ -488,22 +483,22 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
         /** application versionName, buildDate(iff dev mode) */
-        String appVersionName = sys.getAppVersionName();
-        String appBuildDate = sys.getAppBuildDate();
+        String appVersionName = SystemInformation.getAppVersionName(context);
+        String appBuildDate = SystemInformation.getAppBuildDate(context);
 
-        if (Env.DEV == env && null != appBuildDate)
-            appVersionName += "_" + sys.getAppBuildDate();
+        if (Env.DEV == env && appBuildDate != null) {
+            appVersionName += "_" + appBuildDate;
+        }
 
         defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
 
-        String carrier = sys.getCurrentNetworkOperator();
+        String carrier = SystemInformation.getCurrentNetworkOperator(context);
         defaultProps.put(PROPERTY_NAME_CARRIER_NAME, (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
 
-        Boolean isWifi = sys.isWifiConnected();
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi == null) ? PROPERTY_VALUE_UNKNOWN : (isWifi.booleanValue() == true)
-                ? PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI);
+        boolean isWifi = SystemInformation.isWifiConnected(context);
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi ? PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI));
 
-        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, context.getResources().getConfiguration().locale.getCountry());
+        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(context));
 
         return defaultProps;
     }

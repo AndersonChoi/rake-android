@@ -4,6 +4,8 @@ import android.app.Application;
 
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.HttpRequestProcedure;
+import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 
@@ -62,7 +64,7 @@ public class MetricUtilSpec {
     public void recordFlushMetric_should_return_false_given_metric_token() {
         LogChunk l1 = LogChunk.create("lastId", "url", MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, "chunk", 1);
 
-        /** Status 는 최소한 1개 이상이어야 아래 루프에서 검증이 가능 */
+        /* Status 는 최소한 1개 이상이어야 아래 루프에서 검증이 가능 */
         assertThat(Status.values().length).isGreaterThan(0);
 
         for (Status s: Status.values()) {
@@ -74,7 +76,7 @@ public class MetricUtilSpec {
     }
 
     private ServerResponse createEmptySRM(Status status) {
-        ServerResponse srm = ServerResponse.create("body", 0, 0L, FlushMethod.HTTP_URL_CONNECTION).setFlushStatus(status);
+        ServerResponse srm = ServerResponse.create("body", 0, 0L, HttpRequestSender.getProperFlushMethod()).setFlushStatus(status);
         assertThat(srm).isNotNull();
         return srm;
     }
