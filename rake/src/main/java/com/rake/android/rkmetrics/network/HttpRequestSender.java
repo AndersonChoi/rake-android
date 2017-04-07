@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.network;
 
+import android.os.Build;
+
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
@@ -40,42 +42,49 @@ import java.security.GeneralSecurityException;
 
 import static com.rake.android.rkmetrics.metric.model.Status.DROP;
 import static com.rake.android.rkmetrics.metric.model.Status.RETRY;
-import static com.rake.android.rkmetrics.network.FlushMethod.HTTP_CLIENT;
-import static com.rake.android.rkmetrics.network.FlushMethod.HTTP_URL_CONNECTION;
 
 final public class HttpRequestSender {
-    public static final int CONNECTION_TIMEOUT = 3000;
-    public static final int SOCKET_TIMEOUT = 120000;
+    private static final int CONNECTION_TIMEOUT = 3000;
+    private static final int SOCKET_TIMEOUT = 120000;
 
-    private HttpRequestSender() {}
+    // TODO Froyo 단말 탑재가 중단되면 FLUSH_METHOD 속성값 없앨것 (HTTP_URL_CONNECTION으로 통일)
+    static final String FLUSH_METHOD_HTTP_URL_CONNECTION = "HTTP_URL_CONNECTION";
+    static final String FLUSH_METHOD_HTTP_CLIENT = "HTTP_CLIENT";
+
+    private HttpRequestSender() {
+    }
 
     public static HttpRequestProcedure procedure = new HttpRequestProcedure() {
         @Override
-        public ServerResponse execute(String url,
-                                      String log,
-                                      FlushMethod flushMethod) throws Exception {
-            if (null == url) throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
-            if (null == log) throw new UnknownRakeStateException("log can't be NULL in HttpRequestProcedure.execute");
-            if (null == flushMethod) throw new UnknownRakeStateException("flushMethod can't be NULL in HttpRequestProcedure.execute");
+        public ServerResponse execute(String url, String log, String flushMethod) throws Exception {
+            if (null == url)
+                throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
+            if (null == log)
+                throw new UnknownRakeStateException("log can't be NULL in HttpRequestProcedure.execute");
+            if (null == flushMethod)
+                throw new UnknownRakeStateException("flushMethod can't be NULL in HttpRequestProcedure.execute");
 
-            /** 4.0 이상일 경우 HttpUrlConnection 이용 */
-            if (HTTP_URL_CONNECTION == flushMethod)
+            /* 2.3 (Ginger Bread) 이상일 경우 HttpUrlConnection 이용 (Google 권장사항)*/
+            if (getProperFlushMethod().equals(FLUSH_METHOD_HTTP_URL_CONNECTION)) {
                 return HttpRequestSender.sendHttpUrlStreamRequest(url, log);
-            else
-                return HttpRequestSender.sendHttpClientRequest(url, log);
+            }
+            return HttpRequestSender.sendHttpClientRequest(url, log);
         }
     };
 
-    public static ServerResponse handleResponse(String url,
-                                                String log,
-                                                FlushMethod flushMethod,
-                                                HttpRequestProcedure callback) {
+    public static String getProperFlushMethod() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.GINGERBREAD) {
+            return FLUSH_METHOD_HTTP_URL_CONNECTION;
+        }
+        return FLUSH_METHOD_HTTP_CLIENT;
+    }
 
+    public static ServerResponse handleResponse(String url, String log, String flushMethod, HttpRequestProcedure callback) {
         ServerResponse responseMetric;
 
         try {
             responseMetric = callback.execute(url, log, flushMethod);
-        } catch(UnsupportedEncodingException e) {
+        } catch (UnsupportedEncodingException e) {
             Logger.e("Invalid encoding", e);
             return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (GeneralSecurityException e) {
@@ -84,7 +93,7 @@ final public class HttpRequestSender {
         } catch (MalformedURLException e) {
             Logger.e("Malformed url (DROP)", e);
             return ServerResponse.createErrorResponse(e, DROP, flushMethod);
-        }  catch (ProtocolException e) {
+        } catch (ProtocolException e) {
             Logger.e("Invalid protocol (DROP)", e);
             return ServerResponse.createErrorResponse(e, DROP, flushMethod);
         } catch (IOException e) {
@@ -112,8 +121,7 @@ final public class HttpRequestSender {
      * @throws ProtocolException
      * @throws IOException
      */
-    public static ServerResponse sendHttpUrlStreamRequest(String endPoint,
-                                                          String requestBody)
+    private static ServerResponse sendHttpUrlStreamRequest(String endPoint, String requestBody)
             throws MalformedURLException, UnsupportedEncodingException, ProtocolException, IOException {
 
         URL url;
@@ -135,7 +143,7 @@ final public class HttpRequestSender {
             conn.setConnectTimeout(CONNECTION_TIMEOUT);
             conn.setChunkedStreamingMode(0);
             conn.setRequestProperty("Accept-Encoding", "identity"); /* disable default gzip */
-            conn.setRequestProperty("Content-Type","application/json");
+            conn.setRequestProperty("Content-Type", "application/json");
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
@@ -152,7 +160,8 @@ final public class HttpRequestSender {
 
             responseCode = conn.getResponseCode();
 
-            if (responseCode >= 400) br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
+            if (responseCode >= 400)
+                br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
             else br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
 
             String line;
@@ -169,7 +178,7 @@ final public class HttpRequestSender {
             if (null != conn) conn.disconnect();
         }
 
-        return ServerResponse.create(responseBody, responseCode, operationTime, HTTP_URL_CONNECTION);
+        return ServerResponse.create(responseBody, responseCode, operationTime, FLUSH_METHOD_HTTP_URL_CONNECTION);
     }
 
     /**
@@ -177,8 +186,7 @@ final public class HttpRequestSender {
      * @throws GeneralSecurityException
      * @throws IOException
      */
-    public static ServerResponse sendHttpClientRequest(String endPoint,
-                                                       String requestBody)
+    private static ServerResponse sendHttpClientRequest(String endPoint, String requestBody)
             throws UnsupportedEncodingException, GeneralSecurityException, IOException {
         String responseBody;
         int responseCode;
@@ -197,18 +205,17 @@ final public class HttpRequestSender {
 
         if (null == response || null == response.getEntity()) {
             Logger.d("HttpResponse or HttpEntity is null. Retry later");
-            return ServerResponse.createErrorResponse(
-                    new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY, HTTP_CLIENT);
+            return ServerResponse.createErrorResponse(new UnknownRakeStateException("HttpEntity or HttpResponse is null"), RETRY, FLUSH_METHOD_HTTP_CLIENT);
         }
 
         HttpEntity responseEntity = response.getEntity();
         responseBody = StringUtil.inputStreamToString(responseEntity.getContent());
         responseCode = response.getStatusLine().getStatusCode();
 
-        return ServerResponse.create(responseBody, responseCode, responseTime, HTTP_CLIENT);
+        return ServerResponse.create(responseBody, responseCode, responseTime, FLUSH_METHOD_HTTP_CLIENT);
     }
 
-    public static HttpClient createHttpsClient() throws GeneralSecurityException {
+    private static HttpClient createHttpsClient() throws GeneralSecurityException {
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
         schemeRegistry.register(new Scheme("https", SSLSocketFactory.getSocketFactory(), 443));
@@ -218,7 +225,7 @@ final public class HttpRequestSender {
         return new DefaultHttpClient(connectionManager, params);
     }
 
-    public static HttpParams getDefaultHttpParams() {
+    private static HttpParams getDefaultHttpParams() {
         HttpParams params = new BasicHttpParams();
 
         HttpProtocolParams.setVersion(params, HttpVersion.HTTP_1_1);

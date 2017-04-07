@@ -4,7 +4,6 @@ import android.app.Application;
 
 import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 

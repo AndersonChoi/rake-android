@@ -10,7 +10,6 @@ import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.FlushType;
-import com.rake.android.rkmetrics.network.FlushMethod;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
@@ -23,6 +22,7 @@ import com.rake.android.rkmetrics.util.TimeUtil;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
 
@@ -301,30 +301,21 @@ final class MessageLoop {
         }
 
         private ServerResponse send(LogChunk chunk) {
-
-            if (null == chunk) {
+            if (chunk == null) {
                 Logger.e("Can't flush using null args");
                 return null;
             }
 
             String url = chunk.getUrl() + "/" + chunk.getToken();
 
-            Logger.t(String.format(
-                            "[NETWORK] Sending %d log to %s where token = %s",
-                            chunk.getCount(),
-                            url,
-                            chunk.getToken())
-            );
+            Logger.t(String.format(Locale.US, "[NETWORK] Sending %d log to %s where token = %s", chunk.getCount(), url, chunk.getToken()));
 
-            // TODO: add token to URI
-            ServerResponse responseMetric = HttpRequestSender.handleResponse(
+            return HttpRequestSender.handleResponse(
                     url,
                     chunk.getChunk(),
-                    FlushMethod.getProperFlushMethod(),
+                    HttpRequestSender.getProperFlushMethod(),
                     HttpRequestSender.procedure
             );
-
-            return responseMetric;
         }
 
         /**

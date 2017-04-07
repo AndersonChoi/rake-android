@@ -7,16 +7,26 @@ import org.json.JSONObject;
 
 public abstract class Body {
 
-    /** header */
+    /**
+     * header
+     */
     protected Header header;
-    public Body setHeader(Header header) { this.header = header; return this; }
 
-    /** common */
+    public Body setHeader(Header header) {
+        this.header = header;
+        return this;
+    }
+
+    /**
+     * common
+     */
     public static final String BODY_NAME_EXCEPTION_TYPE = "exception_type";
     public static final String BODY_NAME_STACKTRACE = "stacktrace";
     public static final String BODY_NAME_THREAD_INFO = "thread_info";
 
-    /** instance members */
+    /**
+     * instance members
+     */
     protected String exception_type;
     protected String stacktrace;
 
@@ -51,7 +61,9 @@ public abstract class Body {
         return true;
     }
 
-    /** return initialized shuttle for this thread */
+    /**
+     * return initialized shuttle for this thread
+     */
     public static final RakeClientMetricSentinelShuttle getEmptyShuttle() {
 
         RakeClientMetricSentinelShuttle shuttle = metricShuttles.get();
@@ -70,8 +82,11 @@ public abstract class Body {
         return shuttle;
     }
 
-    /** abstract methods */
+    /**
+     * abstract methods
+     */
     public abstract JSONObject toJSONObject();
+
     public abstract String getMetricType();
 
 }
