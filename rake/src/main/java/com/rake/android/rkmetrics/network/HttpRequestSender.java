@@ -156,13 +156,16 @@ final public class HttpRequestSender {
 
             responseCode = conn.getResponseCode();
 
-            if (responseCode >= 400)
+            if (responseCode >= 400) {
                 br = new BufferedReader(new InputStreamReader(conn.getErrorStream()));
-            else br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            } else {
+                br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            }
 
             String line;
-
-            while ((line = br.readLine()) != null) builder.append(line);
+            while ((line = br.readLine()) != null) {
+                builder.append(line);
+            }
 
             responseBody = builder.toString();
 
@@ -179,8 +182,9 @@ final public class HttpRequestSender {
 
     /**
      * @throws GeneralSecurityException
-     * @throws IOException (inclucing UnsupportedEncodingException)
+     * @throws IOException              (inclucing UnsupportedEncodingException)
      */
+    @Deprecated
     private static ServerResponse sendHttpClientRequest(String endPoint, String requestBody) throws GeneralSecurityException, IOException {
         String responseBody;
         int responseCode;
@@ -209,6 +213,7 @@ final public class HttpRequestSender {
         return ServerResponse.create(responseBody, responseCode, responseTime, FLUSH_METHOD_HTTP_CLIENT);
     }
 
+    @Deprecated
     private static HttpClient createHttpsClient() throws GeneralSecurityException {
         SchemeRegistry schemeRegistry = new SchemeRegistry();
         schemeRegistry.register(new Scheme("http", PlainSocketFactory.getSocketFactory(), 80));
@@ -219,6 +224,7 @@ final public class HttpRequestSender {
         return new DefaultHttpClient(connectionManager, params);
     }
 
+    @Deprecated
     private static HttpParams getDefaultHttpParams() {
         HttpParams params = new BasicHttpParams();
 

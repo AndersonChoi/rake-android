@@ -9,7 +9,6 @@ import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
-import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
@@ -26,11 +25,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
 
-import static com.rake.android.rkmetrics.MessageLoop.Command.AUTO_FLUSH_BY_COUNT;
-import static com.rake.android.rkmetrics.MessageLoop.Command.AUTO_FLUSH_BY_TIMER;
-import static com.rake.android.rkmetrics.MessageLoop.Command.KILL_WORKER;
-import static com.rake.android.rkmetrics.MessageLoop.Command.MANUAL_FLUSH;
-import static com.rake.android.rkmetrics.MessageLoop.Command.TRACK;
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.ON;
 import static com.rake.android.rkmetrics.metric.MetricUtil.EMPTY_TOKEN;
 
@@ -53,7 +47,7 @@ final class MessageLoop {
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER(5),
-        RECORD_INSTALL_METRIC(7),
+//        RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
@@ -139,7 +133,7 @@ final class MessageLoop {
 
     private void activateAutoFlushInterval() {
         Message m = Message.obtain();
-        m.what = AUTO_FLUSH_BY_TIMER.code;
+        m.what = Command.AUTO_FLUSH_BY_TIMER.code;
 
         queueMessage(m);
     }
@@ -262,19 +256,19 @@ final class MessageLoop {
                     .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             // MessageHandler 생성시 AUTO_FLUSH_BY_TIMER 메시지 전송
-            sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
+            sendEmptyMessageDelayed(Command.AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
 
         private boolean hasFlushMessage() {
-            return hasMessages(MANUAL_FLUSH.code)
-                    || hasMessages(AUTO_FLUSH_BY_TIMER.code)
-                    || hasMessages(AUTO_FLUSH_BY_COUNT.code);
+            return hasMessages(Command.MANUAL_FLUSH.code)
+                    || hasMessages(Command.AUTO_FLUSH_BY_TIMER.code)
+                    || hasMessages(Command.AUTO_FLUSH_BY_COUNT.code);
         }
 
         /**
          * Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송
          */
-        private void flush(FlushType flushType) {
+        private void flush(String flushType) {
             if (SystemInformation.isDozeModeEnabled(appContext)) {
                 Logger.d("Doze mode is enabled. Network is not available now, so flush() will not be executed. ");
                 return;
@@ -316,7 +310,7 @@ final class MessageLoop {
                         break;
                     case RETRY:
                         if (!hasFlushMessage()) {
-                            sendEmptyMessage(MANUAL_FLUSH.code);
+                            sendEmptyMessage(Command.MANUAL_FLUSH.code);
                         }
                         break; // TODO flush database, RAKE-383, RAKE-381
                     default:
@@ -369,24 +363,24 @@ final class MessageLoop {
                         }
 
                         if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
-                            sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
+                            sendEmptyMessage(Command.AUTO_FLUSH_BY_COUNT.code);
                         }
                         break;
                     case MANUAL_FLUSH:
-                        flush(FlushType.MANUAL_FLUSH);
+                        flush(Command.MANUAL_FLUSH.name());
                         break;
                     case AUTO_FLUSH_BY_COUNT:
                         if (isAutoFlushON()) {
-                            flush(FlushType.AUTO_FLUSH_BY_COUNT);
+                            flush(Command.AUTO_FLUSH_BY_COUNT.name());
                         }
                         break;
                     case AUTO_FLUSH_BY_TIMER:
                         if (isAutoFlushON()) {
                             /* BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 autoFlushInterval 만큼 반복 */
-                            if (!hasMessages(AUTO_FLUSH_BY_TIMER.code)) {
-                                sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
+                            if (!hasMessages(Command.AUTO_FLUSH_BY_TIMER.code)) {
+                                sendEmptyMessageDelayed(Command.AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
                             }
-                            flush(FlushType.AUTO_FLUSH_BY_TIMER);
+                            flush(Command.AUTO_FLUSH_BY_TIMER.name());
                         }
                         break;
                     case KILL_WORKER:

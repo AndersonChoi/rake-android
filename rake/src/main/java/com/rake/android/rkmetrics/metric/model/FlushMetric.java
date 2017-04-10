@@ -31,8 +31,8 @@ public final class FlushMetric extends Body {
     public FlushMetric setLogCount(Long logCount) {
         this.log_count = logCount; return this;
     }
-    public FlushMetric setFlushType(FlushType flushType) {
-        if (null != flushType) this.flush_type = flushType.getValue(); return this;
+    public FlushMetric setFlushType(String flushType) {
+        if (null != flushType) this.flush_type = flushType; return this;
     }
     public FlushMetric setEndpoint(String endpoint) {
         if (null != endpoint) this.endpoint = endpoint; return this;

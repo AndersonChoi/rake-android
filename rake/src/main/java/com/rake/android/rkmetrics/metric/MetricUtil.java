@@ -7,7 +7,6 @@ import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Body;
 import com.rake.android.rkmetrics.metric.model.EmptyMetric;
 import com.rake.android.rkmetrics.metric.model.FlushMetric;
-import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Header;
 import com.rake.android.rkmetrics.metric.model.InstallMetric;
 import com.rake.android.rkmetrics.metric.model.Status;
@@ -110,7 +109,7 @@ public final class MetricUtil {
      * @return true if log was successfully persisted otherwise returns false
      */
     public static boolean recordFlushMetric(Context context,
-                                            FlushType flushType,
+                                            String flushType,
                                             long operationTime,
                                             LogChunk chunk,
                                             ServerResponse response) {

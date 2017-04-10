@@ -2,16 +2,10 @@ package com.rake.android.rkmetrics.metric;
 
 import android.app.Application;
 
-import com.rake.android.rkmetrics.metric.model.FlushType;
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.network.HttpRequestProcedure;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.LogChunk;
-
-import static com.rake.android.rkmetrics.metric.MetricUtil.*;
-
-import static org.assertj.core.api.Assertions.*;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -20,6 +14,9 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 import org.robolectric.shadows.ShadowLog;
+
+import static com.rake.android.rkmetrics.metric.MetricUtil.recordFlushMetric;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
 @Config(manifest = Config.NONE)
@@ -69,7 +66,7 @@ public class MetricUtilSpec {
 
         for (Status s: Status.values()) {
             ServerResponse srm = createEmptySRM(s);
-            boolean b = recordFlushMetric(app, FlushType.MANUAL_FLUSH, 0L, l1, srm);
+            boolean b = recordFlushMetric(app, "MANUAL_FLUSH", 0L, l1, srm);
 
             assertThat(b).isFalse();
         }
