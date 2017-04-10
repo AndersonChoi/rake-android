@@ -52,15 +52,21 @@ final class MessageLoop {
         MANUAL_FLUSH(2),
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
-        KILL_WORKER (5),
+        KILL_WORKER(5),
         RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
-        public int getCode() { return code; }
-        Command(int code) { this.code = code; }
 
-        private static final Map<Integer, Command> messagesByCode = new HashMap<Integer, Command>();
+        public int getCode() {
+            return code;
+        }
+
+        Command(int code) {
+            this.code = code;
+        }
+
+        private static final Map<Integer, Command> messagesByCode = new HashMap<>();
 
         static {
             for (Command m : Command.values()) {
@@ -71,7 +77,8 @@ final class MessageLoop {
         public static Command fromCode(int code) {
             Command m = messagesByCode.get(code);
 
-            if (m == null) return UNKNOWN; else return m;
+            if (m == null) return UNKNOWN;
+            else return m;
         }
     }
 
@@ -94,19 +101,27 @@ final class MessageLoop {
     }
 
     /* Class methods */
-    /* package */ static synchronized MessageLoop getInstance(Context appContext) {
-        if (null == instance) { instance = new MessageLoop(appContext); }
+    /* package */
+    static synchronized MessageLoop getInstance(Context appContext) {
+        if (null == instance) {
+            instance = new MessageLoop(appContext);
+        }
 
         return instance;
     }
 
-    /* package */ static void setAutoFlushInterval(long millis) {
+    /* package */
+    static void setAutoFlushInterval(long millis) {
         autoFlushInterval = millis;
     }
 
-    /* package */ static long getAutoFlushInterval() { return autoFlushInterval; }
+    /* package */
+    static long getAutoFlushInterval() {
+        return autoFlushInterval;
+    }
 
-    /* package */ static void setAutoFlushOption(AutoFlush option) {
+    /* package */
+    static void setAutoFlushOption(AutoFlush option) {
         MessageLoop.autoFlushOption = option;
 
         /* 인스턴스가 존재하면, AUTO_FLUSH_BY_TIMER 루프를 재시작 */
@@ -115,7 +130,10 @@ final class MessageLoop {
         }
     }
 
-    /* package */ static AutoFlush getAutoFlushOption() { return MessageLoop.autoFlushOption; }
+    /* package */
+    static AutoFlush getAutoFlushOption() {
+        return MessageLoop.autoFlushOption;
+    }
 
     /* Instance methods */
 
@@ -126,7 +144,9 @@ final class MessageLoop {
         queueMessage(m);
     }
 
-    private synchronized boolean isAutoFlushON() { return ON == autoFlushOption; }
+    private synchronized boolean isAutoFlushON() {
+        return ON == autoFlushOption;
+    }
 
     public boolean queueTrackCommand(Log log) {
         if (null == log) {
@@ -170,7 +190,9 @@ final class MessageLoop {
     }
 
     private boolean isDead() {
-        synchronized (handlerLock) { return handler == null; }
+        synchronized (handlerLock) {
+            return handler == null;
+        }
     }
 
     private Handler createMessageHandler() {
@@ -249,19 +271,22 @@ final class MessageLoop {
                     || hasMessages(AUTO_FLUSH_BY_COUNT.code);
         }
 
-        /** Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송 */
+        /**
+         * Database Version 5 에 추가된, `log` 테이블에 있는 데이터를 전송
+         */
         private void flush(FlushType flushType) {
-            if(SystemInformation.isDozeModeEnabled(appContext)){
+            if (SystemInformation.isDozeModeEnabled(appContext)) {
                 Logger.d("Doze mode is enabled. Network is not available now, so flush() will not be executed. ");
                 return;
             }
 
             updateFlushFrequency();
 
-            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext)
-                    .getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
+            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext).getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
 
-            if (null == chunks || 0 == chunks.size()) return;
+            if (null == chunks || 0 == chunks.size()) {
+                return;
+            }
 
             for (LogChunk chunk : chunks) {
                 long startAt = System.nanoTime();
@@ -286,9 +311,17 @@ final class MessageLoop {
                  */
                 switch (response.getFlushStatus()) {
                     case DONE:
-                    case DROP: LogTableAdapter.getInstance(appContext).removeLogChunk(chunk); break;
-                    case RETRY: if (!hasFlushMessage()) sendEmptyMessage(MANUAL_FLUSH.code); break; // TODO flush database, RAKE-383, RAKE-381
-                    default: Logger.e("Unknown FlushStatus"); return;
+                    case DROP:
+                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                        break;
+                    case RETRY:
+                        if (!hasFlushMessage()) {
+                            sendEmptyMessage(MANUAL_FLUSH.code);
+                        }
+                        break; // TODO flush database, RAKE-383, RAKE-381
+                    default:
+                        Logger.e("Unknown FlushStatus");
+                        return;
                 }
 
                 RakeProtocolV2.reportResponse(
@@ -325,42 +358,48 @@ final class MessageLoop {
         @Override
         public void handleMessage(Message msg) {
             try {
-                Command command = Command.fromCode(msg.what);
+                switch (Command.fromCode(msg.what)) {
+                    case TRACK:
+                        Log log = (Log) msg.obj;
+                        int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
 
-                if (command == TRACK) {
-                    Log log = (Log) msg.obj;
-                    int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
+                        /* Metric이 아닐 경우에만, 로그 출력 */
+                        if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {
+                            Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
+                        }
 
-                    /** Metric 이 아닐 경우에만, 로깅 */
-                    if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN))
-                        Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
-
-                    if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
-                        sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
-                    }
-                } else if (command == MANUAL_FLUSH) {
-                    flush(FlushType.MANUAL_FLUSH);
-
-                } else if (command == AUTO_FLUSH_BY_COUNT && isAutoFlushON()) {
-                    flush(FlushType.AUTO_FLUSH_BY_COUNT);
-
-                } else if (command == AUTO_FLUSH_BY_TIMER && isAutoFlushON()) {
-                    /** BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 autoFlushInterval 만큼 반복 */
-                    if (!hasMessages(AUTO_FLUSH_BY_TIMER.code) && isAutoFlushON())
-                        sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
-
-                    flush(FlushType.AUTO_FLUSH_BY_TIMER);
-
-                } else if (command == KILL_WORKER) {
-                    Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
-                    synchronized (handlerLock) {
-                        EventTableAdapter.getInstance(appContext).deleteDatabase();
-                        handler = null;
-                        android.os.Looper.myLooper().quit();
-                    }
-
-                } else { /* UNKNOWN COMMAND */
-                    Logger.e("Unexpected message received by Rake worker: " + msg);
+                        if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
+                            sendEmptyMessage(AUTO_FLUSH_BY_COUNT.code);
+                        }
+                        break;
+                    case MANUAL_FLUSH:
+                        flush(FlushType.MANUAL_FLUSH);
+                        break;
+                    case AUTO_FLUSH_BY_COUNT:
+                        if (isAutoFlushON()) {
+                            flush(FlushType.AUTO_FLUSH_BY_COUNT);
+                        }
+                        break;
+                    case AUTO_FLUSH_BY_TIMER:
+                        if (isAutoFlushON()) {
+                            /* BY_TIMER 메시지를 받았을 때 다시 자신을 보냄으로써 autoFlushInterval 만큼 반복 */
+                            if (!hasMessages(AUTO_FLUSH_BY_TIMER.code)) {
+                                sendEmptyMessageDelayed(AUTO_FLUSH_BY_TIMER.code, autoFlushInterval);
+                            }
+                            flush(FlushType.AUTO_FLUSH_BY_TIMER);
+                        }
+                        break;
+                    case KILL_WORKER:
+                        Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
+                        synchronized (handlerLock) {
+                            EventTableAdapter.getInstance(appContext).deleteDatabase();
+                            handler = null;
+                            android.os.Looper.myLooper().quit();
+                        }
+                        break;
+                    default:
+                        Logger.e("Unexpected message received by Rake worker: " + msg);
+                        break;
                 }
 
             } catch (OutOfMemoryError e) {
@@ -369,8 +408,9 @@ final class MessageLoop {
 
                 synchronized (handlerLock) {
                     handler = null;
-                    try { android.os.Looper.myLooper().quit(); }
-                    catch (Exception tooLate) {
+                    try {
+                        android.os.Looper.myLooper().quit();
+                    } catch (Exception tooLate) {
                         Logger.e("Can't halt looper", tooLate);
                     }
                 }

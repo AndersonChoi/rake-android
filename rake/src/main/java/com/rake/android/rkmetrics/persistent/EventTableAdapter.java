@@ -13,6 +13,8 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Locale;
+
 @Deprecated // 0.4.0 버전부터 사용하지 않음. 0.4.0 미만 버전에서 업그레이드시 하위 호환을 위해 남김
 public final class EventTableAdapter extends DatabaseAdapter {
 
@@ -50,7 +52,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * Adds a JSON string representing an event with properties or a person record
      * to the SQLiteDatabase.
      *
-     * @param json     the JSON to record
+     * @param json the JSON to record
      * @return the number of rows in the table, or -1 on failure
      */
     public synchronized int addEvent(final JSONObject json) {
@@ -72,7 +74,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
                     return c.getInt(0);
                 } finally { /** exception 은 Callback 에서 처리 */
-                   if (null != c) c.close();
+                    if (null != c) c.close();
                 }
             }
 
@@ -110,7 +112,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     /**
      * Removes events before time.
      *
-     * @param time  the unix epoch in milliseconds to remove events before
+     * @param time the unix epoch in milliseconds to remove events before
      */
     public synchronized void removeEventByTime(final long time) {
         final String table = Table.EVENTS.getName();
@@ -137,7 +139,8 @@ public final class EventTableAdapter extends DatabaseAdapter {
      * representing the events, or null if none could be successfully retrieved.
      */
     public synchronized ExtractedEvent getExtractEvent() {
-        ExtractedEvent event = executeAndReturnT(new SQLiteUtil.Callback<ExtractedEvent>() {
+
+        return executeAndReturnT(new SQLiteUtil.Callback<ExtractedEvent>() {
             @Override
             public ExtractedEvent execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -149,12 +152,17 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
                     while (c.moveToNext()) {
                         // TODO c.getString getColumnIndex to helper function
-                        if (c.isLast()) lastId = getStringFromCursor(c, EventContract._ID);
+                        if (c.isLast()) {
+                            lastId = EventTableAdapter.this.getStringFromCursor(c, EventContract._ID);
+                        }
 
-                        String log = getStringFromCursor(c, EventContract.COLUMN_DATA);
+                        String log = EventTableAdapter.this.getStringFromCursor(c, EventContract.COLUMN_DATA);
 
-                        try { jsonArr.put(new JSONObject(log)); } /* if an exception occurred, ignore it */
-                        catch (JSONException e) { Logger.t("Failed to convert String to JsonObject", e); }
+                        try {
+                            jsonArr.put(new JSONObject(log));
+                        } /* if an exception occurred, ignore it */ catch (JSONException e) {
+                            Logger.t("Failed to convert String to JsonObject", e);
+                        }
                     }
 
                 } finally { /** exception 은 Callback 에서 처리 */
@@ -165,7 +173,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
                 ExtractedEvent e = ExtractedEvent.create(lastId, jsonArr);
 
                 if (null != e) {
-                    String message = String.format("[SQLite] Extracting %d rows from the [%s] table",
+                    String message = String.format(Locale.US, "[SQLite] Extracting %d rows from the [%s] table",
                             jsonArr.length(), EventContract.TABLE_NAME);
                     Logger.d(message);
                 }
@@ -175,12 +183,10 @@ public final class EventTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                return String.format("SELECT * FROM %s ORDER BY %s ASC LIMIT %d",
+                return String.format(Locale.US, "SELECT * FROM %s ORDER BY %s ASC LIMIT %d",
                         EventContract.TABLE_NAME, EventContract.COLUMN_CREATED_AT, RakeConfig.TRACK_MAX_LOG_COUNT);
             }
         });
-
-        return event;
     }
 
 }

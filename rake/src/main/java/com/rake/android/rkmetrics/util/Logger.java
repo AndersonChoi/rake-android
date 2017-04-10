@@ -5,6 +5,8 @@ import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 import android.util.Log;
 import com.rake.android.rkmetrics.RakeAPI;
 
+import java.util.Locale;
+
 final public class Logger {
 
     public static RakeAPI.Logging loggingMode = RakeAPI.Logging.DISABLE;
@@ -101,7 +103,7 @@ final public class Logger {
     }
 
     private static String getTagWithThreadId(String tag) {
-        return String.format("%s [Thread %d]", tag, Thread.currentThread().getId());
+        return String.format(Locale.US, "%s [Thread %d]", tag, Thread.currentThread().getId());
     }
 
     public static int t(String msg) {

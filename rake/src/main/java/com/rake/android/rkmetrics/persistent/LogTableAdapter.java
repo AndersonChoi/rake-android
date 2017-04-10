@@ -13,27 +13,28 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 
 public final class LogTableAdapter extends DatabaseAdapter {
 
     public static class LogContract implements BaseColumns {
-        public static final String TABLE_NAME = Table.LOG.getName();
-        public static final String COLUMN_CREATED_AT = "createdAt";
+        static final String TABLE_NAME = Table.LOG.getName();
+        static final String COLUMN_CREATED_AT = "createdAt";
 
-        public static final String COLUMN_URL = "url";                 /* STRING not null */
-        public static final String COLUMN_TOKEN = "token";             /* STRING not null */
-        public static final String COLUMN_LOG = "log";
+        static final String COLUMN_URL = "url";                 /* STRING not null */
+        static final String COLUMN_TOKEN = "token";             /* STRING not null */
+        static final String COLUMN_LOG = "log";
 
-        public static final String QUERY_CREATE_TABLE =
-                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME +  " (" +
+        static final String QUERY_CREATE_TABLE =
+                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
                         _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
                         COLUMN_URL + TEXT_TYPE_NOT_NULL + COMMA_SEP +
                         COLUMN_TOKEN + TEXT_TYPE_NOT_NULL + COMMA_SEP +
                         COLUMN_LOG + TEXT_TYPE_NOT_NULL + COMMA_SEP +
                         COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
 
-        public static final String QUERY_CREATE_INDEX =
+        static final String QUERY_CREATE_INDEX =
                 "CREATE INDEX IF NOT EXISTS craetedAt_idx ON " + TABLE_NAME +
                         " (" + COLUMN_CREATED_AT + QUERY_END;
 
@@ -47,7 +48,9 @@ public final class LogTableAdapter extends DatabaseAdapter {
     private static LogTableAdapter instance;
 
     public static synchronized LogTableAdapter getInstance(Context appContext) {
-        if (null == instance) instance = new LogTableAdapter(appContext);
+        if (null == instance) {
+            instance = new LogTableAdapter(appContext);
+        }
 
         return instance;
     }
@@ -68,14 +71,14 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     c = db.rawQuery(getQuery(), null);
                     c.moveToFirst();
                     return c.getInt(0);
-                } finally { /** exception 은 Callback 에서 처리 */
+                } finally { /* exception 은 Callback 에서 처리 */
                     if (null != c) c.close();
                 }
             }
 
             @Override
             public String getQuery() {
-                /** starts with ` ` (space) */
+                /* starts with ` ` (space) */
                 String BEGIN_WHERE_CLAUSE_TOKEN = String.format(" WHERE %s = \"%s\"",
                         LogContract.COLUMN_TOKEN, token);
 
@@ -99,38 +102,38 @@ public final class LogTableAdapter extends DatabaseAdapter {
 
             @Override
             public String getQuery() {
-                String WHERE_CALUSE_TOKEN = String.format("%s = \"%s\"",
+                String WHERE_CLAUSE_TOKEN = String.format("%s = \"%s\"",
                         LogContract.COLUMN_TOKEN, chunk.getToken());
 
-                String WHERE_CALUSE_URL = String.format("%s = \"%s\"",
+                String WHERE_CLAUSE_URL = String.format("%s = \"%s\"",
                         LogContract.COLUMN_URL, chunk.getUrl());
 
                 return LogContract._ID + " <= " + chunk.getLastId() +
-                        AND + WHERE_CALUSE_TOKEN +
-                        AND + WHERE_CALUSE_URL;
+                        AND + WHERE_CLAUSE_TOKEN +
+                        AND + WHERE_CLAUSE_URL;
             }
         });
     }
 
     public synchronized void removeLogByTime(final Long time) {
-       execute(new SQLiteUtil.Callback<Void>() {
-           @Override
-           public Void execute(SQLiteDatabase db) {
-               db.delete(LogContract.TABLE_NAME, getQuery(), null);
-               return null;
-           }
+        execute(new SQLiteUtil.Callback<Void>() {
+            @Override
+            public Void execute(SQLiteDatabase db) {
+                db.delete(LogContract.TABLE_NAME, getQuery(), null);
+                return null;
+            }
 
-           @Override
-           public String getQuery() {
-               return LogContract.COLUMN_CREATED_AT + " <= " + time;
-           }
-       });
+            @Override
+            public String getQuery() {
+                return LogContract.COLUMN_CREATED_AT + " <= " + time;
+            }
+        });
     }
 
     public synchronized int addLog(final Log log) {
         if (null == log) {
             Logger.e("Can't record NULL log");
-            return - 1;
+            return -1;
         }
 
         Integer result = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
@@ -150,13 +153,17 @@ public final class LogTableAdapter extends DatabaseAdapter {
                     c.moveToFirst();
 
                     return c.getInt(0);
-                } finally { /** exception 은 Callback 에서 처리 */
-                   if (null != c) c.close();
+                } finally { /* exception 은 Callback 에서 처리 */
+                    if (null != c) {
+                        c.close();
+                    }
                 }
             }
 
             @Override
-            public String getQuery() { return "SELECT COUNT(*) FROM " + LogContract.TABLE_NAME; }
+            public String getQuery() {
+                return "SELECT COUNT(*) FROM " + LogContract.TABLE_NAME;
+            }
         });
 
         return ((null == result) ? -1 : result);
@@ -164,64 +171,65 @@ public final class LogTableAdapter extends DatabaseAdapter {
 
     /**
      * 개별 토큰마다 flush 하지 않고 아래 처럼 모든 토큰을 flush 하는 이유는,
-     *
+     * <p>
      * - 단말 내에 Rake 를 사용한 복수개의 SDK 가 있을 수 있음
      * - 개별 SDK 는 자신을 Flush 하지 않을 수 있음
      */
     public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
-        List<LogChunk> chunks = executeAndReturnT(new SQLiteUtil.Callback<List<LogChunk>>() {
+        return executeAndReturnT(new SQLiteUtil.Callback<List<LogChunk>>() {
             @Override
             public List<LogChunk> execute(SQLiteDatabase db) {
                 Cursor c = null;
                 String lastId = null;
-                List<Log> logList = new ArrayList<Log>();
+                List<Log> logList = new ArrayList<>();
 
                 try {
                     c = db.rawQuery(getQuery(), null);
 
-                    while(c.moveToNext()) {
-                        if (c.isLast()) lastId = getStringFromCursor(c, LogContract._ID);
+                    while (c.moveToNext()) {
+                        if (c.isLast()) {
+                            lastId = LogTableAdapter.this.getStringFromCursor(c, LogContract._ID);
+                        }
 
-                        Log log = createLog(c);
+                        Log log = LogTableAdapter.this.createLog(c);
 
-                        if (null != log) logList.add(log);
+                        if (null != log) {
+                            logList.add(log);
+                        }
                     }
-                } finally { /** exception 은 Callback 에서 처리 */
-                    if (null != c) c.close();
+                } finally { /* exception 은 Callback 에서 처리 */
+                    if (null != c) {
+                        c.close();
+                    }
                 }
 
-                List<LogChunk> chunks = LogChunk.create(lastId, logList);
-
-                return chunks;
+                return LogChunk.create(lastId, logList);
             }
 
             @Override
             public String getQuery() {
-                String query = String.format("SELECT * FROM %s ORDER BY %s ASC LIMIT %d",
+
+                return String.format(Locale.US, "SELECT * FROM %s ORDER BY %s ASC LIMIT %d",
                         LogContract.TABLE_NAME,
                         LogContract.COLUMN_CREATED_AT,
                         extractCount);
-
-                return query;
             }
         });
-
-        return chunks;
     }
 
-    /** do not close Cursor in this method */
+    /**
+     * do not close Cursor in this method
+     */
     private synchronized Log createLog(Cursor c) {
-        Log l = null;
-
         try {
             String url = getStringFromCursor(c, LogContract.COLUMN_URL);
             String token = getStringFromCursor(c, LogContract.COLUMN_TOKEN);
             JSONObject log = new JSONObject(getStringFromCursor(c, LogContract.COLUMN_LOG));
 
-            l = Log.create(url, token, log);
+            return Log.create(url, token, log);
         } catch (JSONException e) { /* ignore */ }
 
-        return l;
+        return null;
     }
 }

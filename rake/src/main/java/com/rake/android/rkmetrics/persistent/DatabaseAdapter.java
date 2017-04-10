@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
 import com.rake.android.rkmetrics.util.Logger;
 
 import java.io.File;
+import java.util.Locale;
 
 /**
  * Not thread-safe.
@@ -26,18 +27,18 @@ public abstract class DatabaseAdapter {
         private final String tableName;
     }
 
-    protected static final String DATABASE_NAME = "rake";
-    protected static final String TEXT_TYPE_NOT_NULL = " TEXT NOT NULL";
-    protected static final String STRING_TYPE_NOT_NULL = " STRING NOT NULL";
-    protected static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
-    protected static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
-    protected static final String AND = " AND ";
+    private static final String DATABASE_NAME = "rake";
+    static final String TEXT_TYPE_NOT_NULL = " TEXT NOT NULL";
+    static final String STRING_TYPE_NOT_NULL = " STRING NOT NULL";
+    static final String INTEGER_TYPE_NOT_NULL = " INTEGER NOT NULL";
+    static final String INTEGER_PK_AUTO_INCREMENT = " INTEGER PRIMARY KEY AUTOINCREMENT";
+    static final String AND = " AND ";
 
-    public static final int DATABASE_VERSION = 5;
+    private static final int DATABASE_VERSION = 5;
     public static boolean upgradedFrom4To5 = false;
 
-    protected static final String COMMA_SEP = ", ";
-    protected static final String QUERY_END = ");";
+    static final String COMMA_SEP = ", ";
+    static final String QUERY_END = ");";
 
     private static DatabaseHelper dbHelper;
     private static final Object lock = new Object();
@@ -77,7 +78,7 @@ public abstract class DatabaseAdapter {
 
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-            String message = String.format("Upgrade Database [%s] from version %d to %d",
+            String message = String.format(Locale.US, "Upgrade Database [%s] from version %d to %d",
                     DATABASE_NAME, oldVersion, newVersion);
 
             Logger.d(message);

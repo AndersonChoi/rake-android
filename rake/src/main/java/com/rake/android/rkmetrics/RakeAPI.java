@@ -138,7 +138,7 @@ public final class RakeAPI {
 
 
     // TODO: remove nested map
-    private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<String, Map<Context, RakeAPI>>();
+    private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<>();
 
     private String tag;
 
@@ -213,7 +213,7 @@ public final class RakeAPI {
             Map<Context, RakeAPI> instances = sInstanceMap.get(token);
 
             if (instances == null) {
-                instances = new HashMap<Context, RakeAPI>();
+                instances = new HashMap<>();
                 sInstanceMap.put(token, instances);
             }
 
@@ -482,7 +482,7 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
         defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
 
-        /** application versionName, buildDate(iff dev mode) */
+        /* application versionName, buildDate(if dev mode) */
         String appVersionName = SystemInformation.getAppVersionName(context);
         String appBuildDate = SystemInformation.getAppBuildDate(context);
 

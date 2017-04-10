@@ -36,7 +36,7 @@ public class LogChunk {
 
         if (null == lastId || null == logs || 0 == logs.size()) return null;
 
-        Map<String, Map<String, JSONArray>> logMap = new HashMap<String, Map<String, JSONArray>>();
+        Map<String, Map<String, JSONArray>> logMap = new HashMap<>();
 
         for (Log log : logs) {
             if (!logMap.containsKey(log.getUrl())) { /* if urlMap doesn't have the url */
@@ -52,7 +52,7 @@ public class LogChunk {
             jsonArr.put(log.getJson());
         }
 
-        List<LogChunk> chunks = new ArrayList<LogChunk>();
+        List<LogChunk> chunks = new ArrayList<>();
 
         for (String url : logMap.keySet()) {
             for (String token : logMap.get(url).keySet()) {

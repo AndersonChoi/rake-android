@@ -4,6 +4,8 @@ import static com.rake.android.rkmetrics.metric.model.Status.*;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 
+import java.util.Locale;
+
 public final class RakeProtocolV2 {
     public static final String RAKE_PROTOCOL_VERSION = "V2";
     public static final String CHAR_ENCODING = "UTF-8";
@@ -48,7 +50,7 @@ public final class RakeProtocolV2 {
     }
 
     public static void reportResponse(String responseBody, int responseCode) {
-        String message = String.format("[NETWORK] Server returned code: %d, body: %s", responseCode, responseBody);
+        String message = String.format(Locale.US, "[NETWORK] Server returned code: %d, body: %s", responseCode, responseBody);
         Logger.t(message);
     }
 }

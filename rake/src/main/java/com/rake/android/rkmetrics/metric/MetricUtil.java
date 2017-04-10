@@ -42,7 +42,7 @@ public final class MetricUtil {
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "refactoring";
+    public static final String BUILD_CONSTANT_BRANCH = "develop";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -66,10 +66,6 @@ public final class MetricUtil {
         sb.append(u3);
 
         return sb.toString().replaceAll("-", "");
-    }
-
-    public static boolean isNotMetricToken(String token) {
-        return !isMetricToken(token);
     }
 
     public static boolean isMetricToken(String token) {
@@ -146,10 +142,10 @@ public final class MetricUtil {
         metric.setFlushType(flushType)
                 .setEndpoint(chunk.getUrl())
                 .setOperationTime(operationTime)
-                .setLogCount(Long.valueOf(chunk.getCount()))
-                .setLogSize(Long.valueOf(chunk.getChunk().getBytes().length))
+                .setLogCount((long) chunk.getCount())
+                .setLogSize((long) chunk.getChunk().getBytes().length)
                 .setServerResponseBody(response.getResponseBody())
-                .setServerResponseCode(Long.valueOf(response.getResponseCode()))
+                .setServerResponseCode((long) response.getResponseCode())
                 .setServerResponseTime(response.getServerResponseTime())
                 .setFlushMethod(response.getFlushMethod());
 
@@ -159,7 +155,7 @@ public final class MetricUtil {
     /**
      * @return true if log was successfully persisted otherwise returns false
      */
-    public static boolean recordMetric(Context context, Body metric) {
+    private static boolean recordMetric(Context context, Body metric) {
         JSONObject validShuttle = createValidShuttleForMetric(metric, context);
 
         Log log = Log.create(
@@ -175,17 +171,16 @@ public final class MetricUtil {
         return recorded;
     }
 
-    public static JSONObject createValidShuttleForMetric(Body metric, Context context) {
+    private static JSONObject createValidShuttleForMetric(Body metric, Context context) {
         if (null == metric) return null;
 
         JSONObject userProps = metric.toJSONObject();
         JSONObject defaultProps = createDefaultPropsForMetric(context);
-        JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
 
-        return validShuttle;
+        return ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
     }
 
-    public static JSONObject createDefaultPropsForMetric(Context context) {
+    private static JSONObject createDefaultPropsForMetric(Context context) {
         JSONObject defaultProps = null;
         try {
             defaultProps = RakeAPI.getDefaultProps(

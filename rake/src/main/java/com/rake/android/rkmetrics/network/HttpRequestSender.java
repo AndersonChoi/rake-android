@@ -116,13 +116,9 @@ final public class HttpRequestSender {
     }
 
     /**
-     * @throws MalformedURLException
-     * @throws UnsupportedEncodingException
-     * @throws ProtocolException
-     * @throws IOException
+     * @throws IOException (including MalformedURLException, UnsupportedEncodingException, ProtocolException)
      */
-    private static ServerResponse sendHttpUrlStreamRequest(String endPoint, String requestBody)
-            throws MalformedURLException, UnsupportedEncodingException, ProtocolException, IOException {
+    private static ServerResponse sendHttpUrlStreamRequest(String endPoint, String requestBody) throws IOException {
 
         URL url;
         OutputStream os = null;
@@ -182,12 +178,10 @@ final public class HttpRequestSender {
     }
 
     /**
-     * @throws UnsupportedEncodingException
      * @throws GeneralSecurityException
-     * @throws IOException
+     * @throws IOException (inclucing UnsupportedEncodingException)
      */
-    private static ServerResponse sendHttpClientRequest(String endPoint, String requestBody)
-            throws UnsupportedEncodingException, GeneralSecurityException, IOException {
+    private static ServerResponse sendHttpClientRequest(String endPoint, String requestBody) throws GeneralSecurityException, IOException {
         String responseBody;
         int responseCode;
         long responseTime;

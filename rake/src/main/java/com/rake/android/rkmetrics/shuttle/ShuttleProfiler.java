@@ -162,9 +162,8 @@ public class ShuttleProfiler {
             return false;
         }
 
-        if (null == found || !expected.equals(found)) return false;
+        return !(null == found || !expected.equals(found)) && hasValue;
 
-        return hasValue;
     }
 
 
