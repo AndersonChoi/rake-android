@@ -37,7 +37,7 @@ public class HttpRequestSenderSpec {
 
     public void assertFlushStatusReturnedFromHandleResponse(Throwable e, Status status) {
         ServerResponse metric = HttpRequestSender.handleResponse(
-                null, null, HttpRequestSender.FLUSH_METHOD_HTTP_URL_CONNECTION, createProcedureThrowingException(e));
+                null, null, createProcedureThrowingException(e));
 
         assertThat(metric.getFlushStatus()).isEqualTo(status);
         assertThat(metric.getExceptionInfo()).isEqualTo(e);
@@ -151,23 +151,18 @@ public class HttpRequestSenderSpec {
 
     @Test(expected = UnknownRakeStateException.class)
     public void procedure_should_throw_UnknownRakeStateException_given_url_is_NULL() throws Throwable {
-        HttpRequestSender.procedure.execute(null, "log", HttpRequestSender.FLUSH_METHOD_HTTP_URL_CONNECTION);
+        HttpRequestSender.procedure.execute(null, "log");
     }
 
     @Test(expected = UnknownRakeStateException.class)
     public void procedure_should_throw_UnknownRakeStateException_given_log_is_NULL() throws Throwable {
-        HttpRequestSender.procedure.execute("url", null, HttpRequestSender.FLUSH_METHOD_HTTP_URL_CONNECTION);
-    }
-
-    @Test(expected = UnknownRakeStateException.class)
-    public void procedure_should_throw_UnknownRakeStateException_given_flushMethod_is_NULL() throws Throwable {
-        HttpRequestSender.procedure.execute("url", "log", null);
+        HttpRequestSender.procedure.execute("url", null);
     }
 
     public HttpRequestProcedure createProcedureThrowingException(final Throwable e) {
         return new HttpRequestProcedure() {
             @Override
-            public ServerResponse execute(String url, String log, String flushMethod) throws Throwable {
+            public ServerResponse execute(String url, String log) throws Throwable {
                 throw e;
             }
         };

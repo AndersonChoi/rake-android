@@ -73,7 +73,7 @@ public class MetricUtilSpec {
     }
 
     private ServerResponse createEmptySRM(Status status) {
-        ServerResponse srm = ServerResponse.create("body", 0, 0L, HttpRequestSender.getProperFlushMethod()).setFlushStatus(status);
+        ServerResponse srm = ServerResponse.create("body", 0, 0L).setFlushStatus(status);
         assertThat(srm).isNotNull();
         return srm;
     }

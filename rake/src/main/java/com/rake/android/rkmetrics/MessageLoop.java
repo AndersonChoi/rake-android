@@ -340,7 +340,6 @@ final class MessageLoop {
             return HttpRequestSender.handleResponse(
                     url,
                     chunk.getChunk(),
-                    HttpRequestSender.getProperFlushMethod(),
                     HttpRequestSender.procedure
             );
         }
