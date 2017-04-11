@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics.util;
 import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 
 import android.util.Log;
+
 import com.rake.android.rkmetrics.RakeAPI;
 
 import java.util.Locale;
@@ -11,8 +12,13 @@ final public class Logger {
 
     public static RakeAPI.Logging loggingMode = RakeAPI.Logging.DISABLE;
 
-    public Logger() throws InstantiationException { throw new InstantiationException("default constructor of Logger is not supported"); }
-    private static boolean isEnabled() { return (RakeAPI.Logging.ENABLE == loggingMode); }
+    public Logger() throws InstantiationException {
+        throw new InstantiationException("default constructor of Logger is not supported");
+    }
+
+    private static boolean isEnabled() {
+        return RakeAPI.Logging.ENABLE == loggingMode;
+    }
 
     public static int v(String msg) {
         return v(LOG_TAG_PREFIX, msg);
@@ -23,13 +29,11 @@ final public class Logger {
     }
 
     public static int v(String tag, String msg) {
-        if (isEnabled()) return Log.v(tag, msg);
-        else return -1;
+        return isEnabled() ? Log.v(tag, msg) : -1;
     }
 
     public static int v(String tag, String msg, Throwable t) {
-        if (isEnabled()) return Log.v(tag, msg, t);
-        else return -1;
+        return isEnabled() ? Log.v(tag, msg, t) : -1;
     }
 
     public static int d(String msg) {
@@ -41,13 +45,11 @@ final public class Logger {
     }
 
     public static int d(String tag, String msg) {
-        if (isEnabled()) return Log.d(tag, msg);
-        else return -1;
+        return isEnabled() ? Log.d(tag, msg) : -1;
     }
 
     public static int d(String tag, String msg, Throwable t) {
-        if (isEnabled()) return Log.d(tag, msg, t);
-        else return -1;
+        return isEnabled() ? Log.d(tag, msg, t) : -1;
     }
 
     public static int i(String msg) {
@@ -59,13 +61,11 @@ final public class Logger {
     }
 
     public static int i(String tag, String msg) {
-        if (isEnabled()) return Log.i(tag, msg);
-        else return -1;
+        return isEnabled() ? Log.i(tag, msg) : -1;
     }
 
     public static int i(String tag, String msg, Throwable t) {
-        if (isEnabled()) return Log.i(tag, msg, t);
-        else return -1;
+        return isEnabled() ? Log.i(tag, msg, t) : -1;
     }
 
     public static int w(String msg) {
@@ -77,13 +77,11 @@ final public class Logger {
     }
 
     public static int w(String tag, String msg) {
-        if (isEnabled()) return Log.w(tag, msg);
-        else return -1;
+        return isEnabled() ? Log.w(tag, msg) : -1;
     }
 
     public static int w(String tag, String msg, Throwable t) {
-        if (isEnabled()) return Log.w(tag, msg, t);
-        else return -1;
+        return isEnabled() ? Log.w(tag, msg, t) : -1;
     }
 
     public static int e(String msg) {
@@ -115,13 +113,11 @@ final public class Logger {
     }
 
     public static int t(String tag, String msg) {
-        if (isEnabled()) return Log.d(getTagWithThreadId(tag), msg);
-        else return -1;
+        return isEnabled() ? Log.d(getTagWithThreadId(tag), msg) : -1;
     }
 
     public static int t(String tag, String msg, Throwable t) {
-        if (isEnabled()) return Log.d(getTagWithThreadId(tag), msg, t);
-        else return -1;
+        return isEnabled() ? Log.d(getTagWithThreadId(tag), msg, t) : -1;
     }
 
     public static int wtf(String msg) {
