@@ -20,10 +20,14 @@ public abstract class DatabaseAdapter {
         EVENTS("events"),
         LOG("log");
 
-        Table(String name) { tableName = name; }
+        Table(String name) {
+            tableName = name;
+        }
+
         public String getName() {
             return tableName;
         }
+
         private final String tableName;
     }
 
@@ -49,9 +53,16 @@ public abstract class DatabaseAdapter {
         }
     }
 
+    public interface SQLiteDatabaseCallback<T> {
+        T execute(SQLiteDatabase db);
+
+        String getQuery();
+    }
+
     private static class DatabaseHelper extends SQLiteOpenHelper {
 
         private final File database;
+
         DatabaseHelper(Context context, String dbName) {
             super(context, dbName, null, DATABASE_VERSION);
             database = context.getDatabasePath(dbName);
@@ -110,7 +121,7 @@ public abstract class DatabaseAdapter {
         dbHelper.dropDatabase();
     }
 
-    protected void execute(SQLiteUtil.Callback callback) {
+    protected void execute(SQLiteDatabaseCallback callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             callback.execute(db);
@@ -136,7 +147,7 @@ public abstract class DatabaseAdapter {
         return cursor.getString(cursor.getColumnIndex(columnIndex));
     }
 
-    protected <T> T executeAndReturnT(SQLiteUtil.Callback<T> callback) {
+    protected <T> T executeAndReturnT(SQLiteDatabaseCallback<T> callback) {
         try {
             SQLiteDatabase db = dbHelper.getWritableDatabase();
             return callback.execute(db);

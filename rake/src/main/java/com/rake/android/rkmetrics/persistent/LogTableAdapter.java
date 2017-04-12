@@ -26,17 +26,15 @@ public final class LogTableAdapter extends DatabaseAdapter {
         static final String COLUMN_TOKEN = "token";             /* STRING not null */
         static final String COLUMN_LOG = "log";
 
-        static final String QUERY_CREATE_TABLE =
-                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
-                        _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
-                        COLUMN_URL + TEXT_TYPE_NOT_NULL + COMMA_SEP +
-                        COLUMN_TOKEN + TEXT_TYPE_NOT_NULL + COMMA_SEP +
-                        COLUMN_LOG + TEXT_TYPE_NOT_NULL + COMMA_SEP +
-                        COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
+        static final String QUERY_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
+                _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
+                COLUMN_URL + TEXT_TYPE_NOT_NULL + COMMA_SEP +
+                COLUMN_TOKEN + TEXT_TYPE_NOT_NULL + COMMA_SEP +
+                COLUMN_LOG + TEXT_TYPE_NOT_NULL + COMMA_SEP +
+                COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
 
-        static final String QUERY_CREATE_INDEX =
-                "CREATE INDEX IF NOT EXISTS craetedAt_idx ON " + TABLE_NAME +
-                        " (" + COLUMN_CREATED_AT + QUERY_END;
+        static final String QUERY_CREATE_INDEX = "CREATE INDEX IF NOT EXISTS craetedAt_idx ON " + TABLE_NAME +
+                " (" + COLUMN_CREATED_AT + QUERY_END;
 
         public static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
@@ -62,7 +60,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
     public synchronized int getCount(final String token) {
         if (null == token) return -1;
 
-        Integer count = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
+        Integer count = executeAndReturnT(new SQLiteDatabaseCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -93,7 +91,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
      * @param chunk should not be null
      */
     public synchronized void removeLogChunk(final LogChunk chunk) {
-        execute(new SQLiteUtil.Callback<Void>() {
+        execute(new SQLiteDatabaseCallback() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(LogContract.TABLE_NAME, getQuery(), null);
@@ -116,7 +114,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
     }
 
     public synchronized void removeLogByTime(final Long time) {
-        execute(new SQLiteUtil.Callback<Void>() {
+        execute(new SQLiteDatabaseCallback() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(LogContract.TABLE_NAME, getQuery(), null);
@@ -136,7 +134,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
             return -1;
         }
 
-        Integer result = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
+        Integer result = executeAndReturnT(new SQLiteDatabaseCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -177,7 +175,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
      */
     public synchronized List<LogChunk> getLogChunks(final int extractCount) {
 
-        return executeAndReturnT(new SQLiteUtil.Callback<List<LogChunk>>() {
+        return executeAndReturnT(new SQLiteDatabaseCallback<List<LogChunk>>() {
             @Override
             public List<LogChunk> execute(SQLiteDatabase db) {
                 Cursor c = null;

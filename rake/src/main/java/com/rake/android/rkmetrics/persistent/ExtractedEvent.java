@@ -2,6 +2,7 @@ package com.rake.android.rkmetrics.persistent;
 
 import org.json.JSONArray;
 
+@Deprecated // 0.4.0 버전부터 사용하지 않음. 0.4.0 미만 버전에서 업그레이드시 하위 호환을 위해 남김
 public final class ExtractedEvent {
 
     private String lastId; /* `rake` Database PK */

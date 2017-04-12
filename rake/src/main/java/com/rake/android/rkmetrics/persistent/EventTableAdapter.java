@@ -19,21 +19,20 @@ import java.util.Locale;
 public final class EventTableAdapter extends DatabaseAdapter {
 
     public static class EventContract implements BaseColumns {
-        public static final String TABLE_NAME = Table.EVENTS.getName();
+        static final String TABLE_NAME = Table.EVENTS.getName();
 
-        public static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
-        public static final String COLUMN_DATA = "data";               /* STRING not null */
+        static final String COLUMN_CREATED_AT = "created_at";   /* INTEGER not null */
+        static final String COLUMN_DATA = "data";               /* STRING not null */
 
-        public static final String QUERY_CREATE_TABLE =
-                "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" + _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
-                        COLUMN_DATA + STRING_TYPE_NOT_NULL + COMMA_SEP +
-                        COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
+        static final String QUERY_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME +
+                " (" + _ID + INTEGER_PK_AUTO_INCREMENT + COMMA_SEP +
+                COLUMN_DATA + STRING_TYPE_NOT_NULL + COMMA_SEP +
+                COLUMN_CREATED_AT + INTEGER_TYPE_NOT_NULL + QUERY_END;
 
-        public static final String QUERY_CREATE_INDEX =
-                "CREATE INDEX IF NOT EXISTS time_idx ON " + TABLE_NAME +
-                        " (" + COLUMN_CREATED_AT + ");";
+        static final String QUERY_CREATE_INDEX = "CREATE INDEX IF NOT EXISTS time_idx ON " + TABLE_NAME +
+                " (" + COLUMN_CREATED_AT + ");";
 
-        public static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
+        static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
     }
 
     private EventTableAdapter(Context appContext) {
@@ -58,7 +57,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized int addEvent(final JSONObject json) {
         final String table = Table.EVENTS.getName();
 
-        Integer result = executeAndReturnT(new SQLiteUtil.Callback<Integer>() {
+        Integer result = executeAndReturnT(new SQLiteDatabaseCallback<Integer>() {
             @Override
             public Integer execute(SQLiteDatabase db) {
                 Cursor c = null;
@@ -95,7 +94,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized void removeEventById(final String lastId) {
         final String table = Table.EVENTS.getName();
 
-        execute(new SQLiteUtil.Callback<Void>() {
+        execute(new SQLiteDatabaseCallback() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(table, getQuery(), null);
@@ -117,7 +116,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
     public synchronized void removeEventByTime(final long time) {
         final String table = Table.EVENTS.getName();
 
-        execute(new SQLiteUtil.Callback<Void>() {
+        execute(new SQLiteDatabaseCallback() {
             @Override
             public Void execute(SQLiteDatabase db) {
                 db.delete(table, getQuery(), null);
@@ -140,7 +139,7 @@ public final class EventTableAdapter extends DatabaseAdapter {
      */
     public synchronized ExtractedEvent getExtractEvent() {
 
-        return executeAndReturnT(new SQLiteUtil.Callback<ExtractedEvent>() {
+        return executeAndReturnT(new SQLiteDatabaseCallback<ExtractedEvent>() {
             @Override
             public ExtractedEvent execute(SQLiteDatabase db) {
                 Cursor c = null;
