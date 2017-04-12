@@ -12,7 +12,9 @@ import java.util.Map;
  * 전송 가능한 `Log` 덩어리
  */
 public class LogChunk {
-    private LogChunk() { throw new RuntimeException("Can't create Log without args"); }
+    private LogChunk() {
+        throw new RuntimeException("Can't create Log without args");
+    }
 
     private LogChunk(String lastId, String url, String token, String chunk, int count) {
         this.lastId = lastId;
@@ -45,8 +47,9 @@ public class LogChunk {
 
             Map<String, JSONArray> tokenMap = logMap.get(log.getUrl());
 
-            if (!tokenMap.containsKey(log.getToken()))
+            if (!tokenMap.containsKey(log.getToken())) {
                 tokenMap.put(log.getToken(), new JSONArray());
+            }
 
             JSONArray jsonArr = tokenMap.get(log.getToken());
             jsonArr.put(log.getJson());
@@ -59,7 +62,9 @@ public class LogChunk {
                 JSONArray jsons = logMap.get(url).get(token);
                 int count = jsons.length();
 
-                if (null == jsons || 0 == count) continue;
+                if (0 == count) {
+                    continue;
+                }
 
                 LogChunk chunk = create(lastId, url, token, jsons.toString(), count);
 
@@ -70,19 +75,30 @@ public class LogChunk {
         return (0 == chunks.size()) ? Collections.EMPTY_LIST : chunks;
     }
 
-    public String getLastId() { return lastId; }
-    public String getUrl() { return url; }
-    public String getToken() { return token; }
-    public String getChunk() { return chunk; }
-    public int getCount() { return count; }
+    public String getLastId() {
+        return lastId;
+    }
 
-    public static LogChunk create(String lastId,
-                                  String url,
-                                  String token,
-                                  String chunk,
-                                  int count) {
+    public String getUrl() {
+        return url;
+    }
 
-        if (null == url || null == token || null == chunk) return null;
+    public String getToken() {
+        return token;
+    }
+
+    public String getChunk() {
+        return chunk;
+    }
+
+    public int getCount() {
+        return count;
+    }
+
+    public static LogChunk create(String lastId, String url, String token, String chunk, int count) {
+        if (null == url || null == token || null == chunk) {
+            return null;
+        }
 
         return new LogChunk(lastId, url, token, chunk, count);
     }

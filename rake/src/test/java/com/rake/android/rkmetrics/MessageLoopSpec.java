@@ -21,7 +21,7 @@ public class MessageLoopSpec {
     @Test
     public void Command_cannot_have_same_code() {
         List<Command> commands = Arrays.asList(Command.values());
-        Set<Integer> codes = new HashSet<Integer>();
+        Set<Integer> codes = new HashSet<>();
 
         assertThat(commands.size()).isGreaterThan(0);
 

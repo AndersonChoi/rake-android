@@ -39,7 +39,7 @@ final public class HttpRequestSender {
 
             // (2017.04) Rake-Android 사용 앱들의 Froyo(Android 2.2, versionCode = 8) 이하 단말 지원 종료.
             // 따라서 apache HttpClient 사용을 제거하고 HttpURLConnection으로 network 요청 통일. (Google 권장 사항)
-            return HttpRequestSender.sendHttpUrlStreamRequest(url, log);
+            return sendHttpUrlStreamRequest(url, log);
         }
     };
 

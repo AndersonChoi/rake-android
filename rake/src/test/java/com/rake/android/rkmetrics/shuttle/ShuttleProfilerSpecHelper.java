@@ -24,7 +24,7 @@ public class ShuttleProfilerSpecHelper {
     public static String HEADER_NAME_TRANSACTION_ID = "transaction_id";
     public static String HEADER_NAME_APP_PACKAGE = "app_package";
 
-    public static Set<String> requiredHeaderFieldsForTestShuttle = new HashSet<String>(Arrays.asList(
+    public static Set<String> requiredHeaderFieldsForTestShuttle = new HashSet<>(Arrays.asList(
             HEADER_NAME_SESSION_ID,
             HEADER_NAME_LOG_SOURCE,
             HEADER_NAME_TRANSACTION_ID,
@@ -36,7 +36,7 @@ public class ShuttleProfilerSpecHelper {
     public static String BODY_NAME_CODE_TEXT = "code_text";
     public static String BODY_NAME_ISSUE_ID = "issue_id";
 
-    public static Set<String> requiredBodyFieldsForTestShuttle = new HashSet<String>(Arrays.asList(
+    public static Set<String> requiredBodyFieldsForTestShuttle = new HashSet<>(Arrays.asList(
             BODY_NAME_REPOSITORY,
             BODY_NAME_BRANCH,
             BODY_NAME_CODE_TEXT,

@@ -47,13 +47,15 @@ public abstract class DatabaseAdapter {
     private static DatabaseHelper dbHelper;
     private static final Object lock = new Object();
 
-    protected DatabaseAdapter(Context context) {
-        synchronized (lock) { /** prevent from creating multiple database helpers */
-            if (null == dbHelper) dbHelper = new DatabaseHelper(context, DATABASE_NAME);
+    DatabaseAdapter(Context context) {
+        synchronized (lock) { /* prevent from creating multiple database helpers */
+            if (null == dbHelper) {
+                dbHelper = new DatabaseHelper(context, DATABASE_NAME);
+            }
         }
     }
 
-    public interface SQLiteDatabaseCallback<T> {
+    interface SQLiteDatabaseCallback<T> {
         T execute(SQLiteDatabase db);
 
         String getQuery();
@@ -70,7 +72,7 @@ public abstract class DatabaseAdapter {
 
         public void dropDatabase() {
             close();
-            database.delete(); /** delete the DB file from the file system completely. */
+            database.delete(); /* delete the DB file from the file system completely. */
         }
 
         @Override

@@ -33,9 +33,9 @@ import static com.rake.android.rkmetrics.metric.MetricUtil.EMPTY_TOKEN;
  */
 final class MessageLoop {
 
-    public static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
-    public static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
-    public static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
+    private static final int DATA_EXPIRATION_TIME = 1000 * 60 * 60 * 48; /* 48 hours */
+    private static final long INITIAL_FLUSH_DELAY = 10 * 1000; /* 10 seconds */
+    static final long DEFAULT_FLUSH_INTERVAL = 60 * 1000; /* 60 seconds */
 
     private static long autoFlushInterval = DEFAULT_FLUSH_INTERVAL;
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
@@ -142,7 +142,7 @@ final class MessageLoop {
         return ON == autoFlushOption;
     }
 
-    public boolean queueTrackCommand(Log log) {
+    boolean queueTrackCommand(Log log) {
         if (null == log) {
             Logger.e("Can't track null `Log`");
             return false;
@@ -157,7 +157,7 @@ final class MessageLoop {
         return true;
     }
 
-    public void queueFlushCommand() {
+    void queueFlushCommand() {
         Message m = Message.obtain();
         m.what = Command.MANUAL_FLUSH.code;
 
@@ -190,7 +190,7 @@ final class MessageLoop {
     }
 
     private Handler createMessageHandler() {
-        final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<Handler>();
+        final SynchronousQueue<Handler> handlerQueue = new SynchronousQueue<>();
 
         Thread thread = new Thread() {
             @Override
@@ -245,7 +245,7 @@ final class MessageLoop {
 
     private class MessageHandler extends Handler {
 
-        public MessageHandler() {
+        MessageHandler() {
             super();
 
             EventTableAdapter.getInstance(appContext);

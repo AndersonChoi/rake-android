@@ -1,52 +1,45 @@
 package com.rake.android.rkmetrics.network;
 
-import static com.rake.android.rkmetrics.metric.model.Status.*;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 
 import java.util.Locale;
 
 public final class RakeProtocolV2 {
-    public static final String RAKE_PROTOCOL_VERSION = "V2";
-    public static final String CHAR_ENCODING = "UTF-8";
+    static final String RAKE_PROTOCOL_VERSION = "V2";
+    static final String CHAR_ENCODING = "UTF-8";
 
-    public static final int HTTP_STATUS_CODE_OK = 200;
-    public static final int HTTP_STATUS_CODE_REQUEST_TOO_LONG = 413;
-    public static final int HTTP_STATUS_CODE_INTERNAL_SERVER_ERROR = 500;
-    public static final int HTTP_STATUS_CODE_BAD_GATEWAY = 502;
-    public static final int HTTP_STATUS_CODE_SERVICE_UNAVAILABLE = 503;
-
-    public static Status interpretResponseCode(int code) {
-        switch (code) {
-            case HTTP_STATUS_CODE_REQUEST_TOO_LONG: return Status.DROP;
-            case HTTP_STATUS_CODE_INTERNAL_SERVER_ERROR: /* UNKNOWN FAILURE */
-            case HTTP_STATUS_CODE_BAD_GATEWAY:           /* TOMCAT FAILURE */
-            case HTTP_STATUS_CODE_SERVICE_UNAVAILABLE:   /* NGINX FAILURE */
-                return Status.RETRY;
-            default: return Status.DROP;
-        }
-    }
-
-    public static boolean isValidResponseCode(int code) {
-        /**
-         * HttpURLConnection.HTTP_OK 와 HttpStatus.SC_OK 둘다 200 이므로 값으로 200 을 사용
-         */
-
-        return code == HTTP_STATUS_CODE_OK;
-    }
+    static final int HTTP_STATUS_CODE_OK = 200;
+    static final int HTTP_STATUS_CODE_REQUEST_TOO_LONG = 413;
+    static final int HTTP_STATUS_CODE_INTERNAL_SERVER_ERROR = 500;
+    static final int HTTP_STATUS_CODE_BAD_GATEWAY = 502;
+    static final int HTTP_STATUS_CODE_SERVICE_UNAVAILABLE = 503;
 
     /**
      * RakeProtocolV2 의 HTTP 응답 규격을 정의
      *
      * @param responseCode 200 (OK) 일 경우만 성공적으로 서버에서 처리했음을 나타냄. (Protocol V2 에서 body 는 검증하지 않음)
-     * @return
+     * @return Status (DONE / RETRY / DROP)
      */
-    public static Status interpretResponse(int responseCode) {
-        if (isValidResponseCode(responseCode)) return DONE;
+    static Status interpretResponse(int responseCode) {
+        Status status;
+
+        switch (responseCode) {
+            case HTTP_STATUS_CODE_OK:
+                return Status.DONE; // Successful status. So return Status.DONE immediately.
+
+            case HTTP_STATUS_CODE_INTERNAL_SERVER_ERROR: /* UNKNOWN FAILURE */
+            case HTTP_STATUS_CODE_BAD_GATEWAY:           /* TOMCAT FAILURE */
+            case HTTP_STATUS_CODE_SERVICE_UNAVAILABLE:   /* NGINX FAILURE */
+                status = Status.RETRY;
+                break;
+            case HTTP_STATUS_CODE_REQUEST_TOO_LONG:
+            default:
+                status = Status.DROP;
+        }
 
         Logger.e("Server returned negative response. make sure that your token is valid");
-
-        return interpretResponseCode(responseCode);
+        return status;
     }
 
     public static void reportResponse(String responseBody, int responseCode) {

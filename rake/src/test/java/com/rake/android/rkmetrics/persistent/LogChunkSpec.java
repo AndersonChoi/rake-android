@@ -26,7 +26,7 @@ public class LogChunkSpec {
     @Test
     public void create() {
         Log l1 = Log.create("url", "token", new JSONObject());
-        List<Log> logs = new ArrayList<Log>();
+        List<Log> logs = new ArrayList<>();
         logs.add(l1);
 
         assertThat(LogChunk.create("lastId-1", logs)).isNotNull();
@@ -34,7 +34,7 @@ public class LogChunkSpec {
 
     @Test
     public void create__token_과_url_이_여러개일때() {
-        List<Log> logs = new ArrayList<Log>();
+        List<Log> logs = new ArrayList<>();
         logs.add(Log.create("url1", "token1", new JSONObject()));
         logs.add(Log.create("url1", "token1", new JSONObject()));
         logs.add(Log.create("url2", "token2", new JSONObject()));
