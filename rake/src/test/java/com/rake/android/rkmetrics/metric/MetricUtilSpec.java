@@ -3,7 +3,6 @@ package com.rake.android.rkmetrics.metric;
 import android.app.Application;
 
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 

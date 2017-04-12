@@ -3,12 +3,9 @@ package com.rake.android.rkmetrics.metric;
 import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
+import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.metric.model.Action;
-import com.rake.android.rkmetrics.metric.model.Body;
-import com.rake.android.rkmetrics.metric.model.EmptyMetric;
-import com.rake.android.rkmetrics.metric.model.FlushMetric;
-import com.rake.android.rkmetrics.metric.model.Header;
-import com.rake.android.rkmetrics.metric.model.InstallMetric;
+import com.rake.android.rkmetrics.metric.model.Metric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.Log;
@@ -16,6 +13,7 @@ import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
+import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -76,15 +74,15 @@ public final class MetricUtil {
      */
     public static boolean recordErrorMetric(Context context, Action action, String token, Throwable e) {
         if (null == context) {
-            Logger.e("Can't record ErrorStatusMetric using NULL args");
+            Logger.e("Can't record ErrorStatusMetric using NULL context");
             return false;
         }
 
-        EmptyMetric metric = new EmptyMetric();
-        metric.setHeader(Header.create(context, action, Status.ERROR, token));
-        metric.setExceptionInfo(e);
+        Metric errorMetric = fillMetricHeaderValues(context, action, Status.ERROR, token)
+                .setExceptionInfo(e)
+                .build();
 
-        return recordMetric(context, metric);
+        return recordMetric(context, errorMetric);
     }
 
     public static boolean recordInstallErrorMetric(Context context, RakeAPI.Env env, String endpoint,
@@ -94,15 +92,16 @@ public final class MetricUtil {
             return false;
         }
 
-        InstallMetric metric = new InstallMetric();
+        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(token);
 
-        Header h = Header.create(context, Action.INSTALL, Status.ERROR, token);
-        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(metric.getServiceToken());
+        Metric installErrorMetric = fillMetricHeaderValues(context, Action.INSTALL, Status.ERROR, token)
+                .setExceptionInfo(e)
+                .setEnv(env)
+                .setEndpoint(endpoint)
+                .setPersistedLogCount(persistedLogCount)
+                .build();
 
-        metric.setHeader(h).setExceptionInfo(e);
-        metric.setEnv(env).setEndpoint(endpoint).setPersistedLogCount(persistedLogCount);
-
-        return recordMetric(context, metric);
+        return recordMetric(context, installErrorMetric);
     }
 
     /**
@@ -122,23 +121,19 @@ public final class MetricUtil {
             return false;
         }
 
-        /** 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
-        if (MetricUtil.isMetricToken(chunk.getToken())) return false;
+        /* 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
+        if (MetricUtil.isMetricToken(chunk.getToken())) {
+            return false;
+        }
 
-        /** Error Response 일 경우에만 기록 RAKE-429 */
-        if (!response.isErrorResponse()) return false;
+        /* Error Response 일 경우에만 기록 RAKE-429 */
+        if (!response.isErrorResponse()) {
+            return false;
+        }
 
-        FlushMetric metric = new FlushMetric();
-
-        Header header = Header.create(context, Action.FLUSH, response.getFlushStatus(), chunk.getToken());
-
-        /** set HEADER */
-        metric.setHeader(header);
-
-        /** set COMMON BODY */
-        metric.setExceptionInfo(response.getExceptionInfo());
-
-        metric.setFlushType(flushType)
+        Metric flushMetric = fillMetricHeaderValues(context, Action.FLUSH, response.getFlushStatus(), chunk.getToken())
+                .setExceptionInfo(response.getExceptionInfo())
+                .setFlushType(flushType)
                 .setEndpoint(chunk.getUrl())
                 .setOperationTime(operationTime)
                 .setLogCount((long) chunk.getCount())
@@ -146,32 +141,48 @@ public final class MetricUtil {
                 .setServerResponseBody(response.getResponseBody())
                 .setServerResponseCode((long) response.getResponseCode())
                 .setServerResponseTime(response.getServerResponseTime())
-                .setFlushMethod(response.getFlushMethod());
+                .setFlushMethod(response.getFlushMethod())
+                .build();
 
-        return recordMetric(context, metric);
+
+        return recordMetric(context, flushMetric);
+    }
+
+    /**
+     * @return fill header column values
+     */
+    private static Metric.Builder fillMetricHeaderValues(Context context, Action action, Status status, String token) {
+        return new Metric.Builder(new RakeClientMetricSentinelShuttle())
+                .setHeaderAction(action)
+                .setHeaderStatus(status)
+                .setHeaderAppPackage(SystemInformation.getPackageName(context))
+                .setHeaderTransactionId(MetricUtil.TRANSACTION_ID)
+                .setHeaderServiceToken(token);
     }
 
     /**
      * @return true if log was successfully persisted otherwise returns false
      */
-    private static boolean recordMetric(Context context, Body metric) {
+    private static boolean recordMetric(Context context, Metric metric) {
         JSONObject validShuttle = createValidShuttleForMetric(metric, context);
 
-        Log log = Log.create(
-                MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+        Log log = Log.create(MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
         int count = LogTableAdapter.getInstance(context).addLog(log);
 
         boolean recorded = count != -1;
 
-        if (recorded && null != metric)
+        if (recorded && null != metric) {
             Logger.t(String.format("[METRIC] Record ACTION:STATUS [%s]", metric.getMetricType()));
+        }
 
         return recorded;
     }
 
-    private static JSONObject createValidShuttleForMetric(Body metric, Context context) {
-        if (null == metric) return null;
+    private static JSONObject createValidShuttleForMetric(Metric metric, Context context) {
+        if (null == metric) {
+            return null;
+        }
 
         JSONObject userProps = metric.toJSONObject();
         JSONObject defaultProps = createDefaultPropsForMetric(context);
@@ -182,8 +193,7 @@ public final class MetricUtil {
     private static JSONObject createDefaultPropsForMetric(Context context) {
         JSONObject defaultProps = null;
         try {
-            defaultProps = RakeAPI.getDefaultProps(
-                    context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+            defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
         } catch (JSONException e) {
             Logger.e("Can't create defaultProps for metric");
         }

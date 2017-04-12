@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics.metric.model;
 
+import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
+
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
@@ -13,33 +15,25 @@ import static org.assertj.core.api.Assertions.*;
 public class MetricSpec {
     @Test
     public void create_Metric() {
-        FlushMetric m1 = new FlushMetric();
-        m1.toJSONObject();
-
-        InstallMetric m2 = new InstallMetric();
-        m2.toJSONObject();
-
-        EmptyMetric m3 = new EmptyMetric();
-        m3.toJSONObject();
+        Metric metric = new Metric.Builder(new RakeClientMetricSentinelShuttle()).build();
+        assertThat(metric).isNotNull();
     }
 
     @Test
     public void getMetricType_should_not_return_null() {
-        FlushMetric m1 = new FlushMetric();
-        assertThat(m1.getMetricType()).isNotNull();
-
-        InstallMetric m2 = new InstallMetric();
-        assertThat(m2.getMetricType()).isNotNull();
-
-        EmptyMetric m3 = new EmptyMetric();
-        assertThat(m3.getMetricType()).isNotNull();
+        Metric metric = new Metric.Builder(new RakeClientMetricSentinelShuttle()).build();
+        assertThat(metric.getMetricType()).isNotNull();
     }
 
     @Test
-    public void getMetricType_fromEmptyMetric_without_action_and_status_should_return_() {
-        /* ":UNKNOWN" */
+    public void getMetricType_without_action_and_status_should_return_() {
+        Metric metric = new Metric.Builder(new RakeClientMetricSentinelShuttle()).build();
+        assertThat(metric.getMetricType()).isEqualTo(Action.EMPTY.getValue() + ":" + Status.UNKNOWN.getValue());
+    }
 
-        assertThat(new EmptyMetric().getMetricType())
-                .isEqualTo(Action.EMPTY.getValue() + ":" + Status.UNKNOWN.getValue());
+    @Test
+    public void toJSONObject_should_not_return_null() {
+        Metric metric = new Metric.Builder(new RakeClientMetricSentinelShuttle()).build();
+        assertThat(metric.toJSONObject()).isNotNull();
     }
 }
