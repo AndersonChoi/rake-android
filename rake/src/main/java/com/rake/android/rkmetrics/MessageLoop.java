@@ -70,9 +70,7 @@ final class MessageLoop {
 
         public static Command fromCode(int code) {
             Command m = messagesByCode.get(code);
-
-            if (m == null) return UNKNOWN;
-            else return m;
+            return m == null ? UNKNOWN : m;
         }
     }
 

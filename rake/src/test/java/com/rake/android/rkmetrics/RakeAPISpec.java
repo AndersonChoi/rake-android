@@ -5,7 +5,6 @@ import android.app.Application;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
-import com.rake.android.rkmetrics.util.functional.Function0;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -20,7 +19,7 @@ import java.util.Iterator;
 
 import static com.rake.android.rkmetrics.TestUtil.failWhenSuccess;
 import static com.rake.android.rkmetrics.TestUtil.genToken;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.DEFAULT_PROPERTY_NAMES;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerValueChecker.DEFAULT_PROPERTY_NAMES;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
@@ -38,7 +37,7 @@ public class RakeAPISpec {
     @Test()
     public void getInstance_should_throw_IllegalArgumentException_given_null_arg() {
 
-        failWhenSuccess(IllegalArgumentException.class, new Function0() {
+        failWhenSuccess(IllegalArgumentException.class, new TestCallback() {
             @Override
             public <R> R execute() {
                 RakeAPI.getInstance(null, null, null, null);
@@ -46,7 +45,7 @@ public class RakeAPISpec {
             }
         });
 
-        failWhenSuccess(IllegalArgumentException.class, new Function0() {
+        failWhenSuccess(IllegalArgumentException.class, new TestCallback() {
             @Override
             public <R> R execute() {
                 RakeAPI.getInstance(null, genToken(), Env.DEV, Logging.DISABLE);
@@ -54,7 +53,7 @@ public class RakeAPISpec {
             }
         });
 
-        failWhenSuccess(IllegalArgumentException.class, new Function0() {
+        failWhenSuccess(IllegalArgumentException.class, new TestCallback() {
             @Override
             public <R> R execute() {
                 RakeAPI.getInstance(app, null, Env.DEV, Logging.DISABLE);
@@ -62,7 +61,7 @@ public class RakeAPISpec {
             }
         });
 
-        failWhenSuccess(IllegalArgumentException.class, new Function0() {
+        failWhenSuccess(IllegalArgumentException.class, new TestCallback() {
             @Override
             public <R> R execute() {
                 RakeAPI.getInstance(app, genToken(), null, Logging.DISABLE);
@@ -70,7 +69,7 @@ public class RakeAPISpec {
             }
         });
 
-        failWhenSuccess(IllegalArgumentException.class, new Function0() {
+        failWhenSuccess(IllegalArgumentException.class, new TestCallback() {
             @Override
             public <R> R execute() {
                 RakeAPI.getInstance(app, genToken(), Env.DEV, null);

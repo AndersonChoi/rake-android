@@ -12,7 +12,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.DEFAULT_PROPERTY_NAMES;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.EMPTY_FIELD_VALUE;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_BODY;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_PROPERTIES;
@@ -24,15 +23,8 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.SENTINEL_META_FIELD_NAMES;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.createValidShuttle;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.extractMeta;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasDefaultProps;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasKey;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasMeta;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasMetaFields;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasProps;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.hasValue;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.isShuttle;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.mergeProps;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.BODY_NAME_BRANCH;
@@ -49,6 +41,8 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getDe
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getMergedPropsWithEmptySuperPropsForTest;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getShuttleWithMissingField;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getTestShuttle;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerValueChecker.DEFAULT_PROPERTY_NAMES;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerValueChecker.SENTINEL_META_FIELD_NAMES;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
@@ -170,9 +164,9 @@ public class ShuttleProfilerSpec {
 
         JSONObject validShuttle = createValidShuttle(userProps, superProps, defaultProps);
 
-        hasMeta(validShuttle);
-        hasProps(validShuttle);
-        hasDefaultProps(validShuttle, FIELD_NAME_PROPERTIES);
+        ShuttleProfilerValueChecker.hasMeta(validShuttle);
+        ShuttleProfilerValueChecker.hasProps(validShuttle);
+        ShuttleProfilerValueChecker.hasDefaultProps(validShuttle, FIELD_NAME_PROPERTIES);
     }
 
     @Test
@@ -198,7 +192,7 @@ public class ShuttleProfilerSpec {
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
-        hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
+        ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
     @Test
@@ -222,7 +216,7 @@ public class ShuttleProfilerSpec {
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
-        hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
+        ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
     @Test
@@ -244,8 +238,8 @@ public class ShuttleProfilerSpec {
 
         JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
 
-        hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
-        hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
+        ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+        ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
     }
 
     @Test
@@ -264,8 +258,8 @@ public class ShuttleProfilerSpec {
 
         JSONObject props = mergeProps(fieldOrder, userProps, null /* null 일 수 있음 */, defaultProps);
 
-        assertThat(hasKey(props, FIELD_NAME_BODY, null)).isTrue();
-        assertThat(hasDefaultProps(props, null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(props, FIELD_NAME_BODY, null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasDefaultProps(props, null)).isTrue();
     }
 
     @Test
@@ -431,7 +425,7 @@ public class ShuttleProfilerSpec {
     @Test
     public void extractMeta_should_return_meta() throws JSONException {
         JSONObject transformed = extractMeta(getTestShuttle().toJSONObject());
-        assertThat(hasMetaFields(transformed)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasMetaFields(transformed)).isTrue();
     }
 
     @Test
@@ -440,8 +434,8 @@ public class ShuttleProfilerSpec {
         JSONObject transformed = extractMeta(shuttle);
         JSONObject invalid = new JSONObject();
 
-        assertThat(hasMeta(transformed)).isTrue();
-        assertThat(hasMeta(invalid)).isFalse();
+        assertThat(ShuttleProfilerValueChecker.hasMeta(transformed)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasMeta(invalid)).isFalse();
     }
 
     @Test
@@ -462,16 +456,16 @@ public class ShuttleProfilerSpec {
         String depth2Key = "depth2";
         depth1.put(depth2Key, depth2);
 
-        assertThat(hasKey(depth1, "key1", null)).isTrue();
-        assertThat(hasKey(depth1, "key2", null)).isTrue();
-        assertThat(hasKey(depth1, "key3", null)).isTrue();
-        assertThat(hasKey(depth1, "key4", null)).isFalse();
-        assertThat(hasKey(depth1, depth2Key, null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth1, "key1", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth1, "key2", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth1, "key3", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth1, "key4", null)).isFalse();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth1, depth2Key, null)).isTrue();
 
-        assertThat(hasKey(depth2, "nested_key1", null)).isTrue();
-        assertThat(hasKey(depth2, "nested_key2", null)).isTrue();
-        assertThat(hasKey(depth2, "nested_key3", null)).isTrue();
-        assertThat(hasKey(depth2, "nested_key4", null)).isFalse();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth2, "nested_key1", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth2, "nested_key2", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth2, "nested_key3", null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasKey(depth2, "nested_key4", null)).isFalse();
     }
 
 
