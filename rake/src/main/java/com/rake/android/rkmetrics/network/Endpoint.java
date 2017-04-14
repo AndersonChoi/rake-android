@@ -22,9 +22,8 @@ public class Endpoint {
     private static HashMap<String, Pair<String, String>> uriMap;
     private static HashMap<String, HashSet<String>> areaCountryMap;
 
+    // Class Loading시에 다음 값들을 초기화한다.
     static {
-        // Class Loading시에 다음 값들을 초기화한다.
-
         uriMap = new HashMap<>();
 
         // default : 대한민국 / 과금 Port
@@ -84,12 +83,13 @@ public class Endpoint {
 
             if (TextUtils.isEmpty(countryCode)) {
                 // 3. Network Country Code 획득 실패시 대안으로 Language Code 획득.
-                // 100% 실제 사용자의 소속 국가와 맞진 않음 (예:ES 스페인, 실제 지역은 칠레)
+                // 100% 실제 사용자의 소속 국가와 맞진 않음 (예:ES 스페인, 실제 지역은 남미국가(페루, 칠레, 멕시코 등등))
                 countryCode = SystemInformation.getLanguageCode(context);
             }
         }
 
         if (areaCountryMap.get(AREA_ASIA).contains(countryCode)) {
+            // ASIA 지역에서 수집되는 로그의 경우 Rake Library Version에 suffix로 _aws를 붙인다.
             versionSuffix = "_aws";
             return AREA_ASIA;
         }

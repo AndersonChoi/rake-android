@@ -55,6 +55,7 @@ public class EndpointSpec {
         String ASIA_ENDPOINT_DEV = "https://pg.asia-rake.skplanet.com/log/putlog/client";
         String ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
 
+        // 현재 국가 설정을 태국으로 변경
         setLocale("TH", "TH");
 
         Endpoint e = new Endpoint(app, RakeAPI.Env.DEV);
@@ -63,6 +64,10 @@ public class EndpointSpec {
 
         // 다음 Unit Test를 위해 국가설정 원복
         setLocale("KR", "KR");
+
+        e = new Endpoint(app, RakeAPI.Env.DEV);
+        assertThat(e.getURI()).isEqualTo(ENDPOINT_DEV);
+        assertThat(e.getVersionSuffix()).isEqualTo("");
     }
 
     private void setLocale(String language, String country) {
