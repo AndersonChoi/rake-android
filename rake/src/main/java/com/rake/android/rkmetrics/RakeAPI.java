@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics;
 
-
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
@@ -24,7 +22,6 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_OS_NAME;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.createValidShuttle;
 
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -35,7 +32,9 @@ import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.persistent.Log;
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
@@ -46,8 +45,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 
 public final class RakeAPI {
@@ -103,46 +100,13 @@ public final class RakeAPI {
         }
     }
 
-    public static class Endpoint {
-        static final String ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
-        static final String ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";
-
-        private String uri = ENDPOINT_LIVE;
-
-        public Endpoint(Env env) {
-            uri = (env == Env.DEV ? ENDPOINT_DEV : ENDPOINT_LIVE);
-        }
-
-        public String getURI() {
-            return uri;
-        }
-
-        boolean changeURIPort(int port) {
-            Pattern pattern = Pattern.compile(":\\d+/");
-            Matcher m = pattern.matcher(uri);
-
-            String portFound = null;
-            while (m.find()) {
-                portFound = m.group();
-            }
-
-            if (portFound == null) {
-                // no port value in the uri
-                return false;
-            }
-
-            uri = uri.replace(portFound, ":" + port + "/");
-            return true;
-        }
-    }
-
-
     // TODO: remove nested map
     private static Map<String, Map<Context, RakeAPI>> sInstanceMap = new HashMap<>();
 
     private String tag;
 
     private Endpoint endpoint;
+    private static String versionSuffix;
     private final Env env;
     private final String token;
 
@@ -152,7 +116,7 @@ public final class RakeAPI {
 
     private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
 
-        this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint);
+        this.tag = createTag(Logger.LOG_TAG_PREFIX, token, env, endpoint);
 
         Logger.d(tag, "Creating instance");
 
@@ -195,7 +159,7 @@ public final class RakeAPI {
         try {
             return _getInstance(context, token, env, logging);
         } catch (Exception e) { /* should not be here */
-            MetricUtil.recordInstallErrorMetric(context, env, new Endpoint(env).getURI(), token, e);
+            MetricUtil.recordInstallErrorMetric(context, env, new Endpoint(context, env).getURI(), token, e);
             Logger.e("Failed to return RakeAPI instance");
             throw new IllegalStateException("Failed to create RakeAPI instance");
         }
@@ -218,12 +182,14 @@ public final class RakeAPI {
             }
 
             RakeAPI rake = instances.get(appContext);
+            Endpoint endpoint = new Endpoint(appContext, env);
+            versionSuffix = endpoint.getVersionSuffix();
 
             if (rake == null) {
-                Endpoint endpoint = new Endpoint(env);
                 rake = new RakeAPI(appContext, token, env, endpoint);
                 instances.put(appContext, rake);
             } else {
+                rake.endpoint = endpoint;
                 Logger.w("RakeAPI is already initialized for TOKEN ", token);
             }
 
@@ -272,6 +238,15 @@ public final class RakeAPI {
         return MessageLoop.getAutoFlushOption();
     }
 
+    /**
+     * Get Rake Library Version.
+     *
+     * @return version value
+     */
+    public static String getLibVersion() {
+        return RakeConfig.RAKE_LIB_VERSION + versionSuffix;
+    }
+
     private static String createTag(String prefix, String token, Env e, Endpoint ep) {
         return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
     }
@@ -307,7 +282,7 @@ public final class RakeAPI {
             superProps = getSuperProperties();
             defaultProps = getDefaultProps(context, env, token, now);
 
-            JSONObject validShuttle = createValidShuttle(shuttle, superProps, defaultProps);
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(shuttle, superProps, defaultProps);
 
             String uri = endpoint.getURI();
             Log log = Log.create(uri, token, validShuttle);
@@ -355,7 +330,7 @@ public final class RakeAPI {
 
         Endpoint old = this.endpoint;
         if (this.endpoint.changeURIPort(port)) {
-            this.tag = createTag(LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
+            this.tag = createTag(Logger.LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
             String message = String.format("Changed endpoint from %s to %s", old.getURI(), endpoint.getURI());
             Logger.d(tag, message);
         } else {
@@ -465,7 +440,7 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
         defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
-        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION);
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
         defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
         defaultProps.put(PROPERTY_NAME_OS_VERSION, Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
         defaultProps.put(PROPERTY_NAME_MANUFACTURER, Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);

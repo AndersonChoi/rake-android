@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Config(manifest = Config.NONE)
 public class MetricUtilSpec {
 
-    Application app = RuntimeEnvironment.application;
+    private Application app = RuntimeEnvironment.application;
 
     @Before
     public void setUp() {
@@ -41,7 +41,7 @@ public class MetricUtilSpec {
 
     @Test
     public void getEndpoint() {
-        assertThat(MetricUtil.getURI()).isNotNull();
+        assertThat(MetricUtil.getURI(app)).isNotNull();
     }
 
     @Test

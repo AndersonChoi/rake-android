@@ -1,10 +1,13 @@
 package com.rake.android.rkmetrics;
 
 import android.app.Application;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
+import com.rake.android.rkmetrics.config.RakeConfig;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -16,6 +19,7 @@ import org.robolectric.annotation.Config;
 
 import java.util.Date;
 import java.util.Iterator;
+import java.util.Locale;
 
 import static com.rake.android.rkmetrics.TestUtil.failWhenSuccess;
 import static com.rake.android.rkmetrics.TestUtil.genToken;
@@ -26,13 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Config(sdk = 19, manifest = Config.NONE)
 public class RakeAPISpec {
 
-    Application app = RuntimeEnvironment.application;
-    RakeAPI rake = RakeAPI.getInstance(
-            app,
-            "exampleToken",
-            RakeAPI.Env.DEV,
-            RakeAPI.Logging.ENABLE
-    );
+    private Application app = RuntimeEnvironment.application;
 
     @Test()
     public void getInstance_should_throw_IllegalArgumentException_given_null_arg() {
@@ -144,6 +142,34 @@ public class RakeAPISpec {
         for (String key : DEFAULT_PROPERTY_NAMES) {
             assertThat(defaultProps.has(key)).isTrue();
         }
+    }
+
+    @Test
+    public void Locale_변경_Endpoint_변경_검증() {
+        String ASIA_ENDPOINT_DEV = "https://pg.asia-rake.skplanet.com/log/putlog/client";
+        String ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
+
+        setLocale("TH", "TH");
+        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        assertThat(r.getServerURL()).isEqualTo(ASIA_ENDPOINT_DEV);
+        assertThat(RakeAPI.getLibVersion()).isEqualTo(RakeConfig.RAKE_LIB_VERSION + "_aws");
+
+        // Locale이 바뀐 상태에서 인스턴스를 새로 생성했을 경우 URL이 바뀌어 있어야 함
+        setLocale("KR", "KR");
+        r = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        assertThat(r.getServerURL()).isEqualTo(ENDPOINT_DEV);
+        assertThat(RakeAPI.getLibVersion()).isEqualTo(RakeConfig.RAKE_LIB_VERSION);
+    }
+
+    private void setLocale(String language, String country) {
+        Locale locale = new Locale(language, country);
+        // here we update locale for date formatters
+        Locale.setDefault(locale);
+        // here we update locale for app resources
+        Resources res = app.getResources();
+        Configuration config = res.getConfiguration();
+        config.locale = locale;
+        res.updateConfiguration(config, res.getDisplayMetrics());
     }
 }
 

@@ -27,8 +27,8 @@ public class MetricUtilBuildConstantSpec {
     private final String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
     private final String releaseBranch = "release";
 
-    String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE);
-    String METRIC_TOKEN_DEV = System.getenv(ENV_METRIC_TOKEN_DEV);
+    private String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE);
+    private String METRIC_TOKEN_DEV = System.getenv(ENV_METRIC_TOKEN_DEV);
 
     @Test
     public void 토큰_관련_환경변수_검사() {

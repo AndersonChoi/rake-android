@@ -7,6 +7,7 @@ import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Metric;
 import com.rake.android.rkmetrics.metric.model.Status;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.network.ServerResponse;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
@@ -47,8 +48,8 @@ public final class MetricUtil {
     public static final String TRANSACTION_ID = createTransactionId();
     public static final String EMPTY_TOKEN = null;
 
-    public static String getURI() {
-        return new RakeAPI.Endpoint(BUILD_CONSTANT_ENV).getURI();
+    public static String getURI(Context context) {
+        return new Endpoint(context, BUILD_CONSTANT_ENV).getURI();
     }
 
     public static String createTransactionId() {
@@ -166,7 +167,7 @@ public final class MetricUtil {
     private static boolean recordMetric(Context context, Metric metric) {
         JSONObject validShuttle = createValidShuttleForMetric(metric, context);
 
-        Log log = Log.create(MetricUtil.getURI(), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+        Log log = Log.create(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
         int count = LogTableAdapter.getInstance(context).addLog(log);
 

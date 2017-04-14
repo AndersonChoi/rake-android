@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings.Secure;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
@@ -65,10 +66,7 @@ public final class SystemInformation {
         }
 
         String deviceId = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
-        if (deviceId == null) {
-            deviceId = PROPERTY_VALUE_UNKNOWN;
-        }
-        return deviceId;
+        return deviceId != null ? deviceId : PROPERTY_VALUE_UNKNOWN;
     }
 
     public static String getAppVersionName(Context context) {
@@ -76,10 +74,9 @@ public final class SystemInformation {
             return PROPERTY_VALUE_UNKNOWN;
         }
 
-        PackageManager packageManager = context.getPackageManager();
-        String packageName = context.getPackageName();
-
         try {
+            PackageManager packageManager = context.getPackageManager();
+            String packageName = context.getPackageName();
             PackageInfo info = packageManager.getPackageInfo(packageName, 0);
             return info.versionName;
         } catch (Exception e) {
@@ -94,10 +91,9 @@ public final class SystemInformation {
             return -1;
         }
 
-        PackageManager packageManager = context.getPackageManager();
-        String packageName = context.getPackageName();
-
         try {
+            PackageManager packageManager = context.getPackageManager();
+            String packageName = context.getPackageName();
             PackageInfo info = packageManager.getPackageInfo(packageName, 0);
             return info.versionCode;
         } catch (Exception e) {
@@ -152,11 +148,8 @@ public final class SystemInformation {
         }
 
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager != null) {
-            return telephonyManager.getNetworkOperatorName();
-        }
 
-        return null;
+        return telephonyManager != null ? telephonyManager.getNetworkOperatorName() : null;
     }
 
     public static boolean isWifiConnected(Context context) {
@@ -166,6 +159,7 @@ public final class SystemInformation {
 
         if (PackageManager.PERMISSION_GRANTED == context.checkCallingOrSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE)) {
             ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
                 if (networkInfo != null) {
@@ -184,9 +178,8 @@ public final class SystemInformation {
             return PROPERTY_VALUE_UNKNOWN;
         }
 
-        PackageManager packageManager = context.getApplicationContext().getPackageManager();
-
         try {
+            PackageManager packageManager = context.getApplicationContext().getPackageManager();
             ApplicationInfo ai = packageManager.getApplicationInfo(context.getPackageName(), 0);
             return packageManager.getApplicationLabel(ai).toString();
         } catch (Exception e) {
@@ -207,7 +200,8 @@ public final class SystemInformation {
         }
 
         PowerManager powerManager = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        return powerManager.isDeviceIdleMode();
+        return powerManager != null && powerManager.isDeviceIdleMode();
+
     }
 
     public static String getLanguageCode(Context context) {
@@ -218,5 +212,38 @@ public final class SystemInformation {
         Configuration configuration = context.getResources().getConfiguration();
         Locale locale = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N ? configuration.getLocales().get(0) : configuration.locale;
         return locale.getCountry().toUpperCase();
+    }
+
+    public static String getCountryCodeFromUSIM(Context context) {
+        if (context == null) {
+            return null;
+        }
+
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager != null) {
+            String usimISO = telephonyManager.getSimCountryIso();
+            return (TextUtils.isEmpty(usimISO) || usimISO.length() != 0) ? null : usimISO.toUpperCase();
+        }
+
+        return null;
+    }
+
+    public static String getCountryCodeFromNetwork(Context context) {
+        if (context == null) {
+            return null;
+        }
+
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager == null) {
+            return null;
+        }
+
+        if (telephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_CDMA) {
+            String networkISO = telephonyManager.getNetworkCountryIso();
+            return (TextUtils.isEmpty(networkISO) || networkISO.length() != 0) ? null : networkISO.toUpperCase();
+        }
+
+        // CDMA 네트워크 상태에서 획득되는 정보는 신뢰할 수 없음 (API 문서 참고)
+        return null;
     }
 }

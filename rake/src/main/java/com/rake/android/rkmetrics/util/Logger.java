@@ -1,7 +1,5 @@
 package com.rake.android.rkmetrics.util;
 
-import static com.rake.android.rkmetrics.config.RakeConfig.LOG_TAG_PREFIX;
-
 import android.util.Log;
 
 import com.rake.android.rkmetrics.RakeAPI;
@@ -9,6 +7,7 @@ import com.rake.android.rkmetrics.RakeAPI;
 import java.util.Locale;
 
 final public class Logger {
+    public static final String LOG_TAG_PREFIX = "RAKE";
 
     public static RakeAPI.Logging loggingMode = RakeAPI.Logging.DISABLE;
 
