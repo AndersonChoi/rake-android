@@ -448,14 +448,14 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(context));
 
         DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(context);
-        int displayWidth = displayMetrics.widthPixels;
-        int displayHeight = displayMetrics.heightPixels;
-        StringBuilder resolutionBuilder = new StringBuilder();
+        if (displayMetrics != null) {
+            int displayWidth = displayMetrics.widthPixels;
+            int displayHeight = displayMetrics.heightPixels;
 
-        // TODO: is it correct?
-        defaultProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
-        defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
-        defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, resolutionBuilder.append(displayWidth).append("*").append(displayHeight).toString());
+            defaultProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
+            defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
+            defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
+        }
 
         /* application versionName, buildDate(if dev mode) */
         String appVersionName = SystemInformation.getAppVersionName(context);

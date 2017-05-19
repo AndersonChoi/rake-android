@@ -47,7 +47,7 @@ final class MessageLoop {
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER(5),
-//        RECORD_INSTALL_METRIC(7),
+        //        RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;

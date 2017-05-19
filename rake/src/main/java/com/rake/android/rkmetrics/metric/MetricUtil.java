@@ -80,7 +80,7 @@ public final class MetricUtil {
         }
 
         Metric errorMetric = fillMetricHeaderValues(context, action, Status.ERROR, token)
-                .setExceptionInfo(e)
+                .setBodyExceptionInfo(e)
                 .build();
 
         return recordMetric(context, errorMetric);
@@ -96,10 +96,10 @@ public final class MetricUtil {
         int persistedLogCount = LogTableAdapter.getInstance(context).getCount(token);
 
         Metric installErrorMetric = fillMetricHeaderValues(context, Action.INSTALL, Status.ERROR, token)
-                .setExceptionInfo(e)
-                .setEnv(env)
-                .setEndpoint(endpoint)
-                .setPersistedLogCount(persistedLogCount)
+                .setBodyExceptionInfo(e)
+                .setBodyEnv(env)
+                .setBodyEndpoint(endpoint)
+                .setBodyPersistedLogCount(persistedLogCount)
                 .build();
 
         return recordMetric(context, installErrorMetric);
@@ -133,16 +133,16 @@ public final class MetricUtil {
         }
 
         Metric flushMetric = fillMetricHeaderValues(context, Action.FLUSH, response.getFlushStatus(), chunk.getToken())
-                .setExceptionInfo(response.getExceptionInfo())
-                .setFlushType(flushType)
-                .setEndpoint(chunk.getUrl())
-                .setOperationTime(operationTime)
-                .setLogCount((long) chunk.getCount())
-                .setLogSize((long) chunk.getChunk().getBytes().length)
-                .setServerResponseBody(response.getResponseBody())
-                .setServerResponseCode((long) response.getResponseCode())
-                .setServerResponseTime(response.getServerResponseTime())
-                .setFlushMethod(response.getFlushMethod())
+                .setBodyExceptionInfo(response.getExceptionInfo())
+                .setBodyFlushType(flushType)
+                .setBodyEndpoint(chunk.getUrl())
+                .setBodyOperationTime(operationTime)
+                .setBodyLogCount((long) chunk.getCount())
+                .setBodyLogSize((long) chunk.getChunk().getBytes().length)
+                .setBodyServerResponseBody(response.getResponseBody())
+                .setBodyServerResponseCode((long) response.getResponseCode())
+                .setBodyServerResponseTime(response.getServerResponseTime())
+                .setBodyFlushMethod(response.getFlushMethod())
                 .build();
 
 

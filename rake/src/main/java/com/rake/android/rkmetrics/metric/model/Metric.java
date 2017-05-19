@@ -94,7 +94,7 @@ public class Metric {
         }
 
         // body values
-        public Builder setExceptionInfo(Throwable e) {
+        public Builder setBodyExceptionInfo(Throwable e) {
             if (shuttle != null) {
                 shuttle.exception_type(ExceptionUtil.createExceptionType(e));
                 shuttle.stacktrace(ExceptionUtil.createStacktrace(e));
@@ -102,119 +102,119 @@ public class Metric {
             return this;
         }
 
-        public Builder setOperationTime(long operationTime) {
+        public Builder setBodyOperationTime(long operationTime) {
             if (shuttle != null) {
                 shuttle.operation_time(operationTime);
             }
             return this;
         }
 
-        public Builder setLogSize(long logSizeAsBytes) {
+        public Builder setBodyLogSize(long logSizeAsBytes) {
             if (shuttle != null) {
                 shuttle.log_size(logSizeAsBytes);
             }
             return this;
         }
 
-        public Builder setLogCount(long logCount) {
+        public Builder setBodyLogCount(long logCount) {
             if (shuttle != null) {
                 shuttle.log_count(logCount);
             }
             return this;
         }
 
-        public Builder setFlushType(String flushType) {
+        public Builder setBodyFlushType(String flushType) {
             if (shuttle != null) {
                 shuttle.flush_type(flushType);
             }
             return this;
         }
 
-        public Builder setEndpoint(String endpoint) {
+        public Builder setBodyEndpoint(String endpoint) {
             if (shuttle != null) {
                 shuttle.endpoint(endpoint);
             }
             return this;
         }
 
-        public Builder setServerResponseBody(String responseBody) {
+        public Builder setBodyServerResponseBody(String responseBody) {
             if (shuttle != null) {
                 shuttle.server_response_body(responseBody);
             }
             return this;
         }
 
-        public Builder setServerResponseCode(long responseCode) {
+        public Builder setBodyServerResponseCode(long responseCode) {
             if (shuttle != null) {
                 shuttle.server_response_code(responseCode);
             }
             return this;
         }
 
-        public Builder setServerResponseTime(long responseTime) {
+        public Builder setBodyServerResponseTime(long responseTime) {
             if (shuttle != null) {
                 shuttle.server_response_time(responseTime);
             }
             return this;
         }
 
-        public Builder setFlushMethod(String flushMethod) {
+        public Builder setBodyFlushMethod(String flushMethod) {
             if (shuttle != null) {
                 shuttle.flush_method(flushMethod);
             }
             return this;
         }
 
-        public Builder setEnv(RakeAPI.Env env) {
+        public Builder setBodyEnv(RakeAPI.Env env) {
             if (shuttle != null) {
                 shuttle.env(env.name());
             }
             return this;
         }
 
-        public Builder setLogging(RakeAPI.Logging logging) {
+        public Builder setBodyLogging(RakeAPI.Logging logging) {
             if (shuttle != null) {
                 shuttle.logging(logging.name());
             }
             return this;
         }
 
-        public Builder setDatabaseVersion(long databaseVersion) {
+        public Builder setBodyDatabaseVersion(long databaseVersion) {
             if (shuttle != null) {
                 shuttle.database_version(databaseVersion);
             }
             return this;
         }
 
-        public Builder setPersistedLogCount(long persistedLogCount) {
+        public Builder setBodyPersistedLogCount(long persistedLogCount) {
             if (shuttle != null) {
                 shuttle.persisted_log_count(persistedLogCount);
             }
             return this;
         }
 
-        public Builder setExpiredLogCount(long expiredLogCount) {
+        public Builder setBodyExpiredLogCount(long expiredLogCount) {
             if (shuttle != null) {
                 shuttle.expired_log_count(expiredLogCount);
             }
             return this;
         }
 
-        public Builder setMaxTrackCount(long maxTrackCount) {
+        public Builder setBodyMaxTrackCount(long maxTrackCount) {
             if (shuttle != null) {
                 shuttle.max_track_count(maxTrackCount);
             }
             return this;
         }
 
-        public Builder setAutoFlushOnOff(RakeAPI.AutoFlush autoFlushOnOff) {
+        public Builder setBodyAutoFlushOnOff(RakeAPI.AutoFlush autoFlushOnOff) {
             if (shuttle != null) {
                 shuttle.auto_flush_onoff(autoFlushOnOff.name());
             }
             return this;
         }
 
-        public Builder setAutoFlushInterval(long autoFlushInterval) {
+        public Builder setBodyAutoFlushInterval(long autoFlushInterval) {
             if (shuttle != null) {
                 shuttle.auto_flush_interval(autoFlushInterval);
             }

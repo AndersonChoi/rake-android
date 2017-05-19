@@ -4,15 +4,15 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 
 public class ExceptionUtil {
-    /** static methods */
-    public static String createExceptionType(Throwable e) {
-        if (null == e) return null;
 
-        return e.getClass().getCanonicalName();
+    public static String createExceptionType(Throwable e) {
+        return e == null ? null : e.getClass().getCanonicalName();
     }
 
     public static String createStacktrace(Throwable e) {
-        if (null == e) return null;
+        if (e == null) {
+            return null;
+        }
 
         StringWriter sw = new StringWriter();
         e.printStackTrace(new PrintWriter(sw));

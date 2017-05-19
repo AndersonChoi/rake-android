@@ -23,6 +23,8 @@ public class Endpoint {
     private static HashMap<String, HashSet<String>> areaCountryMap;
 
     static {
+        // Class Loading시에 다음 값들을 초기화한다.
+
         uriMap = new HashMap<>();
 
         // default : 대한민국 / 과금 Port
@@ -43,7 +45,7 @@ public class Endpoint {
                 )
         );
 
-        // 기타 외국 지역 서버가 추가될 경우, uriMap에 Dev/Live 서버 URL을 추가 필요
+        // TODO 기타 외국 지역 서버가 추가될 경우, uriMap에 Dev/Live 서버 URL을 추가 필요
     }
 
     static {
@@ -55,6 +57,8 @@ public class Endpoint {
         HashSet<String> countrySet = new HashSet<>();
         countrySet.addAll(new ArrayList<>(Arrays.asList(new String[]{"TH", "MY", "ID", "SG"})));
         areaCountryMap.put(AREA_ASIA, countrySet);
+
+        // TODO 기타 외국 지역 서버가 추가될 경우, areaCountryMap에 국가코드 추가 필요
     }
 
     private String uri;
@@ -79,7 +83,7 @@ public class Endpoint {
             countryCode = SystemInformation.getCountryCodeFromNetwork(context);
 
             if (TextUtils.isEmpty(countryCode)) {
-                // 3. Network Country Code 획득 실패시 Language Code 획득.
+                // 3. Network Country Code 획득 실패시 대안으로 Language Code 획득.
                 // 100% 실제 사용자의 소속 국가와 맞진 않음 (예:ES 스페인, 실제 지역은 칠레)
                 countryCode = SystemInformation.getLanguageCode(context);
             }
