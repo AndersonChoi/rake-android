@@ -41,7 +41,7 @@ final class MessageLoop {
     private static final AutoFlush DEFAULT_AUTO_FLUSH = ON;
     private static AutoFlush autoFlushOption = DEFAULT_AUTO_FLUSH;
 
-    public enum Command {
+    enum Command {
         TRACK(1),
         MANUAL_FLUSH(2),
         AUTO_FLUSH_BY_COUNT(3),

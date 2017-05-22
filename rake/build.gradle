@@ -22,7 +22,7 @@ buildscript {
 
 import java.util.regex.Pattern
 
-version = '0.4.6' // TODO Release build 할 때 version 값을 반드시 확인한다.
+version = '0.4.7' // TODO Release build 할 때 version 값을 반드시 확인한다.
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -296,6 +296,15 @@ tasks.build.doLast {
         destinationDir file("${DIR_AAR}")
     }
 
+    task copyCompleteJarToReleaseDir(type: Copy) {
+
+        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${RELEASE_JAR_DIR}/"
+
+        from DIR_AAR
+        include COMPLETE_JAR
+        into RELEASE_JAR_DIR
+    }
+
     task copyCompleteJarToTestApp(type: Copy) {
 
         logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_TEST_APP_LIBS}/"
@@ -310,15 +319,6 @@ tasks.build.doLast {
         from DIR_AAR
         include COMPLETE_JAR
         into DIR_EXAMPLE_APP_LIBS
-    }
-
-    task copyCompleteJarToReleaseDir(type: Copy) {
-
-        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${RELEASE_JAR_DIR}/"
-
-        from DIR_AAR
-        include COMPLETE_JAR
-        into RELEASE_JAR_DIR
     }
 
     task initializeBuildConstant(type: Copy) {
