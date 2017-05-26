@@ -7,7 +7,7 @@ android:
   components:
     - tools
     - build-tools-19.1.0
-    - build-tools-24.0.2
+    - build-tools-25.0.0
     - sysimg-19
     - sysimg-24
     - android-19
