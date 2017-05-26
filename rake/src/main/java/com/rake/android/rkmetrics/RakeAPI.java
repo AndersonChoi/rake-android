@@ -46,7 +46,11 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
+/**
+ The primary interface for integrating Rake with your app.
 
+ - Copyright: SK Planet
+ */
 public final class RakeAPI {
 
     public enum Logging {
@@ -64,11 +68,13 @@ public final class RakeAPI {
         }
     }
 
-    /**
-     * 공개 API 의 일부이며 빌드스크립트에서 사용되는 ENUM 이므로 이름 또는 내부 값 변경시
-     * rake-android/rake/build.gradle 도 변경할 것
-     */
+
     public enum Env {
+        /*
+         * 공개 API 의 일부이며 빌드스크립트에서 사용되는 ENUM 이므로 이름 또는 내부 값 변경시
+         * rake-android/rake/build.gradle 도 변경할 것
+         */
+
         LIVE("LIVE"),
         DEV("DEV");
 
