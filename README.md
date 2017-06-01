@@ -9,7 +9,7 @@
 *Rake* 는 안드로이드 앱에서 JSON 로그를 전송할 수 있도록 도와주는 라이브러리입니다.
   
 - **no extra dependency** required
-- support **android 2.2** (API Level 8)
+- supports from **android 2.3** (API Level 9)
 - **small** (*~100K*)
 
 자세한 내용은 위키를 참조해주세요.
