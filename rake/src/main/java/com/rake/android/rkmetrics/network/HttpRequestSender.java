@@ -1,5 +1,9 @@
 package com.rake.android.rkmetrics.network;
 
+import android.net.TrafficStats;
+import android.os.Build;
+import android.os.Process;
+
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
@@ -95,6 +99,11 @@ final public class HttpRequestSender {
         String responseBody = null;
         long operationTime = 0L;
 
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+            // 사용자가 어플리케이션에서 StrictMode를 사용하여 개발을 할 경우, VM Policy 위반 회피를 위해 Thread Stats Tag 추가
+            TrafficStats.setThreadStatsTag(Process.myTid());
+        }
+
         try {
             url = new URL(endPoint);
             conn = (HttpURLConnection) url.openConnection();
@@ -140,6 +149,10 @@ final public class HttpRequestSender {
 
             if (null != conn) {
                 conn.disconnect();
+            }
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+                TrafficStats.clearThreadStatsTag();
             }
         }
 
