@@ -17,6 +17,7 @@ import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
 
+import com.rake.android.rkmetrics.BuildConfig;
 import com.rake.android.rkmetrics.util.Logger;
 
 import java.text.SimpleDateFormat;
@@ -32,33 +33,6 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_
  * Gather android system dependent information
  */
 public final class SystemInformation {
-
-    public static String getAppBuildDate(Context context) {
-        if (context == null) {
-            return PROPERTY_VALUE_UNKNOWN;
-        }
-
-        PackageManager packageManager = context.getPackageManager();
-        String packageName = context.getPackageName();
-
-        try {
-            ApplicationInfo ai = packageManager.getApplicationInfo(packageName, 0);
-            ZipFile zf = new ZipFile(ai.sourceDir);
-            ZipEntry ze = zf.getEntry("classes.dex");
-            long time = ze.getTime();
-
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US);
-            TimeZone tz = TimeZone.getDefault(); /* current TimeZone */
-            formatter.setTimeZone(tz);
-            zf.close();
-
-            return formatter.format(new Date(time));
-        } catch (Exception e) {
-            Logger.e("Can't get Build Date from classes.dex"); /* trivial, DO NOT print stacktrace */
-        }
-
-        return PROPERTY_VALUE_UNKNOWN;
-    }
 
     public static String getDeviceId(Context context) {
         if (context == null) {

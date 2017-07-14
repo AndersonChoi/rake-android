@@ -463,14 +463,7 @@ public final class RakeAPI {
             defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
         }
 
-        /* application versionName, buildDate(if dev mode) */
         String appVersionName = SystemInformation.getAppVersionName(context);
-        String appBuildDate = SystemInformation.getAppBuildDate(context);
-
-        if (Env.DEV == env && appBuildDate != null) {
-            appVersionName += "_" + appBuildDate;
-        }
-
         defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
 
         String carrier = SystemInformation.getCurrentNetworkOperator(context);
