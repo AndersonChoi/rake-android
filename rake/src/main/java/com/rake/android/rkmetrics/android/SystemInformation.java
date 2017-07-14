@@ -63,9 +63,9 @@ public final class SystemInformation {
             return info.versionName;
         } catch (Exception e) {
             Logger.e("Can't get versionName from PackageInfo");
+        } finally {
+            return PROPERTY_VALUE_UNKNOWN;
         }
-
-        return PROPERTY_VALUE_UNKNOWN;
     }
 
     public static int getAppVersionCode(Context context) {

@@ -13,6 +13,8 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_FIELD_ORDER;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_PROJECT_ID;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_SCHEMA_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_BUILD_NUMBER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_RELEASE;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
@@ -54,6 +56,8 @@ public class ShuttleProfilerValueChecker {
             PROPERTY_NAME_SCREEN_WIDTH,
             PROPERTY_NAME_SCREEN_RESOLUTION,
             PROPERTY_NAME_APP_VERSION,
+            PROPERTY_NAME_APP_RELEASE,
+            PROPERTY_NAME_APP_BUILD_NUMBER,
             PROPERTY_NAME_CARRIER_NAME,
             PROPERTY_NAME_NETWORK_TYPE,
             PROPERTY_NAME_LANGUAGE_CODE
@@ -148,6 +152,12 @@ public class ShuttleProfilerValueChecker {
         }
 
         for (String name : DEFAULT_PROPERTY_NAMES) {
+            // RAKE-485 : Unit Test용 shuttle의 fieldOrder에는 없는 field들.
+            // TODO : Unit Test용 shuttle에 app_release, app_build_number field 추가되면 아래 if문 제거할 것 
+            if (name.equals(PROPERTY_NAME_APP_RELEASE) || name.equals(PROPERTY_NAME_APP_BUILD_NUMBER)) {
+                continue;
+            }
+
             isValid &= hasKey(json, name, null);
         }
 

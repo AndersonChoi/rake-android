@@ -124,7 +124,7 @@ public class ShuttleProfilerSpec {
     @Test
     public void defaultPropertyNames_length() {
         /** default properties 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
-        assertThat(DEFAULT_PROPERTY_NAMES.size()).isEqualTo(17);
+        assertThat(DEFAULT_PROPERTY_NAMES.size()).isEqualTo(19);
     }
 
     @Test
