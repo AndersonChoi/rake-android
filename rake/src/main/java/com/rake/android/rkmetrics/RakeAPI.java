@@ -1,5 +1,7 @@
 package com.rake.android.rkmetrics;
 
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_BUILD_NUMBER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_RELEASE;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
@@ -17,15 +19,11 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_S
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_RESOLUTION;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_WIDTH;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_WIFI;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_OS_NAME;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.Build;
 import android.util.DisplayMetrics;
 
 import com.rake.android.rkmetrics.android.SystemInformation;
@@ -458,10 +456,19 @@ public final class RakeAPI {
             defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
         }
 
-        defaultProps.put(PROPERTY_NAME_APP_VERSION, SystemInformation.getAppVersionName(context));
+        /*
+         DILTFCO-14 :
+            app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
+            app_release : 앱의 version
+            app_build_number: 앱의 build count
+        */
+        String appVersion = SystemInformation.getAppVersionName(context);
+        defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersion);
+        defaultProps.put(PROPERTY_NAME_APP_RELEASE, appVersion);
+        defaultProps.put(PROPERTY_NAME_APP_BUILD_NUMBER, SystemInformation.getAppVersionCode(context));
 
         defaultProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(context));
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.isWifiConnected(context));
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(context));
         defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(context));
 
         return defaultProps;

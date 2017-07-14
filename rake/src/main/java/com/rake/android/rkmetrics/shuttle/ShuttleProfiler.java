@@ -34,11 +34,20 @@ public class ShuttleProfiler {
     public static final String PROPERTY_NAME_SCREEN_HEIGHT = "screen_height";
     public static final String PROPERTY_NAME_SCREEN_WIDTH = "screen_width";
     public static final String PROPERTY_NAME_SCREEN_RESOLUTION = "resolution";
-    public static final String PROPERTY_NAME_APP_VERSION = "app_version";
     public static final String PROPERTY_NAME_CARRIER_NAME = "carrier_name";
     public static final String PROPERTY_NAME_NETWORK_TYPE = "network_type";
     public static final String PROPERTY_NAME_LANGUAGE_CODE = "language_code";
     public static final String PROPERTY_NAME_LOG_VERSION = "log_version";
+
+    /*
+     DILTFCO-14 :
+        app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
+        app_release : 앱의 version
+        app_build_number: 앱의 build count
+    */
+    public static final String PROPERTY_NAME_APP_VERSION = "app_version";
+    public static final String PROPERTY_NAME_APP_RELEASE = "app_release";
+    public static final String PROPERTY_NAME_APP_BUILD_NUMBER = "app_build_number";
 
     /* in properties (values) */
     public static final String PROPERTY_VALUE_UNKNOWN = "UNKNOWN";
