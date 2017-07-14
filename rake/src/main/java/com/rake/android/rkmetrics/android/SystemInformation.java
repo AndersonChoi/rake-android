@@ -17,16 +17,12 @@ import android.util.DisplayMetrics;
 import android.view.Display;
 import android.view.WindowManager;
 
-import com.rake.android.rkmetrics.BuildConfig;
 import com.rake.android.rkmetrics.util.Logger;
 
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.Locale;
-import java.util.TimeZone;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
 
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_NETWORK_TYPE_WIFI;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_UNKNOWN;
 
 /**
@@ -34,13 +30,25 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_
  */
 public final class SystemInformation {
 
+    public static String getOsVersion() {
+        return TextUtils.isEmpty(Build.VERSION.RELEASE) ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE;
+    }
+
+    public static String getManufacturer() {
+        return TextUtils.isEmpty(Build.MANUFACTURER) ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER;
+    }
+
+    public static String getDeviceModel() {
+        return TextUtils.isEmpty(Build.MODEL) ? PROPERTY_VALUE_UNKNOWN : Build.MODEL;
+    }
+
     public static String getDeviceId(Context context) {
         if (context == null) {
             return PROPERTY_VALUE_UNKNOWN;
         }
 
         String deviceId = Secure.getString(context.getContentResolver(), Secure.ANDROID_ID);
-        return deviceId != null ? deviceId : PROPERTY_VALUE_UNKNOWN;
+        return TextUtils.isEmpty(deviceId) ? PROPERTY_VALUE_UNKNOWN : deviceId;
     }
 
     public static String getAppVersionName(Context context) {
@@ -62,7 +70,7 @@ public final class SystemInformation {
 
     public static int getAppVersionCode(Context context) {
         if (context == null) {
-            return -1;
+            return 0;
         }
 
         try {
@@ -74,7 +82,7 @@ public final class SystemInformation {
             Logger.e("Can't get versionName from PackageInfo");
         }
 
-        return -1;
+        return 0;
     }
 
     public static DisplayMetrics getDisplayMetrics(Context context) {
@@ -90,6 +98,7 @@ public final class SystemInformation {
         return displayMetrics;
     }
 
+    @Deprecated
     public static String getPhoneRadioType(Context context) {
         if (context == null) {
             return PROPERTY_VALUE_UNKNOWN;
@@ -123,28 +132,36 @@ public final class SystemInformation {
 
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
 
-        return telephonyManager != null ? telephonyManager.getNetworkOperatorName() : null;
+        String carrier = telephonyManager != null ? telephonyManager.getNetworkOperatorName() : null;
+
+        return TextUtils.isEmpty(carrier) ? PROPERTY_VALUE_UNKNOWN : carrier;
     }
 
-    public static boolean isWifiConnected(Context context) {
+    public static String getWifiConnected(Context context) {
         if (context == null) {
-            return false;
+            return PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI;
         }
+
+        boolean isWiFi = false;
 
         if (PackageManager.PERMISSION_GRANTED == context.checkCallingOrSelfPermission(Manifest.permission.ACCESS_NETWORK_STATE)) {
             ConnectivityManager connManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 
+            NetworkInfo networkInfo;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                NetworkInfo networkInfo = connManager.getActiveNetworkInfo();
+                networkInfo = connManager.getActiveNetworkInfo();
                 if (networkInfo != null) {
-                    return networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
+                    isWiFi = networkInfo.getType() == ConnectivityManager.TYPE_WIFI;
                 }
             } else {
-                return connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI).isConnected();
+                networkInfo = connManager.getNetworkInfo(ConnectivityManager.TYPE_WIFI);
+                if (networkInfo != null) {
+                    isWiFi = networkInfo.isConnected();
+                }
             }
         }
 
-        return false;
+        return isWiFi ? PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI;
     }
 
     public static String getPackageName(Context context) {
@@ -196,7 +213,7 @@ public final class SystemInformation {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager != null) {
             String usimISO = telephonyManager.getSimCountryIso();
-            return (TextUtils.isEmpty(usimISO) || usimISO.length() != 0) ? null : usimISO.toUpperCase();
+            return (TextUtils.isEmpty(usimISO) || usimISO.length() != 2) ? null : usimISO.toUpperCase();
         }
 
         return null;
@@ -208,16 +225,12 @@ public final class SystemInformation {
         }
 
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager == null) {
+        if (telephonyManager == null || telephonyManager.getPhoneType() == TelephonyManager.PHONE_TYPE_CDMA) {
+            // CDMA 네트워크 상태에서 획득되는 정보는 신뢰할 수 없음 (API 문서 참고)
             return null;
         }
 
-        if (telephonyManager.getPhoneType() != TelephonyManager.PHONE_TYPE_CDMA) {
-            String networkISO = telephonyManager.getNetworkCountryIso();
-            return (TextUtils.isEmpty(networkISO) || networkISO.length() != 0) ? null : networkISO.toUpperCase();
-        }
-
-        // CDMA 네트워크 상태에서 획득되는 정보는 신뢰할 수 없음 (API 문서 참고)
-        return null;
+        String networkISO = telephonyManager.getNetworkCountryIso();
+        return (TextUtils.isEmpty(networkISO) || networkISO.length() != 2) ? null : networkISO.toUpperCase();
     }
 }

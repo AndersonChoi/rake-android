@@ -47,9 +47,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 /**
- The primary interface for integrating Rake with your app.
-
- - Copyright: SK Planet
+ * The primary interface for integrating Rake with your app.
+ * <p>
+ * - Copyright: SK Planet
  */
 public final class RakeAPI {
 
@@ -121,8 +121,7 @@ public final class RakeAPI {
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
     private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
-
-        this.tag = createTag(Logger.LOG_TAG_PREFIX, token, env, endpoint);
+        this.tag = createTag(token, env, endpoint);
 
         Logger.d(tag, "Creating instance");
 
@@ -171,11 +170,7 @@ public final class RakeAPI {
         }
     }
 
-    private static RakeAPI _getInstance(Context context,
-                                        String token,
-                                        Env env,
-                                        Logging logging) {
-
+    private static RakeAPI _getInstance(Context context, String token, Env env, Logging logging) {
         setLogging(logging);
 
         synchronized (sInstanceMap) {
@@ -253,8 +248,8 @@ public final class RakeAPI {
         return RakeConfig.RAKE_LIB_VERSION + versionSuffix;
     }
 
-    private static String createTag(String prefix, String token, Env e, Endpoint ep) {
-        return String.format("%s (%s, %s, %s)", prefix, token, e, ep);
+    private static String createTag(String token, Env e, Endpoint ep) {
+        return String.format("%s (%s, %s, %s)", Logger.LOG_TAG_PREFIX, token, e, ep);
     }
 
     public JSONObject getSuperProperties() throws JSONException {
@@ -336,7 +331,7 @@ public final class RakeAPI {
 
         Endpoint old = this.endpoint;
         if (this.endpoint.changeURIPort(port)) {
-            this.tag = createTag(Logger.LOG_TAG_PREFIX, token, env, endpoint); /* update tag */
+            this.tag = createTag(token, env, endpoint); /* update tag */
             String message = String.format("Changed endpoint from %s to %s", old.getURI(), endpoint.getURI());
             Logger.d(tag, message);
         } else {
@@ -448,9 +443,9 @@ public final class RakeAPI {
         defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
         defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
         defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
-        defaultProps.put(PROPERTY_NAME_OS_VERSION, Build.VERSION.RELEASE == null ? PROPERTY_VALUE_UNKNOWN : Build.VERSION.RELEASE);
-        defaultProps.put(PROPERTY_NAME_MANUFACTURER, Build.MANUFACTURER == null ? PROPERTY_VALUE_UNKNOWN : Build.MANUFACTURER);
-        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL, Build.MODEL == null ? PROPERTY_VALUE_UNKNOWN : Build.MODEL);
+        defaultProps.put(PROPERTY_NAME_OS_VERSION, SystemInformation.getOsVersion());
+        defaultProps.put(PROPERTY_NAME_MANUFACTURER, SystemInformation.getManufacturer());
+        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL, SystemInformation.getDeviceModel());
         defaultProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(context));
 
         DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(context);
@@ -463,15 +458,10 @@ public final class RakeAPI {
             defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
         }
 
-        String appVersionName = SystemInformation.getAppVersionName(context);
-        defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersionName == null ? PROPERTY_VALUE_UNKNOWN : appVersionName);
+        defaultProps.put(PROPERTY_NAME_APP_VERSION, SystemInformation.getAppVersionName(context));
 
-        String carrier = SystemInformation.getCurrentNetworkOperator(context);
-        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, (null != carrier && carrier.length() > 0) ? carrier : PROPERTY_VALUE_UNKNOWN);
-
-        boolean isWifi = SystemInformation.isWifiConnected(context);
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, (isWifi ? PROPERTY_VALUE_NETWORK_TYPE_WIFI : PROPERTY_VALUE_NETWORK_TYPE_NOT_WIFI));
-
+        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(context));
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.isWifiConnected(context));
         defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(context));
 
         return defaultProps;
