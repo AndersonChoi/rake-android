@@ -7,6 +7,7 @@ import android.content.res.Resources;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
+import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 
 import org.json.JSONException;
@@ -137,10 +138,12 @@ public class RakeAPISpec {
         for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
             assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
+            System.out.println();
         }
 
         for (String key : DEFAULT_PROPERTY_NAMES) {
             assertThat(defaultProps.has(key)).isTrue();
+            System.out.println(key);
         }
     }
 

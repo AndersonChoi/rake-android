@@ -56,15 +56,17 @@ public final class SystemInformation {
             return PROPERTY_VALUE_UNKNOWN;
         }
 
+        String versionName = PROPERTY_VALUE_UNKNOWN;
+
         try {
             PackageManager packageManager = context.getPackageManager();
             String packageName = context.getPackageName();
             PackageInfo info = packageManager.getPackageInfo(packageName, 0);
-            return info.versionName;
+            versionName = info.versionName;
         } catch (Exception e) {
             Logger.e("Can't get versionName from PackageInfo");
         } finally {
-            return PROPERTY_VALUE_UNKNOWN;
+            return TextUtils.isEmpty(versionName) ? PROPERTY_VALUE_UNKNOWN : versionName;
         }
     }
 
