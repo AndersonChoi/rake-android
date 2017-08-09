@@ -109,7 +109,7 @@ public class ShuttleProfilerSpecHelper {
         String logVersion = getTestShuttle().toJSONObject().getString(PROPERTY_NAME_LOG_VERSION);
         String generatorVersion = Arrays.asList(logVersion.split(":")).get(1);
 
-        assertThat(generatorVersion).isEqualTo("1.5.54");
+        assertThat(generatorVersion).isEqualTo("1.6.5");
     }
 
     /** assertion for schema specific test */
@@ -120,6 +120,6 @@ public class ShuttleProfilerSpecHelper {
         String logVersion = getTestShuttle().toJSONObject().getString(PROPERTY_NAME_LOG_VERSION);
         String schemaVersion = Arrays.asList(logVersion.split(":")).get(2);
 
-        assertThat(schemaVersion).isEqualTo("14");
+        assertThat(schemaVersion).isEqualTo("1");
     }
 }
