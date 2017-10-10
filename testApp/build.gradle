@@ -50,7 +50,7 @@ dependencies {
     testCompile 'org.assertj:assertj-core:2.2.0'
     compile 'com.android.support:appcompat-v7:+'
     compile 'com.android.support:design:+'
-    compile files('libs/RakeClientTestSentinelShuttle-1.jar')
+    compile files('libs/RakeClientTestSentinelShuttle-0.jar')
     compile 'com.facebook.stetho:stetho:1.4.2'
 
     // when you develop something on :rake module, enable "compile project..." and disable "compile files..."

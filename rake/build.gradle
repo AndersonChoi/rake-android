@@ -270,7 +270,7 @@ tasks.build.doLast {
     task zipWithShuttle(type: Zip) {
 
         /* constants */
-        String shuttleJarNamePrefix = "rakemetricSentinelShuttle"
+        String shuttleJarNamePrefix = "RakeClientMetricSentinelShuttle"
         def shuttleJarNames = []
 
         /* logic */
