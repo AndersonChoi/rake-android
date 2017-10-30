@@ -18,7 +18,7 @@ public final class ServerResponse {
         this.isErrorResponse = false;
     }
 
-    public ServerResponse(Throwable e, Status flushStatus) {
+    private ServerResponse(Throwable e, Status flushStatus) {
         this.throwable = e;
         this.flushStatus = flushStatus;
         this.isErrorResponse = true;
@@ -33,7 +33,7 @@ public final class ServerResponse {
         return new ServerResponse(responseBody, responseCode, serverResponseTime);
     }
 
-    public static ServerResponse createErrorResponse(Throwable e, Status flushStatus) {
+    static ServerResponse createErrorResponse(Throwable e, Status flushStatus) {
         if (flushStatus == null) {
             return null;
         }

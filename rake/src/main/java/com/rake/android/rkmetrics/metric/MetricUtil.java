@@ -42,17 +42,17 @@ public final class MetricUtil {
      */
     public static final String BUILD_CONSTANT_BRANCH = "develop";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
-    public static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
+    static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
 
-    public static final String TRANSACTION_ID = createTransactionId();
+    static final String TRANSACTION_ID = createTransactionId();
     public static final String EMPTY_TOKEN = null;
 
-    public static String getURI(Context context) {
+    static String getURI(Context context) {
         return new Endpoint(context, BUILD_CONSTANT_ENV).getURI();
     }
 
-    public static String createTransactionId() {
+    static String createTransactionId() {
         StringBuilder sb = new StringBuilder();
 
         String u1 = java.util.UUID.randomUUID().toString();
@@ -66,7 +66,7 @@ public final class MetricUtil {
         return sb.toString().replaceAll("-", "");
     }
 
-    public static boolean isMetricToken(String token) {
+    static boolean isMetricToken(String token) {
         return BUILD_CONSTANT_METRIC_TOKEN.equals(token);
     }
 
