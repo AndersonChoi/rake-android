@@ -6,12 +6,12 @@ jdk:
 android:
   components:
     - tools
-    - build-tools-19.1.0
-    - build-tools-25.0.0
+    - build-tools-25.0.1
+    - build-tools-26.0.2
     - sysimg-19
-    - sysimg-24
+    - sysimg-26
     - android-19
-    - android-24
+    - android-26
     - extra-android-support
     - extra-android-m2repository
     - extra-google-m2repository
