@@ -37,7 +37,7 @@ def updateFile = { String path, Pattern regex, String replace ->
     def old = content.find(regex)
     content = content.replaceAll(regex, replace)
 
-    assert(content.find(regex) == replace)
+    assert (content.find(regex) == replace)
     f.write(content, encoding)
 
     logger "Replaced: \n$old -> $replace \n($path)"
@@ -46,13 +46,13 @@ def updateFile = { String path, Pattern regex, String replace ->
 /**
  * 빌드타임에 변수 또는 상수가 치환(replace) 되는 파일들
  */
-String RAKE_ROOT_PACKAGE = "src/main/java/com/rake/android/rkmetrics";
+String RAKE_ROOT_PACKAGE = "src/main/java/com/rake/android/rkmetrics"
 String FILE_REPLACED_CONFIG = "${CURRENT_PROJECT_DIR}/$RAKE_ROOT_PACKAGE/config/RakeConfig.java"
 String FILE_REPLACED_METRIC_LOGGER = "${CURRENT_PROJECT_DIR}/$RAKE_ROOT_PACKAGE/metric/MetricUtil.java"
 
 String RELEASE_BRANCH = "release"
 def isReleaseBranch = BRANCH_NAME.startsWith(RELEASE_BRANCH)
-String VAR_BRANCH = "BUILD_CONSTANT_BRANCH";
+String VAR_BRANCH = "BUILD_CONSTANT_BRANCH"
 Pattern REGEX_BRANCH = ~/String $VAR_BRANCH = "(.)*"/
 String FILLED_BRANCH = "String $VAR_BRANCH = \"$BRANCH_NAME\""
 
@@ -137,8 +137,8 @@ task updateVersionInSource(type: Copy) {
 
         String v = version.tokenize('-')[0]
         Pattern pattern = ~/"r0.5.0_c(.)*"/
-        String  replace = "\"r0.5.0_c${v}\""
-        String  path = FILE_REPLACED_CONFIG
+        String replace = "\"r0.5.0_c${v}\""
+        String path = FILE_REPLACED_CONFIG
 
         updateFile(path, pattern, replace)
     }
@@ -146,7 +146,7 @@ task updateVersionInSource(type: Copy) {
     /**
      * build.gradle 에 있는 버전을 이용해, RakeConfig.java 파일 내에 있는 버전을 매 빌드마다 변경
      */
-    updateVersionInConfigFile();
+    updateVersionInConfigFile()
 
 }
 
@@ -156,15 +156,15 @@ task updateMetricToken(type: Copy) {
         /**
          * 아래의 환경변수 및 상수 이름들은 MetricUtilTokenSpec.java 에 있는 이름과 동일해야 함
          */
-        String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE";
-        String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV";
+        String ENV_METRIC_TOKEN_LIVE = "METRIC_TOKEN_LIVE"
+        String ENV_METRIC_TOKEN_DEV = "METRIC_TOKEN_DEV"
 
         /* 환경변수 검증 */
         String METRIC_TOKEN_LIVE = System.getenv(ENV_METRIC_TOKEN_LIVE)
-        String METRIC_TOKEN_DEV  = System.getenv(ENV_METRIC_TOKEN_DEV)
+        String METRIC_TOKEN_DEV = System.getenv(ENV_METRIC_TOKEN_DEV)
 
-        if (null == METRIC_TOKEN_LIVE) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_LIVE required");
-        if (null == METRIC_TOKEN_DEV)  throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_DEV required");
+        if (null == METRIC_TOKEN_LIVE) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_LIVE required")
+        if (null == METRIC_TOKEN_DEV) throw new IllegalArgumentException("Env $ENV_METRIC_TOKEN_DEV required")
 
         /* TOKEN 값 설정 */
         FILLED_METRIC_TOKEN_DEV = "String $VAR_METRIC_TOKEN = \"$METRIC_TOKEN_DEV\""
@@ -185,7 +185,7 @@ task updateMetricToken(type: Copy) {
         return FILLED_METRIC_TOKEN
     }
 
-    def updateMetricToken =  {
+    def updateMetricToken = {
         String FILLED_METRIC_TOKEN = getFilledMetricToken()
         /**
          * 소스 코드에 토큰을 노출하지 않기 위해서 TOKEN 값을 빌드타임에 환경변수에서 읽어와 덮어쓴다.
@@ -195,8 +195,10 @@ task updateMetricToken(type: Copy) {
          * BUILD_CONSTANT_BRANCH 값을 이용한다.
          */
 
-        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_BRANCH, FILLED_BRANCH) /* BUILD_CONSTANT_BRANCH 업데이트 */
-        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN) /* BUILD_CONSTANT_METRIC_TOKEN 업데이트 */
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_BRANCH, FILLED_BRANCH)
+        /* BUILD_CONSTANT_BRANCH 업데이트 */
+        updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_METRIC_TOKEN_FILLED, FILLED_METRIC_TOKEN)
+        /* BUILD_CONSTANT_METRIC_TOKEN 업데이트 */
     }
 
     /**
@@ -204,14 +206,14 @@ task updateMetricToken(type: Copy) {
      * 자세한 내용은 MetricUtil.java, MetricUtilTokenSpec.java 를 참조
      */
 
-     updateMetricToken();
+    updateMetricToken()
 }
 
 task updateRakeEnv(type: Copy) {
     def getRakeEnv = {
 
         String ENV_LIVE = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.LIVE;"
-        String ENV_DEV  = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
+        String ENV_DEV = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
 
         if (isReleaseBranch) return ENV_LIVE
         else return ENV_DEV
@@ -311,14 +313,14 @@ tasks.build.doLast {
         updateFile(FILE_REPLACED_METRIC_LOGGER, REGEX_RAKE_ENV, FILLED_RAKE_ENV)
     }
 
-    extractJarFromAar.execute();
-    zipWithShuttle.execute();
-    copyCompleteJarToTestApp.execute();
+    extractJarFromAar.execute()
+    zipWithShuttle.execute()
+    copyCompleteJarToTestApp.execute()
 
     if (BRANCH_NAME.startsWith("release")) {
         createJavadoc.execute()
-        copyCompleteJarToReleaseDir.execute();
+        copyCompleteJarToReleaseDir.execute()
     }
 
-    initializeBuildConstant.execute();
+    initializeBuildConstant.execute()
 }
