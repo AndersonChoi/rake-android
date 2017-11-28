@@ -26,6 +26,7 @@ import android.content.Context;
 import android.content.SharedPreferences;
 import android.util.DisplayMetrics;
 
+import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.metric.MetricUtil;
@@ -110,15 +111,17 @@ public final class RakeAPI {
     private String tag;
 
     private Endpoint endpoint;
-    private static String versionSuffix;
     private final Env env;
     private final String token;
+
+    private static String versionSuffix;
+    private static String googleAdID;
 
     private final Context context;
     private final SharedPreferences storedPreferences;
     private JSONObject superProperties; /* the place where persistent members loaded and stored */
 
-    private RakeAPI(Context appContext, String token, Env env, Endpoint endpoint) {
+    private RakeAPI(final Context appContext, String token, Env env, Endpoint endpoint) {
         this.tag = createTag(token, env, endpoint);
 
         Logger.d(tag, "Creating instance");
@@ -130,6 +133,22 @@ public final class RakeAPI {
         this.endpoint = endpoint;
 
         this.storedPreferences = appContext.getSharedPreferences("com.rake.android.rkmetrics.RakeAPI_" + token, Context.MODE_PRIVATE);
+
+        final Thread googleAdIdGetterThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    AdvertisingIdClient.Info advertisingIdClientInfo = AdvertisingIdClient.getAdvertisingIdInfo(appContext);
+                    if (advertisingIdClientInfo != null) {
+                        googleAdID = advertisingIdClientInfo.getId();
+                    }
+                } catch (Exception e) {
+                    Logger.e("Failed to getting GAID. : " + e.getMessage());
+                }
+            }
+        });
+
+        googleAdIdGetterThread.start();
 
         readSuperProperties();
     }
@@ -172,7 +191,7 @@ public final class RakeAPI {
         setLogging(logging);
 
         synchronized (sInstanceMap) {
-            Context appContext = context.getApplicationContext();
+            final Context appContext = context.getApplicationContext();
             Map<Context, RakeAPI> instances = sInstanceMap.get(token);
 
             if (instances == null) {

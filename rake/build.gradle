@@ -97,15 +97,16 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs/included', include: ['*.jar'])
-    testImplementation fileTree(dir: 'libs/test', include: ['*.jar'])
-
+    implementation fileTree(include: ['*.jar'], dir: 'libs/included')
+    testImplementation fileTree(include: ['*.jar'], dir: 'libs/test')
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.assertj:assertj-core:3.8.0'
     testImplementation 'com.github.tomakehurst:wiremock:1.55'
     testImplementation 'ch.qos.logback:logback-core:1.2.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    testImplementation "org.robolectric:robolectric:3.0"
+    testImplementation 'org.robolectric:robolectric:3.0'
+
+    provided 'com.google.android.gms:play-services-ads:11.6.0'
 }
 
 coveralls {

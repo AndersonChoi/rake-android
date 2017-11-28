@@ -39,7 +39,7 @@ dependencies {
     implementation 'com.android.support:design:26.1.0'
     implementation files('libs/RakeClientTestSentinelShuttle-0.jar')
     implementation 'com.facebook.stetho:stetho:1.5.0'
-
     // when you develop something on :rake module, enable "compile project..." and disable "compile files..."
     implementation project(':rake')
+    implementation 'com.google.android.gms:play-services-ads:11.6.0'
 }
