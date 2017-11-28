@@ -17,11 +17,13 @@ import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
-import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 import java.net.URL;
 import java.security.GeneralSecurityException;
+
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
 
 import static com.rake.android.rkmetrics.metric.model.Status.DROP;
 import static com.rake.android.rkmetrics.metric.model.Status.RETRY;
@@ -92,12 +94,12 @@ final public class HttpRequestSender {
         OutputStream os = null;
         BufferedWriter writer = null;
         BufferedReader br = null;
-        HttpURLConnection conn = null;
+        HttpsURLConnection conn = null;
         StringBuilder builder = new StringBuilder();
 
-        int responseCode = 0;
-        String responseBody = null;
-        long operationTime = 0L;
+        int responseCode;
+        String responseBody;
+        long operationTime;
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
             // 사용자가 어플리케이션에서 StrictMode를 사용하여 개발을 할 경우, VM Policy 위반 회피를 위해 Thread Stats Tag 추가
@@ -106,7 +108,7 @@ final public class HttpRequestSender {
 
         try {
             url = new URL(endPoint);
-            conn = (HttpURLConnection) url.openConnection();
+            conn = (HttpsURLConnection) url.openConnection();
 
             conn.setReadTimeout(SOCKET_TIMEOUT);
             conn.setConnectTimeout(CONNECTION_TIMEOUT);
@@ -116,6 +118,7 @@ final public class HttpRequestSender {
             conn.setRequestMethod("POST");
             conn.setDoInput(true);
             conn.setDoOutput(true);
+            conn.setSSLSocketFactory((SSLSocketFactory) SSLSocketFactory.getDefault());
 
             long startAt = System.nanoTime();
 

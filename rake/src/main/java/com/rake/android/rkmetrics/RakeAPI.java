@@ -247,7 +247,7 @@ public final class RakeAPI {
     }
 
     private static String createTag(String token, Env e, Endpoint ep) {
-        return String.format("%s (%s, %s, %s)", Logger.LOG_TAG_PREFIX, token, e, ep);
+        return String.format("%s (%s, %s, %s)", Logger.LOG_TAG_PREFIX, token, e, ep.getURI());
     }
 
     public JSONObject getSuperProperties() throws JSONException {
