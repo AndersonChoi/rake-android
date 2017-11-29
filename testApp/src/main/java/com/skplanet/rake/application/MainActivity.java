@@ -36,7 +36,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 디버깅을 위한 stetho 연동(chrome으로 DB, SharedPreference 조회)
+        // 디버깅을 위한 stetho 연동(chrome://inspect url로 접속하여 DB, SharedPreference 조회)
         Stetho.initialize(
                 Stetho.newInitializerBuilder(this)
                         .enableDumpapp(Stetho.defaultDumperPluginsProvider(this))
@@ -89,36 +89,36 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Test용 버튼 Initialization
 
         /** DEV */
-        Button btnInstallDevRake = (Button) findViewById(R.id.btnInstallDevRake);
+        Button btnInstallDevRake = findViewById(R.id.btnInstallDevRake);
         btnInstallDevRake.setOnClickListener(this);
 
-        Button btnTrackDevRake = (Button) findViewById(R.id.btnTrackDevRake);
+        Button btnTrackDevRake = findViewById(R.id.btnTrackDevRake);
         btnTrackDevRake.setOnClickListener(this);
 
-        Button btnFlushDevRake = (Button) findViewById(R.id.btnFlushDevRake);
+        Button btnFlushDevRake = findViewById(R.id.btnFlushDevRake);
         btnFlushDevRake.setOnClickListener(this);
 
-        Button btnSetServerPortDevRake = (Button) findViewById(R.id.btnSetServerPortDevRake);
+        Button btnSetServerPortDevRake = findViewById(R.id.btnSetServerPortDevRake);
         btnSetServerPortDevRake.setOnClickListener(this);
 
         /** LIVE */
-        Button btnInstallLiveRake = (Button) findViewById(R.id.btnInstallLiveRake);
+        Button btnInstallLiveRake = findViewById(R.id.btnInstallLiveRake);
         btnInstallLiveRake.setOnClickListener(this);
 
-        Button btnTrackLiveRake = (Button) findViewById(R.id.btnTrackLiveRake);
+        Button btnTrackLiveRake = findViewById(R.id.btnTrackLiveRake);
         btnTrackLiveRake.setOnClickListener(this);
 
-        Button btnFlushLiveRake = (Button) findViewById(R.id.btnFlushLiveRake);
+        Button btnFlushLiveRake = findViewById(R.id.btnFlushLiveRake);
         btnFlushLiveRake.setOnClickListener(this);
 
-        Button btnSetServerPortLiveRake = (Button) findViewById(R.id.btnSetServerPortLiveRake);
+        Button btnSetServerPortLiveRake = findViewById(R.id.btnSetServerPortLiveRake);
         btnSetServerPortLiveRake.setOnClickListener(this);
 
         /** GLOBAL */
-        Button btnSetAutoFlushON = (Button) findViewById(R.id.btnSetAutoFlushON);
+        Button btnSetAutoFlushON = findViewById(R.id.btnSetAutoFlushON);
         btnSetAutoFlushON.setOnClickListener(this);
 
-        Button btnSetAutoFlushOFF = (Button) findViewById(R.id.btnSetAutoFlushOFF);
+        Button btnSetAutoFlushOFF = findViewById(R.id.btnSetAutoFlushOFF);
         btnSetAutoFlushOFF.setOnClickListener(this);
     }
 

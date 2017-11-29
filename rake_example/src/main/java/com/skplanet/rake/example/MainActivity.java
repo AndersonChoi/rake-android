@@ -31,10 +31,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 RakeAPI.Logging.ENABLE /* or RakeAPI.Logging.DISABLE */);
 
 
-        buttonTrack = (Button) findViewById(R.id.button_track);
+        buttonTrack = findViewById(R.id.button_track);
         buttonTrack.setOnClickListener(this);
 
-        buttonFlush = (Button) findViewById(R.id.button_flush);
+        buttonFlush = findViewById(R.id.button_flush);
         buttonFlush.setOnClickListener(this);
     }
 
