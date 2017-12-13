@@ -96,16 +96,12 @@ public abstract class DatabaseAdapter {
 
             Logger.d(message);
 
-            if (oldVersion < 4) { /* DO NOT SUPPORT */
-                db.execSQL(EventTableAdapter.EventContract.QUERY_DROP_TABLE);
-                db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_TABLE);
-                db.execSQL(EventTableAdapter.EventContract.QUERY_CREATE_INDEX);
-            }
-
             /**
              * Version 4 -> 5: `Log` 테이블이 추가되었음
              */
             if (oldVersion < 5) {
+                db.execSQL("DROP TABLE IF EXISTS events");  // Database version 4에서 쓰던 테이블 삭제
+
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_TABLE);
                 db.execSQL(LogTableAdapter.LogContract.QUERY_CREATE_INDEX);
             }

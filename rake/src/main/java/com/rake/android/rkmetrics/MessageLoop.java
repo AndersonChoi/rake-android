@@ -12,7 +12,6 @@ import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
-import com.rake.android.rkmetrics.persistent.EventTableAdapter;
 import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.persistent.LogChunk;
 import com.rake.android.rkmetrics.persistent.LogTableAdapter;
@@ -246,7 +245,6 @@ final class MessageLoop {
         MessageHandler() {
             super();
 
-            EventTableAdapter.getInstance(appContext);
             LogTableAdapter.getInstance(appContext);
 
             Logger.t("[SQLite] Remove expired log (48 hours before)");
@@ -383,7 +381,6 @@ final class MessageLoop {
                     case KILL_WORKER:
                         Logger.w("Worker received a hard kill. Dumping all events and force-killing. Thread id " + Thread.currentThread().getId());
                         synchronized (handlerLock) {
-                            EventTableAdapter.getInstance(appContext).deleteDatabase();
                             handler = null;
                             android.os.Looper.myLooper().quit();
                         }
