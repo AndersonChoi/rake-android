@@ -1,2 +1,2 @@
-include ':rake', ':testApp', ':rake_example'
+include ':rake', ':testApp', ':rake_example_java'
 
