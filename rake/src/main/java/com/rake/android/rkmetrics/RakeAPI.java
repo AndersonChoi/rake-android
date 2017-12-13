@@ -289,8 +289,8 @@ public final class RakeAPI {
             if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
                 Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
 
-                if (Env.DEV == env) /* if Env.DEV, flush immediately */
-                    MessageLoop.getInstance(context).queueFlushCommand();
+//                if (Env.DEV == env) /* if Env.DEV, flush immediately */
+//                    MessageLoop.getInstance(context).queueFlushCommand();
             }
         } catch (Exception e) { /* might be JSONException */
             MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);

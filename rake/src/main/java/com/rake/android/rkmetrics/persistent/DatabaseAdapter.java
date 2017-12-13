@@ -6,6 +6,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import com.rake.android.rkmetrics.db.LogTable;
 import com.rake.android.rkmetrics.util.Logger;
 
 import java.io.File;
@@ -112,7 +113,10 @@ public abstract class DatabaseAdapter {
              */
             if (4 == oldVersion && 5 == newVersion)
                 upgradedFrom4To5 = true;
+
         }
+
+
     }
 
     public void deleteDatabase() {
