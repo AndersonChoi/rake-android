@@ -28,7 +28,7 @@ import android.util.DisplayMetrics;
 
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.db.value.Log;
+import com.rake.android.rkmetrics.db.log.Log;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.Endpoint;

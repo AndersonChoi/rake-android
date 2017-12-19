@@ -1,4 +1,4 @@
-package com.rake.android.rkmetrics.db.value;
+package com.rake.android.rkmetrics.db.log;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

@@ -2,7 +2,7 @@ package com.rake.android.rkmetrics.metric;
 
 import android.app.Application;
 
-import com.rake.android.rkmetrics.db.value.LogBundle;
+import com.rake.android.rkmetrics.db.log.LogBundle;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.ServerResponse;
 

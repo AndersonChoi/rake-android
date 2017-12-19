@@ -1,19 +1,9 @@
 package com.rake.android.rkmetrics.persistent;
 
 
-import com.rake.android.rkmetrics.db.value.Log;
-import com.rake.android.rkmetrics.db.value.LogBundle;
-
-import org.json.JSONObject;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.*;
 
 @RunWith(JUnit4.class)
 public class LogBundleSpec {

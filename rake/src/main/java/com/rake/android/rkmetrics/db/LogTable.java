@@ -5,8 +5,9 @@ import android.content.Context;
 import android.database.Cursor;
 import android.provider.BaseColumns;
 
-import com.rake.android.rkmetrics.db.value.Log;
-import com.rake.android.rkmetrics.db.value.LogBundle;
+
+import com.rake.android.rkmetrics.db.log.Log;
+import com.rake.android.rkmetrics.db.log.LogBundle;
 import com.rake.android.rkmetrics.util.Logger;
 
 import org.json.JSONException;
