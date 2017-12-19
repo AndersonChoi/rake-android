@@ -7,14 +7,14 @@ import android.os.Message;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.db.LogTable;
+import com.rake.android.rkmetrics.db.value.Log;
+import com.rake.android.rkmetrics.db.value.LogBundle;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.RakeProtocolV2;
 import com.rake.android.rkmetrics.network.ServerResponse;
-import com.rake.android.rkmetrics.persistent.Log;
-import com.rake.android.rkmetrics.persistent.LogChunk;
-import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
@@ -245,12 +245,11 @@ final class MessageLoop {
         MessageHandler() {
             super();
 
-            LogTableAdapter.getInstance(appContext);
-
             Logger.t("[SQLite] Remove expired log (48 hours before)");
-            LogTableAdapter.getInstance(appContext)
-                    .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
+//            LogTableAdapter.getInstance(appContext)
+//                    .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
+            LogTable.getInstance(appContext).removeLogsBefore(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
             // MessageHandler 생성시 AUTO_FLUSH_BY_TIMER 메시지 전송
             sendEmptyMessageDelayed(Command.AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
@@ -272,23 +271,25 @@ final class MessageLoop {
 
             updateFlushFrequency();
 
-            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext).getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
+//            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext).getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
+            List<LogBundle> logBundles = LogTable.getInstance(appContext).getLogBundles(RakeConfig.TRACK_MAX_LOG_COUNT);
 
-            if (null == chunks || 0 == chunks.size()) {
+            if (logBundles == null || logBundles.size() == 0) {
                 return;
             }
 
-            for (LogChunk chunk : chunks) {
+            for (LogBundle logBundle : logBundles) {
                 long startAt = System.nanoTime();
 
                 /** network operation */
-                ServerResponse response = send(chunk);
+                ServerResponse response = send(logBundle);
 
                 long endAt = System.nanoTime();
 
                 if (null == response || null == response.getFlushStatus()) {
                     Logger.e("ServerResponse or ServerResponse.getFlushStatus() can't be NULL");
-                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+//                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                    LogTable.getInstance(appContext).removeLogBundle(logBundle);
                     return;
                 }
 
@@ -302,7 +303,8 @@ final class MessageLoop {
                 switch (response.getFlushStatus()) {
                     case DONE:
                     case DROP:
-                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+//                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
+                        LogTable.getInstance(appContext).removeLogBundle(logBundle);
                         break;
                     case RETRY:
                         if (!hasFlushMessage()) {
@@ -319,23 +321,23 @@ final class MessageLoop {
                         response.getResponseCode()
                 );
 
-                MetricUtil.recordFlushMetric(appContext, flushType, operationTime, chunk, response);
+                MetricUtil.recordFlushMetric(appContext, flushType, operationTime, logBundle, response);
             }
         }
 
-        private ServerResponse send(LogChunk chunk) {
-            if (chunk == null) {
+        private ServerResponse send(LogBundle logBundle) {
+            if (logBundle == null) {
                 Logger.e("Can't flush using null args");
                 return null;
             }
 
-            String url = chunk.getUrl() + "/" + chunk.getToken();
+            String url = logBundle.getUrl() + "/" + logBundle.getToken();
 
-            Logger.t(String.format(Locale.US, "[NETWORK] Sending %d log to %s where token = %s", chunk.getCount(), url, chunk.getToken()));
+            Logger.t(String.format(Locale.US, "[NETWORK] Sending %d log to %s where token = %s", logBundle.getCount(), url, logBundle.getToken()));
 
             return HttpRequestSender.handleResponse(
                     url,
-                    chunk.getChunk(),
+                    logBundle.getLogsByJSONString(),
                     HttpRequestSender.procedure
             );
         }
@@ -350,7 +352,7 @@ final class MessageLoop {
                 switch (Command.fromCode(msg.what)) {
                     case TRACK:
                         Log log = (Log) msg.obj;
-                        int logQueueLength = LogTableAdapter.getInstance(appContext).addLog(log);
+                        int logQueueLength = LogTable.getInstance(appContext).addLog(log);
 
                         /* Metric이 아닐 경우에만, 로그 출력 */
                         if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {

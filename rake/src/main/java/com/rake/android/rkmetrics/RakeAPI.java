@@ -28,10 +28,10 @@ import android.util.DisplayMetrics;
 
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
+import com.rake.android.rkmetrics.db.value.Log;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.persistent.Log;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
@@ -284,7 +284,7 @@ public final class RakeAPI {
             JSONObject validShuttle = ShuttleProfiler.createValidShuttle(shuttle, superProps, defaultProps);
 
             String uri = endpoint.getURI();
-            Log log = Log.create(uri, token, validShuttle);
+            Log log = new Log(uri, token, validShuttle);
 
             if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
                 Logger.d(tag, "Tracked JSONObject\n" + validShuttle);

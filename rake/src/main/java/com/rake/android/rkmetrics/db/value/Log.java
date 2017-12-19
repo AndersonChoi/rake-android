@@ -25,7 +25,7 @@ public class Log {
         return token;
     }
 
-    public JSONObject getJson() {
+    public JSONObject getJSON() {
         return json;
     }
 }

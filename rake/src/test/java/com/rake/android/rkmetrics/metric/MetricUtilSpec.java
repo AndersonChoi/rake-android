@@ -2,10 +2,11 @@ package com.rake.android.rkmetrics.metric;
 
 import android.app.Application;
 
+import com.rake.android.rkmetrics.db.value.LogBundle;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.ServerResponse;
-import com.rake.android.rkmetrics.persistent.LogChunk;
 
+import org.json.JSONObject;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -58,7 +59,11 @@ public class MetricUtilSpec {
 
     @Test
     public void recordFlushMetric_should_return_false_given_metric_token() {
-        LogChunk l1 = LogChunk.create("lastId", "url", MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, "chunk", 1);
+        LogBundle l1 = new LogBundle();
+        l1.setLast_ID("lastId");
+        l1.setUrl("url");
+        l1.setToken(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN);
+        l1.addLog(new JSONObject());
 
         /* Status 는 최소한 1개 이상이어야 아래 루프에서 검증이 가능 */
         assertThat(Status.values().length).isGreaterThan(0);

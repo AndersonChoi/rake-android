@@ -3,9 +3,6 @@ package com.rake.android.rkmetrics.db.value;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by 1000731 on 2017. 12. 19..
  */
@@ -14,7 +11,6 @@ public class LogBundle {
 
     private String token;
     private String url;
-    private int count;
     private String last_ID;
     private JSONArray jsonLogArray;
 
@@ -38,14 +34,6 @@ public class LogBundle {
         this.url = url;
     }
 
-    public int getCount() {
-        return count;
-    }
-
-    public void setCount(int count) {
-        this.count = count;
-    }
-
     public String getLast_ID() {
         return last_ID;
     }
@@ -59,6 +47,10 @@ public class LogBundle {
     }
 
     public String getLogsByJSONString(){
-        return null;
+        return jsonLogArray.toString();
+    }
+
+    public int getCount() {
+        return jsonLogArray.length();
     }
 }

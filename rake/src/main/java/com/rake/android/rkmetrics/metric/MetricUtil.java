@@ -4,14 +4,14 @@ import android.content.Context;
 
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.android.SystemInformation;
+import com.rake.android.rkmetrics.db.LogTable;
+import com.rake.android.rkmetrics.db.value.Log;
+import com.rake.android.rkmetrics.db.value.LogBundle;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Metric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.network.ServerResponse;
-import com.rake.android.rkmetrics.persistent.Log;
-import com.rake.android.rkmetrics.persistent.LogChunk;
-import com.rake.android.rkmetrics.persistent.LogTableAdapter;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
@@ -93,7 +93,8 @@ public final class MetricUtil {
             return false;
         }
 
-        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(token);
+//        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(token);
+        int persistedLogCount = LogTable.getInstance(context).getCount(token);
 
         Metric installErrorMetric = fillMetricHeaderValues(context, Action.INSTALL, Status.ERROR, token)
                 .setBodyExceptionInfo(e)
@@ -111,11 +112,11 @@ public final class MetricUtil {
     public static boolean recordFlushMetric(Context context,
                                             String flushType,
                                             long operationTime,
-                                            LogChunk chunk,
+                                            LogBundle logBundle,
                                             ServerResponse response) {
 
         if (null == context
-                || null == chunk
+                || null == logBundle
                 || null == response
                 || null == response.getFlushStatus()) {
             Logger.e("Can't record FlushMetric using NULL args");
@@ -123,7 +124,7 @@ public final class MetricUtil {
         }
 
         /* 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
-        if (MetricUtil.isMetricToken(chunk.getToken())) {
+        if (MetricUtil.isMetricToken(logBundle.getToken())) {
             return false;
         }
 
@@ -132,13 +133,13 @@ public final class MetricUtil {
             return false;
         }
 
-        Metric flushMetric = fillMetricHeaderValues(context, Action.FLUSH, response.getFlushStatus(), chunk.getToken())
+        Metric flushMetric = fillMetricHeaderValues(context, Action.FLUSH, response.getFlushStatus(), logBundle.getToken())
                 .setBodyExceptionInfo(response.getExceptionInfo())
                 .setBodyFlushType(flushType)
-                .setBodyEndpoint(chunk.getUrl())
+                .setBodyEndpoint(logBundle.getUrl())
                 .setBodyOperationTime(operationTime)
-                .setBodyLogCount((long) chunk.getCount())
-                .setBodyLogSize((long) chunk.getChunk().getBytes().length)
+                .setBodyLogCount((long) logBundle.getCount())
+                .setBodyLogSize((long) logBundle.getLogsByJSONString().getBytes().length)
                 .setBodyServerResponseBody(response.getResponseBody())
                 .setBodyServerResponseCode((long) response.getResponseCode())
                 .setBodyServerResponseTime(response.getServerResponseTime())
@@ -167,9 +168,11 @@ public final class MetricUtil {
     private static boolean recordMetric(Context context, Metric metric) {
         JSONObject validShuttle = createValidShuttleForMetric(metric, context);
 
-        Log log = Log.create(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+//        Log log = Log.create(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
-        int count = LogTableAdapter.getInstance(context).addLog(log);
+        Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+
+        int count = LogTable.getInstance(context).addLog(log);
 
         boolean recorded = count != -1;
 

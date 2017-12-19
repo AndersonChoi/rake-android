@@ -3,10 +3,8 @@ package com.rake.android.rkmetrics.db;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteQuery;
 import android.provider.BaseColumns;
 
-import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.db.value.Log;
 import com.rake.android.rkmetrics.db.value.LogBundle;
 import com.rake.android.rkmetrics.util.Logger;
@@ -16,10 +14,8 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Created by 1000731 on 2017. 12. 13..
@@ -69,19 +65,23 @@ public class LogTable extends Table {
      * @param log Log object
      * @return true if Log is successfully added.
      */
-    public synchronized boolean addLog(Log log) {
-        if (log == null || log.getUrl() == null || log.getToken() == null || log.getJson() == null) {
+    public synchronized int addLog(Log log) {
+        if (log == null || log.getUrl() == null || log.getToken() == null || log.getJSON() == null) {
             Logger.e("Cannot add log without args.");
-            return false;
+            return count(TABLE_NAME, null);
         }
 
         ContentValues values = new ContentValues();
         values.put(Columns.URL, log.getUrl());
         values.put(Columns.TOKEN, log.getToken());
-        values.put(Columns.LOG, log.getJson().toString());
+        values.put(Columns.LOG, log.getJSON().toString());
         values.put(Columns.CREATED_AT, System.currentTimeMillis());
 
-        return insert(TABLE_NAME, values);
+        if (insert(TABLE_NAME, values)){
+            return count(TABLE_NAME, null);
+        } else {
+            return -1;
+        }
     }
 
     /**
@@ -111,7 +111,7 @@ public class LogTable extends Table {
         }
 
         String whereClause = Columns.CREATED_AT + " <= " + time;
-        return delete(TABLE_NAME, whereClause, null);
+        return delete(TABLE_NAME, whereClause, (String[]) null);
     }
 
     public synchronized List<LogBundle> getLogBundles(int maxLogCountByBundle) {
@@ -168,6 +168,6 @@ public class LogTable extends Table {
                 + " AND " + Columns.TOKEN + " = \"" + logBundle.getToken() + "\""
                 + " AND " + Columns.URL + " = \"" + logBundle.getUrl() + "\"";
 
-        return delete(TABLE_NAME, whereClause, null);
+        return delete(TABLE_NAME, whereClause, (String[]) null);
     }
 }
