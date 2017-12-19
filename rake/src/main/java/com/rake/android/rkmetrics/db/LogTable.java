@@ -2,12 +2,24 @@ package com.rake.android.rkmetrics.db;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteQuery;
 import android.provider.BaseColumns;
 
 import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.db.value.Log;
+import com.rake.android.rkmetrics.db.value.LogBundle;
 import com.rake.android.rkmetrics.util.Logger;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by 1000731 on 2017. 12. 13..
@@ -26,7 +38,7 @@ public class LogTable extends Table {
 
     // 테이블 생성/삭제 쿼리
     static final String QUERY_CREATE_TABLE = "CREATE TABLE IF NOT EXISTS " + TABLE_NAME + " (" +
-            Columns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "+
+            Columns._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, " +
             Columns.URL + " TEXT NOT NULL, " +
             Columns.TOKEN + " TEXT NOT NULL, " +
             Columns.LOG + " TEXT NOT NULL, " +
@@ -44,8 +56,8 @@ public class LogTable extends Table {
         super(context);
     }
 
-    public static synchronized LogTable getInstance(Context context){
-        if(instance == null){
+    public static synchronized LogTable getInstance(Context context) {
+        if (instance == null) {
             instance = new LogTable(context);
         }
         return instance;
@@ -56,9 +68,9 @@ public class LogTable extends Table {
      *
      * @param log Log object
      * @return true if Log is successfully added.
-     * */
-    public synchronized boolean addLog(Log log){
-        if(log == null || log.getUrl() == null || log.getToken() == null || log.getJson() == null) {
+     */
+    public synchronized boolean addLog(Log log) {
+        if (log == null || log.getUrl() == null || log.getToken() == null || log.getJson() == null) {
             Logger.e("Cannot add log without args.");
             return false;
         }
@@ -77,9 +89,9 @@ public class LogTable extends Table {
      *
      * @param token rake token
      * @return -1, if exception occurred or token is NULL
-     * */
+     */
     public synchronized int getCount(String token) {
-        if(token == null) {
+        if (token == null) {
             return -1;
         }
 
@@ -92,9 +104,9 @@ public class LogTable extends Table {
      *
      * @param time remove logs before time
      * @return true if Logs are successfully added.
-     * */
-    public synchronized boolean removeLogsBefore(long time){
-        if(time <= 0) {
+     */
+    public synchronized boolean removeLogsBefore(long time) {
+        if (time <= 0) {
             return false;
         }
 
@@ -102,6 +114,60 @@ public class LogTable extends Table {
         return delete(TABLE_NAME, whereClause, null);
     }
 
+    public synchronized List<LogBundle> getLogBundles(int maxLogCountByBundle) {
+        if (maxLogCountByBundle <= 0) {
+            return null;
+        }
 
+        // 1. 50개 로그를 읽어온다.
+        String query = "SELECT * FROM " + TABLE_NAME
+                + " ORDER BY " + Columns.CREATED_AT + " ASC "
+                + " LIMIT " + maxLogCountByBundle;
 
+        Cursor cursor = select(query);
+
+        // token별로 로그 번들을 나눈다.
+        Map<String, LogBundle> logBundles = new HashMap<>();
+
+        try {
+            while (cursor.moveToNext()) {
+                String token = getStringFromCursor(cursor, Columns.TOKEN);
+                JSONObject json = new JSONObject(getStringFromCursor(cursor, Columns.LOG));
+
+                LogBundle logBundle;
+                if (logBundles.containsKey(token)) {
+                    logBundle = logBundles.get(token);
+                } else {
+                    logBundle = new LogBundle();
+                    String url = getStringFromCursor(cursor, Columns.URL);
+                    logBundle.setUrl(url);
+                    logBundle.setToken(token);
+                }
+
+                logBundle.addLog(json);
+
+                if(cursor.isLast()) {
+                    logBundle.setLast_ID(getStringFromCursor(cursor, Columns._ID));
+                }
+
+                logBundles.put(token, logBundle);
+            }
+        } catch (JSONException e) {
+            Logger.e("Failed to getting logs from DB. " + e.getMessage());
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+
+        return new ArrayList<>(logBundles.values());
+    }
+
+    public synchronized boolean removeLogBundle(LogBundle logBundle) {
+        String whereClause = Columns._ID + " <= " + logBundle.getLast_ID()
+                + " AND " + Columns.TOKEN + " = \"" + logBundle.getToken() + "\""
+                + " AND " + Columns.URL + " = \"" + logBundle.getUrl() + "\"";
+
+        return delete(TABLE_NAME, whereClause, null);
+    }
 }

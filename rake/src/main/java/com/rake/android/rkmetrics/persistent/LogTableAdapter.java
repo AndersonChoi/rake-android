@@ -225,7 +225,7 @@ public final class LogTableAdapter extends DatabaseAdapter {
             String token = getStringFromCursor(c, LogContract.COLUMN_TOKEN);
             JSONObject log = new JSONObject(getStringFromCursor(c, LogContract.COLUMN_LOG));
 
-            return Log.create(url, token, log);
+            return   Log.create(url, token, log);
         } catch (JSONException e) { /* ignore */ }
 
         return null;

@@ -30,14 +30,14 @@ public class Table {
         return _id != -1;
     }
 
-    boolean delete(String tableName, String whereClause, String... whereArgs){
+    boolean delete(String tableName, String whereClause, String... whereArgs) {
         long affectedRowCount = dbOpenHelper.getWritableDatabase().delete(tableName, whereClause, whereArgs);
 
         return affectedRowCount > 0;
     }
 
-    int count(String tableName, String whereClause){
-        if(TextUtils.isEmpty(whereClause)) {
+    int count(String tableName, String whereClause) {
+        if (TextUtils.isEmpty(whereClause)) {
             whereClause = "";
         } else {
             whereClause = " " + whereClause;
@@ -50,5 +50,13 @@ public class Table {
         int count = cursor.getInt(0);
         cursor.close();
         return count;
+    }
+
+    Cursor select(String rawQuery) {
+        return dbOpenHelper.getReadableDatabase().rawQuery(rawQuery, null);
+    }
+
+    String getStringFromCursor(Cursor cursor, String columnIndex){
+        return cursor.getString(cursor.getColumnIndex(columnIndex));
     }
 }
