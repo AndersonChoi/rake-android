@@ -22,7 +22,7 @@ import java.util.Map;
  */
 
 public class LogTable extends Table {
-    public static final String TABLE_NAME = "log";
+    private static final String TABLE_NAME = "log";
 
     // log 테이블 columns
     public static class Columns implements BaseColumns {
@@ -43,7 +43,7 @@ public class LogTable extends Table {
     static final String QUERY_CREATE_INDEX = "CREATE INDEX IF NOT EXISTS craetedAt_idx ON " + TABLE_NAME +
             " (" + Columns.CREATED_AT + ");";
 
-    public static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
+    static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
 
     // singleton
     private static LogTable instance;
@@ -77,7 +77,7 @@ public class LogTable extends Table {
         values.put(Columns.LOG, log.getJSON().toString());
         values.put(Columns.CREATED_AT, System.currentTimeMillis());
 
-        if (insert(TABLE_NAME, values)){
+        if (insert(TABLE_NAME, values)) {
             return count(TABLE_NAME, null);
         } else {
             return -1;
@@ -146,7 +146,7 @@ public class LogTable extends Table {
 
                 logBundle.addLog(json);
 
-                if(cursor.isLast()) {
+                if (cursor.isLast()) {
                     logBundle.setLast_ID(getStringFromCursor(cursor, Columns._ID));
                 }
 

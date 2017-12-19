@@ -93,7 +93,6 @@ public final class MetricUtil {
             return false;
         }
 
-//        int persistedLogCount = LogTableAdapter.getInstance(context).getCount(token);
         int persistedLogCount = LogTable.getInstance(context).getCount(token);
 
         Metric installErrorMetric = fillMetricHeaderValues(context, Action.INSTALL, Status.ERROR, token)
@@ -167,8 +166,6 @@ public final class MetricUtil {
      */
     private static boolean recordMetric(Context context, Metric metric) {
         JSONObject validShuttle = createValidShuttleForMetric(metric, context);
-
-//        Log log = Log.create(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
         Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 

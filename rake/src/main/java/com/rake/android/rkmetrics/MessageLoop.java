@@ -46,7 +46,6 @@ final class MessageLoop {
         AUTO_FLUSH_BY_COUNT(3),
         AUTO_FLUSH_BY_TIMER(4),
         KILL_WORKER(5),
-        //        RECORD_INSTALL_METRIC(7),
         UNKNOWN(-1);
 
         private int code;
@@ -246,8 +245,6 @@ final class MessageLoop {
             super();
 
             Logger.t("[SQLite] Remove expired log (48 hours before)");
-//            LogTableAdapter.getInstance(appContext)
-//                    .removeLogByTime(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
 
             LogTable.getInstance(appContext).removeLogsBefore(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
             // MessageHandler 생성시 AUTO_FLUSH_BY_TIMER 메시지 전송
@@ -271,7 +268,6 @@ final class MessageLoop {
 
             updateFlushFrequency();
 
-//            List<LogChunk> chunks = LogTableAdapter.getInstance(appContext).getLogChunks(RakeConfig.TRACK_MAX_LOG_COUNT);
             List<LogBundle> logBundles = LogTable.getInstance(appContext).getLogBundles(RakeConfig.TRACK_MAX_LOG_COUNT);
 
             if (logBundles == null || logBundles.size() == 0) {
@@ -288,7 +284,6 @@ final class MessageLoop {
 
                 if (null == response || null == response.getFlushStatus()) {
                     Logger.e("ServerResponse or ServerResponse.getFlushStatus() can't be NULL");
-//                    LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                     LogTable.getInstance(appContext).removeLogBundle(logBundle);
                     return;
                 }
@@ -303,7 +298,6 @@ final class MessageLoop {
                 switch (response.getFlushStatus()) {
                     case DONE:
                     case DROP:
-//                        LogTableAdapter.getInstance(appContext).removeLogChunk(chunk);
                         LogTable.getInstance(appContext).removeLogBundle(logBundle);
                         break;
                     case RETRY:
