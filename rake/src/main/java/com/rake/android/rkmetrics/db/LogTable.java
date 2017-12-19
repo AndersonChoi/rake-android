@@ -119,14 +119,17 @@ public class LogTable extends Table {
             return null;
         }
 
-        // 1. 50개 로그를 읽어온다.
+        // read logs from DB
         String query = "SELECT * FROM " + TABLE_NAME
                 + " ORDER BY " + Columns.CREATED_AT + " ASC "
                 + " LIMIT " + maxLogCountByBundle;
 
         Cursor cursor = select(query);
+        if(cursor == null) {
+            return null;
+        }
 
-        // token별로 로그 번들을 나눈다.
+        // divide logs by token and url
         Map<String, LogBundle> logBundles = new HashMap<>();
 
         try {
@@ -155,9 +158,7 @@ public class LogTable extends Table {
         } catch (JSONException e) {
             Logger.e("Failed to getting logs from DB. " + e.getMessage());
         } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
+            cursor.close();
         }
 
         return new ArrayList<>(logBundles.values());
