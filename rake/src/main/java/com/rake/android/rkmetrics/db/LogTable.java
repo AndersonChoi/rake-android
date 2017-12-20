@@ -41,7 +41,7 @@ public class LogTable extends Table {
             Columns.LOG + " TEXT NOT NULL, " +
             Columns.CREATED_AT + " INTEGER NOT NULL);";
 
-    static final String QUERY_CREATE_INDEX = "CREATE INDEX IF NOT EXISTS craetedAt_idx ON " + TABLE_NAME +
+    static final String QUERY_CREATE_INDEX = "CREATE INDEX IF NOT EXISTS createdAt_idx ON " + TABLE_NAME +
             " (" + Columns.CREATED_AT + ");";
 
     static final String QUERY_DROP_TABLE = "DROP TABLE IF EXISTS " + TABLE_NAME;
@@ -130,8 +130,8 @@ public class LogTable extends Table {
             return null;
         }
 
-        // divide logs by token and url
-        Map<String, LogBundle> logBundles = new HashMap<>();
+        // divide logs by token
+        Map<String, LogBundle> logBundleMap = new HashMap<>();
 
         try {
             while (cursor.moveToNext()) {
@@ -139,8 +139,8 @@ public class LogTable extends Table {
                 JSONObject json = new JSONObject(getStringFromCursor(cursor, Columns.LOG));
 
                 LogBundle logBundle;
-                if (logBundles.containsKey(token)) {
-                    logBundle = logBundles.get(token);
+                if (logBundleMap.containsKey(token)) {
+                    logBundle = logBundleMap.get(token);
                 } else {
                     logBundle = new LogBundle();
                     String url = getStringFromCursor(cursor, Columns.URL);
@@ -154,7 +154,7 @@ public class LogTable extends Table {
                     logBundle.setLast_ID(getStringFromCursor(cursor, Columns._ID));
                 }
 
-                logBundles.put(token, logBundle);
+                logBundleMap.put(token, logBundle);
             }
         } catch (JSONException e) {
             Logger.e("Failed to getting logs from DB. " + e.getMessage());
@@ -162,7 +162,7 @@ public class LogTable extends Table {
             cursor.close();
         }
 
-        return new ArrayList<>(logBundles.values());
+        return new ArrayList<>(logBundleMap.values());
     }
 
     public synchronized boolean removeLogBundle(LogBundle logBundle) {

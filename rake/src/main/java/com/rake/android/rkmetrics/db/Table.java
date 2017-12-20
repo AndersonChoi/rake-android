@@ -89,7 +89,7 @@ public class Table {
         try {
             cursor = dbOpenHelper.getReadableDatabase().rawQuery(rawQuery, null);
         } catch (SQLiteException e) {
-            Logger.e("[SQLite] selection (count) error : " + e.getMessage());
+            Logger.e("[SQLite] selection error : " + e.getMessage());
         } finally {
             dbOpenHelper.close();
         }
