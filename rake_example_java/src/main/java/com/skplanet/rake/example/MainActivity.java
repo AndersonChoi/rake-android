@@ -12,7 +12,7 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
  * This example is made for the purpose of external release.
  * */
 public class MainActivity extends AppCompatActivity implements View.OnClickListener{
-    // Define Rake Token. You can get it from Setinel site. Check if it is for DEV or LIVE.
+    // Define Rake Token. You can get it from Sentinel site. Check if it is for DEV or LIVE.
     private final static String rakeToken = "your_rake_token";
     private RakeAPI rake = null;
 
