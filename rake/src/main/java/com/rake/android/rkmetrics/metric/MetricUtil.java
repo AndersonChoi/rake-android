@@ -40,7 +40,7 @@ public final class MetricUtil {
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "feature/refactor_db";
+    public static final String BUILD_CONSTANT_BRANCH = "feature/refactor";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -165,40 +165,30 @@ public final class MetricUtil {
      * @return true if log was successfully persisted otherwise returns false
      */
     private static boolean recordMetric(Context context, Metric metric) {
-        JSONObject validShuttle = createValidShuttleForMetric(metric, context);
-
-        Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
-
-        long count = LogTable.getInstance(context).addLog(log);
-
-        boolean recorded = count != -1;
-
-        if (recorded && null != metric) {
-            Logger.t(String.format("[METRIC] Record ACTION:STATUS [%s]", metric.getMetricType()));
+        if(metric == null) {
+            return false;
         }
 
-        return recorded;
-    }
-
-    private static JSONObject createValidShuttleForMetric(Metric metric, Context context) {
-        if (null == metric) {
-            return null;
-        }
-
-        JSONObject userProps = metric.toJSONObject();
-        JSONObject defaultProps = createDefaultPropsForMetric(context);
-
-        return ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
-    }
-
-    private static JSONObject createDefaultPropsForMetric(Context context) {
-        JSONObject defaultProps = null;
         try {
-            defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+            JSONObject userProps = metric.toJSONObject();
+            JSONObject defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
+
+            Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
+
+            long count = LogTable.getInstance(context).addLog(log);
+
+            boolean recorded = count != -1;
+
+            if (recorded) {
+                Logger.t(String.format("[METRIC] Record ACTION:STATUS [%s]", metric.getMetricType()));
+            }
+
+            return recorded;
         } catch (JSONException e) {
             Logger.e("Can't create defaultProps for metric");
         }
 
-        return defaultProps;
+        return false;
     }
 }
