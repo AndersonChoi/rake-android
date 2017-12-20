@@ -93,7 +93,7 @@ public final class MetricUtil {
             return false;
         }
 
-        int persistedLogCount = LogTable.getInstance(context).getCount(token);
+        long persistedLogCount = LogTable.getInstance(context).getCount(token);
 
         Metric installErrorMetric = fillMetricHeaderValues(context, Action.INSTALL, Status.ERROR, token)
                 .setBodyExceptionInfo(e)
@@ -169,7 +169,7 @@ public final class MetricUtil {
 
         Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
-        int count = LogTable.getInstance(context).addLog(log);
+        long count = LogTable.getInstance(context).addLog(log);
 
         boolean recorded = count != -1;
 

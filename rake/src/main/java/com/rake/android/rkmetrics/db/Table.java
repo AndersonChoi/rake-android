@@ -1,10 +1,9 @@
 package com.rake.android.rkmetrics.db;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteException;
-import android.text.TextUtils;
 
 import com.rake.android.rkmetrics.util.Logger;
 
@@ -27,78 +26,22 @@ public class Table {
         }
     }
 
-    boolean insert(String tableName, ContentValues values) {
-        long _id = -1;
-
-        try {
-            _id = dbOpenHelper.getWritableDatabase().insert(tableName, null, values);
-        } catch (SQLiteException e) {
-            Logger.e("[SQLite] insertion error : " + e.getMessage());
-        } finally {
-            dbOpenHelper.close();
-        }
-
-        return _id != -1;
+    interface QueryExecCallback<T> {
+        T execute(SQLiteDatabase db);
     }
 
-    boolean delete(String tableName, String whereClause, String... whereArgs) {
-        long affectedRowCount = 0;
-
+    <T> T queryExecutor(QueryExecCallback<T> callback) {
         try {
-            affectedRowCount = dbOpenHelper.getWritableDatabase().delete(tableName, whereClause, whereArgs);
+            return callback.execute(dbOpenHelper.getWritableDatabase());
         } catch (SQLiteException e) {
-            Logger.e("[SQLite] deletion error : " + e.getMessage());
+            Logger.e("[SQLite] query execution error : " + e.getMessage());
+            return null;
         } finally {
             dbOpenHelper.close();
         }
-
-        return affectedRowCount > 0;
-    }
-
-    int count(String tableName, String whereClause) {
-        if (TextUtils.isEmpty(whereClause)) {
-            whereClause = "";
-        } else {
-            whereClause = " " + whereClause;
-        }
-
-        String sql = "SELECT COUNT(*) FROM " + tableName + whereClause;
-
-        Cursor cursor = null;
-        int count = 0;
-
-        try {
-            cursor = dbOpenHelper.getReadableDatabase().rawQuery(sql, null);
-            cursor.moveToFirst();
-            count = cursor.getInt(0);
-        } catch (SQLiteException e) {
-            Logger.e("[SQLite] selection (count) error : " + e.getMessage());
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-            dbOpenHelper.close();
-        }
-
-        return count;
-    }
-
-    Cursor select(String rawQuery) {
-        Cursor cursor = null;
-
-        try {
-            cursor = dbOpenHelper.getReadableDatabase().rawQuery(rawQuery, null);
-        } catch (SQLiteException e) {
-            Logger.e("[SQLite] selection error : " + e.getMessage());
-        } finally {
-            dbOpenHelper.close();
-        }
-
-        return cursor;
     }
 
     String getStringFromCursor(Cursor cursor, String columnIndex) {
         return cursor.getString(cursor.getColumnIndex(columnIndex));
     }
-
 }

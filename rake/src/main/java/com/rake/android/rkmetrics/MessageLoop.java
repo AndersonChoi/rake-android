@@ -346,7 +346,7 @@ final class MessageLoop {
                 switch (Command.fromCode(msg.what)) {
                     case TRACK:
                         Log log = (Log) msg.obj;
-                        int logQueueLength = LogTable.getInstance(appContext).addLog(log);
+                        long logQueueLength = LogTable.getInstance(appContext).addLog(log);
 
                         /* Metric이 아닐 경우에만, 로그 출력 */
                         if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {
