@@ -1,7 +1,7 @@
 package com.rake.android.rkmetrics.network;
 
 public interface HttpRequestProcedure {
-    ServerResponse execute(String url,
+    HttpResponse execute(String url,
                            String log) throws Throwable;
 }
 

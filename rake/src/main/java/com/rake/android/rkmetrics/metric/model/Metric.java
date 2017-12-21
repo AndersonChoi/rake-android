@@ -221,6 +221,13 @@ public class Metric {
             return this;
         }
 
+        public Builder setBodyRakeProtocolVersion(String version) {
+            if(shuttle != null) {
+                shuttle.rake_protocol_version(version);
+            }
+            return this;
+        }
+
         public Metric build() {
             return new Metric(this);
         }

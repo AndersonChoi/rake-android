@@ -13,8 +13,7 @@ import com.rake.android.rkmetrics.db.log.LogBundle;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
-import com.rake.android.rkmetrics.network.RakeProtocolV2;
-import com.rake.android.rkmetrics.network.ServerResponse;
+import com.rake.android.rkmetrics.network.HttpResponse;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
@@ -278,11 +277,11 @@ final class MessageLoop {
                 long startAt = System.nanoTime();
 
                 /** network operation */
-                ServerResponse response = send(logBundle);
+                HttpResponse httpResponse = send(logBundle);
 
                 long endAt = System.nanoTime();
 
-                if (null == response || null == response.getFlushStatus()) {
+                if (null == httpResponse || null == httpResponse.getFlushStatus()) {
                     Logger.e("ServerResponse or ServerResponse.getFlushStatus() can't be NULL");
                     LogTable.getInstance(appContext).removeLogBundle(logBundle);
                     return;
@@ -295,7 +294,7 @@ final class MessageLoop {
                  * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
                  * - 복구 가능한 예외인지 (RETRY) 판단 후 실행
                  */
-                switch (response.getFlushStatus()) {
+                switch (httpResponse.getFlushStatus()) {
                     case DONE:
                     case DROP:
                         LogTable.getInstance(appContext).removeLogBundle(logBundle);
@@ -310,16 +309,13 @@ final class MessageLoop {
                         return;
                 }
 
-                RakeProtocolV2.reportResponse(
-                        response.getResponseBody(),
-                        response.getResponseCode()
-                );
+                Logger.t("[NETWORK] Server returned code: " + httpResponse.getResponseCode() + ", body: " + httpResponse.getResponseBody());
 
-                MetricUtil.recordFlushMetric(appContext, flushType, operationTime, logBundle, response);
+                MetricUtil.recordFlushMetric(appContext, flushType, operationTime, logBundle, httpResponse);
             }
         }
 
-        private ServerResponse send(LogBundle logBundle) {
+        private HttpResponse send(LogBundle logBundle) {
             if (logBundle == null) {
                 Logger.e("Can't flush using null args");
                 return null;

@@ -4,8 +4,6 @@ import android.net.TrafficStats;
 import android.os.Build;
 import android.os.Process;
 
-import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.StreamUtil;
 import com.rake.android.rkmetrics.util.TimeUtil;
 import com.rake.android.rkmetrics.util.UnknownRakeStateException;
@@ -16,19 +14,15 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
-import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
-import java.security.GeneralSecurityException;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
-import static com.rake.android.rkmetrics.metric.model.Status.DROP;
-import static com.rake.android.rkmetrics.metric.model.Status.RETRY;
-
 final public class HttpRequestSender {
+    public static final String RAKE_PROTOCOL_VERSION = "V2";
+    private static final String CHAR_ENCODING = "UTF-8";
+
     private static final int CONNECTION_TIMEOUT = 3000;
     private static final int SOCKET_TIMEOUT = 120000;
 
@@ -37,7 +31,7 @@ final public class HttpRequestSender {
 
     public static HttpRequestProcedure procedure = new HttpRequestProcedure() {
         @Override
-        public ServerResponse execute(String url, String log) throws Exception {
+        public HttpResponse execute(String url, String log) throws Exception {
             if (null == url)
                 throw new UnknownRakeStateException("URL can't be NULL in HttpRequestProcedure.execute");
             if (null == log)
@@ -49,46 +43,20 @@ final public class HttpRequestSender {
         }
     };
 
-    public static ServerResponse handleResponse(String url, String log, HttpRequestProcedure callback) {
-        ServerResponse responseMetric;
-
+    public static HttpResponse handleResponse(String url, String log, HttpRequestProcedure callback) {
         try {
-            responseMetric = callback.execute(url, log);
-        } catch (UnsupportedEncodingException e) {
-            Logger.e("Invalid encoding", e);
-            return ServerResponse.createErrorResponse(e, DROP);
-        } catch (GeneralSecurityException e) {
-            Logger.e("SSL error (DROP)", e);
-            return ServerResponse.createErrorResponse(e, DROP);
-        } catch (MalformedURLException e) {
-            Logger.e("Malformed url (DROP)", e);
-            return ServerResponse.createErrorResponse(e, DROP);
-        } catch (ProtocolException e) {
-            Logger.e("Invalid protocol (DROP)", e);
-            return ServerResponse.createErrorResponse(e, DROP);
-        } catch (IOException e) {
-            Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponse.createErrorResponse(e, RETRY);
-        } catch (OutOfMemoryError e) {
-            Logger.e("Can't post message to Rake Server (RETRY)", e);
-            return ServerResponse.createErrorResponse(e, RETRY);
+            return callback.execute(url, log);
         } catch (Exception e) {
-            Logger.e("Uncaught exception (DROP)", e);
-            return ServerResponse.createErrorResponse(e, DROP);
+            return new HttpResponse(e);
         } catch (Throwable e) {
-            Logger.e("Uncaught throwable (DROP)", e);
-            return ServerResponse.createErrorResponse(e, DROP);
+            return new HttpResponse(e);
         }
-
-        Status flushStatus = RakeProtocolV2.interpretResponse(responseMetric.getResponseCode());
-
-        return responseMetric.setFlushStatus(flushStatus);
     }
 
     /**
      * @throws IOException (including MalformedURLException, UnsupportedEncodingException, ProtocolException)
      */
-    private static ServerResponse sendHttpUrlStreamRequest(String endPoint, String requestBody) throws IOException {
+    private static HttpResponse sendHttpUrlStreamRequest(String endPoint, String requestBody) throws IOException {
 
         URL url;
         OutputStream os = null;
@@ -123,7 +91,7 @@ final public class HttpRequestSender {
             long startAt = System.nanoTime();
 
             os = conn.getOutputStream();
-            writer = new BufferedWriter(new OutputStreamWriter(os, RakeProtocolV2.CHAR_ENCODING));
+            writer = new BufferedWriter(new OutputStreamWriter(os, CHAR_ENCODING));
             writer.write(requestBody);
             writer.flush();
 
@@ -159,6 +127,6 @@ final public class HttpRequestSender {
             }
         }
 
-        return ServerResponse.create(responseBody, responseCode, operationTime);
+        return new HttpResponse(responseCode, responseBody, operationTime);
     }
 }

@@ -11,7 +11,8 @@ import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.metric.model.Metric;
 import com.rake.android.rkmetrics.metric.model.Status;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.network.ServerResponse;
+import com.rake.android.rkmetrics.network.HttpRequestSender;
+import com.rake.android.rkmetrics.network.HttpResponse;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
@@ -83,7 +84,7 @@ public final class MetricUtil {
                 .setBodyExceptionInfo(e)
                 .build();
 
-        return recordMetric(context, errorMetric);
+        return trackMetric(context, errorMetric);
     }
 
     public static boolean recordInstallErrorMetric(Context context, RakeAPI.Env env, String endpoint,
@@ -102,7 +103,7 @@ public final class MetricUtil {
                 .setBodyPersistedLogCount(persistedLogCount)
                 .build();
 
-        return recordMetric(context, installErrorMetric);
+        return trackMetric(context, installErrorMetric);
     }
 
     /**
@@ -112,7 +113,7 @@ public final class MetricUtil {
                                             String flushType,
                                             long operationTime,
                                             LogBundle logBundle,
-                                            ServerResponse response) {
+                                            HttpResponse response) {
 
         if (null == context
                 || null == logBundle
@@ -122,7 +123,7 @@ public final class MetricUtil {
             return false;
         }
 
-        /* 메트릭 토큰에 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
+        /* 메트릭 토큰에 서비스 토큰에 의한 flush 메트릭은 기록하지 않음, MessageLoop 내부에서 필터링 하고 있으나 나중을 위해 방어로직을 추가 */
         if (MetricUtil.isMetricToken(logBundle.getToken())) {
             return false;
         }
@@ -132,8 +133,9 @@ public final class MetricUtil {
             return false;
         }
 
+
         Metric flushMetric = fillMetricHeaderValues(context, Action.FLUSH, response.getFlushStatus(), logBundle.getToken())
-                .setBodyExceptionInfo(response.getExceptionInfo())
+                .setBodyExceptionInfo(response.getException())
                 .setBodyFlushType(flushType)
                 .setBodyEndpoint(logBundle.getUrl())
                 .setBodyOperationTime(operationTime)
@@ -141,12 +143,15 @@ public final class MetricUtil {
                 .setBodyLogSize((long) logBundle.getLogsByJSONString().getBytes().length)
                 .setBodyServerResponseBody(response.getResponseBody())
                 .setBodyServerResponseCode((long) response.getResponseCode())
-                .setBodyServerResponseTime(response.getServerResponseTime())
-                .setBodyFlushMethod(response.getFlushMethod())
+                .setBodyServerResponseTime(response.getResponseTime())
+                .setBodyRakeProtocolVersion(HttpRequestSender.RAKE_PROTOCOL_VERSION)
+
+                // (2017.11) Rake-Android 사용 앱들의 ICS(Android 4.0, versionCode = 14) 미만 단말 지원 종료.
+                .setBodyFlushMethod("HTTP_URL_CONNECTION")
                 .build();
 
 
-        return recordMetric(context, flushMetric);
+        return trackMetric(context, flushMetric);
     }
 
     /**
@@ -164,8 +169,8 @@ public final class MetricUtil {
     /**
      * @return true if log was successfully persisted otherwise returns false
      */
-    private static boolean recordMetric(Context context, Metric metric) {
-        if(metric == null) {
+    private static boolean trackMetric(Context context, Metric metric) {
+        if (metric == null) {
             return false;
         }
 
