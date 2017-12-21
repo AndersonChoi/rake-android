@@ -4,7 +4,7 @@ import android.app.Application;
 
 import com.rake.android.rkmetrics.db.log.LogBundle;
 import com.rake.android.rkmetrics.metric.model.Status;
-import com.rake.android.rkmetrics.network.ServerResponse;
+import com.rake.android.rkmetrics.network.HttpResponse;
 
 import org.json.JSONObject;
 import org.junit.Before;
@@ -68,17 +68,10 @@ public class MetricUtilSpec {
         /* Status 는 최소한 1개 이상이어야 아래 루프에서 검증이 가능 */
         assertThat(Status.values().length).isGreaterThan(0);
 
-        for (Status s: Status.values()) {
-            ServerResponse srm = createEmptySRM(s);
-            boolean b = recordFlushMetric(app, "MANUAL_FLUSH", 0L, l1, srm);
+        HttpResponse fakeResponse = new HttpResponse(0, "body", 0L);
 
-            assertThat(b).isFalse();
-        }
-    }
+        boolean b = recordFlushMetric(app, "MANUAL_FLUSH", 0L, l1, fakeResponse);
+        assertThat(!b);
 
-    private ServerResponse createEmptySRM(Status status) {
-        ServerResponse srm = ServerResponse.create("body", 0, 0L).setFlushStatus(status);
-        assertThat(srm).isNotNull();
-        return srm;
     }
 }

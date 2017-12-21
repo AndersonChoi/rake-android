@@ -36,11 +36,13 @@ public class HttpRequestSenderSpec {
      */
 
     public void assertFlushStatusReturnedFromHandleResponse(Throwable e, Status status) {
-        ServerResponse metric = HttpRequestSender.handleResponse(
+        HttpResponse httpResponse = HttpRequestSender.handleResponse(
                 null, null, createProcedureThrowingException(e));
 
-        assertThat(metric.getFlushStatus()).isEqualTo(status);
-        assertThat(metric.getExceptionInfo()).isEqualTo(e);
+        assertThat(httpResponse.getFlushStatus()).isEqualTo(status);
+        assertThat(httpResponse.getException()).isEqualTo(e);
+
+
     }
 
     @Test
@@ -162,7 +164,7 @@ public class HttpRequestSenderSpec {
     public HttpRequestProcedure createProcedureThrowingException(final Throwable e) {
         return new HttpRequestProcedure() {
             @Override
-            public ServerResponse execute(String url, String log) throws Throwable {
+            public HttpResponse execute(String url, String log) throws Throwable {
                 throw e;
             }
         };

@@ -25,7 +25,7 @@ public class HttpResponse {
     private long responseTime;
     private Throwable exception;
 
-    HttpResponse(int responseCode, String responseBody, long responseTime) {
+    public HttpResponse(int responseCode, String responseBody, long responseTime) {
         this.responseCode = responseCode;
         this.responseBody = responseBody;
         this.responseTime = responseTime;
@@ -34,15 +34,17 @@ public class HttpResponse {
         switch (this.responseCode) {
             case HTTP_STATUS_CODE_OK:
                 flushStatus = Status.DONE; // Successful status. So return Status.DONE immediately.
-
+                break;
             case HTTP_STATUS_CODE_INTERNAL_SERVER_ERROR: // UNKNOWN FAILURE
             case HTTP_STATUS_CODE_BAD_GATEWAY:           // TOMCAT FAILURE
             case HTTP_STATUS_CODE_SERVICE_UNAVAILABLE:   // NGINX FAILURE
                 flushStatus = Status.RETRY;
+                break;
 
             case HTTP_STATUS_CODE_REQUEST_TOO_LONG:
             default:
                 flushStatus = Status.DROP;
+                break;
         }
     }
 
