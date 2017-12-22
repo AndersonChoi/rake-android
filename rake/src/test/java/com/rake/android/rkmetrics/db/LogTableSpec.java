@@ -8,7 +8,6 @@ import com.rake.android.rkmetrics.db.log.Log;
 import com.rake.android.rkmetrics.db.log.LogBundle;
 
 import org.json.JSONObject;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -19,10 +18,6 @@ import org.robolectric.annotation.Config;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-
-/**
- * Created by 1000731 on 2017. 12. 19..
- */
 
 @RunWith(RobolectricTestRunner.class)
 @Config(constants = BuildConfig.class, sdk = 19, manifest = Config.NONE)
@@ -89,7 +84,7 @@ public class LogTableSpec {
         List<LogBundle> logBundleList = LogTable.getInstance(context).getLogBundles(maxLogCount);
 
         assertThat(logBundleList != null);
-        assertThat(logBundleList.size() != 2);
+        assertThat((logBundleList != null ? logBundleList.size() : 0) != 2);
     }
 
     @Test

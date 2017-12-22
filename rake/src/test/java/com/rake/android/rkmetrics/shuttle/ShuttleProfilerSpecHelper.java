@@ -97,11 +97,8 @@ public class ShuttleProfilerSpecHelper {
         }
     }
 
-    public static RakeClientTestSentinelShuttle getTestShuttle() throws JSONException {
-
-        RakeClientTestSentinelShuttle shuttle = new RakeClientTestSentinelShuttle();
-
-        return shuttle;
+    public static RakeClientTestSentinelShuttle getTestShuttle() {
+        return new RakeClientTestSentinelShuttle();
     }
 
     /** assertion for generator specific test */

@@ -13,9 +13,6 @@ import java.net.MalformedURLException;
 import java.net.ProtocolException;
 
 import static org.assertj.core.api.Assertions.*;
-/**
- * Created by 1000731 on 2017. 12. 22..
- */
 
 @RunWith(RobolectricTestRunner.class)
 @Config(sdk = 19, manifest = Config.NONE)

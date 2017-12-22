@@ -86,7 +86,7 @@ public class ShuttleProfilerValueChecker {
             return false;
         }
 
-        return !(null == found || !expected.equals(found)) && hasValue;
+        return !(null == found || !expected.equals(found));
 
     }
 

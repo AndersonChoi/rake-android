@@ -8,10 +8,6 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.ProtocolException;
 
-/**
- * Created by 1000731 on 2017. 12. 20..
- */
-
 public class HttpResponse {
     private static final int HTTP_STATUS_CODE_OK = 200;
     private static final int HTTP_STATUS_CODE_REQUEST_TOO_LONG = 413;

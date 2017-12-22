@@ -11,7 +11,7 @@ public class StatusSpec {
 
     @Test
     public void assertStatusEnumCount() {
-        /** Status 는 최소한 1개 이어야 함 */
+        /* Status 는 최소한 1개 이어야 함 */
         assertThat(Status.values().length).isGreaterThan(0);
     }
 }

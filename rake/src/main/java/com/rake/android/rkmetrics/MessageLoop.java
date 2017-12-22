@@ -276,7 +276,7 @@ final class MessageLoop {
             for (LogBundle logBundle : logBundles) {
                 long startAt = System.nanoTime();
 
-                /** network operation */
+                /* network operation */
                 HttpResponse httpResponse = send(logBundle);
 
                 long endAt = System.nanoTime();
@@ -289,10 +289,10 @@ final class MessageLoop {
 
                 Long operationTime = TimeUtil.convertNanoTimeDurationToMillis(startAt, endAt);
 
-                /**
-                 * - 전송된 데이터를 삭제해도 되는지(DONE),
-                 * - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
-                 * - 복구 가능한 예외인지 (RETRY) 판단 후 실행
+                /*
+                  - 전송된 데이터를 삭제해도 되는지(DONE),
+                  - 전송되지 않았지만 복구 불가능하여 삭제해야만 하는지(DROP)
+                  - 복구 가능한 예외인지 (RETRY) 판단 후 실행
                  */
                 switch (httpResponse.getFlushStatus()) {
                     case DONE:

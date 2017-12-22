@@ -123,13 +123,13 @@ public class ShuttleProfilerSpec {
 
     @Test
     public void defaultPropertyNames_length() {
-        /** default properties 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
+        /* default properties 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
         assertThat(DEFAULT_PROPERTY_NAMES.size()).isEqualTo(19);
     }
 
     @Test
     public void metaFieldNames_length() {
-        /** sentinel meta fields 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
+        /* sentinel meta fields 추가 혹은 삭제될 경우, 이 테스트 코드의 하드코딩된 숫자도 변화시켜야 함 */
         assertThat(SENTINEL_META_FIELD_NAMES.size()).isEqualTo(4);
     }
 
@@ -147,15 +147,15 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    /** IMPORTANT TEST: FULL test */
+    /* IMPORTANT TEST: FULL test */
     public void createValidShuttle_should_return_validShuttle() throws JSONException {
-        /**
-         * validShuttle 은
-         *
-         * - 4개의 META 필드가 TOP-LEVEL 에 존재
-         * - properties TOP-LEVEL 에 존재
-         * - properties._$body 가 존재
-         * - 자동수집필드 (default props) 가 properties 에 존재
+        /*
+          validShuttle 은
+
+          - 4개의 META 필드가 TOP-LEVEL 에 존재
+          - properties TOP-LEVEL 에 존재
+          - properties._$body 가 존재
+          - 자동수집필드 (default props) 가 properties 에 존재
          */
 
         JSONObject userProps = getTestShuttle().toJSONObject();
@@ -171,12 +171,12 @@ public class ShuttleProfilerSpec {
 
     @Test
     public void superProps_should_not_override_userProps() throws JSONException {
-        /**
-         * superProp 는 userProps 가 있을 경우에 덮어 쓰면 안됌
+        /*
+          superProp 는 userProps 가 있을 경우에 덮어 쓰면 안됌
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
 
-        /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
+        /* RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
         String sampleHeaderKey = "transaction_id";
         String sampleHeaderValue = "origin tx id";
         String overridedHeaderValue = "override tx id";
@@ -197,12 +197,12 @@ public class ShuttleProfilerSpec {
 
     @Test
     public void superProps_can_override_given_userProps_field_is_empty() throws JSONException {
-        /**
-         * superProp 는 userProps 가 없을 경우 덮어쓸 수 있음
+        /*
+          superProp 는 userProps 가 없을 경우 덮어쓸 수 있음
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
 
-        /** RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
+        /* RakeClientMetricShuttle 을 샘플 Shuttle 로 사용하므로, 존재하는 임의 헤더를 superProps 테스트 대상으로 사용 */
         String sampleHeaderKey = "transaction_id";
         String sampleHeaderValue = "example tx id";
         assertThat(userProps.has(sampleHeaderKey)).isTrue();
@@ -220,10 +220,10 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    /** IMPORTANT TEST */
+    /* IMPORTANT TEST */
     public void mergeProps_should_preserve_defaultProps() throws JSONException {
-        /**
-         * 사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
+        /*
+          사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
         userProps.put(PROPERTY_NAME_RAKE_LIB, "invalid rake_lib");
@@ -243,13 +243,13 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    /** IMPORTANT TEST */
+    /* IMPORTANT TEST */
     public void mergeProps_should_return_props_which_has_body_and_defaultProps() throws JSONException {
-        /**
-         * mergeProps() 의 결과는,
-         *
-         * defaultProps 를 가지고 있어야 하고,
-         * _$body 키도 가지고 있어야 함
+        /*
+          mergeProps() 의 결과는,
+
+          defaultProps 를 가지고 있어야 하고,
+          _$body 키도 가지고 있어야 함
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
@@ -263,7 +263,7 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    /** IMPORTANT TEST */
+    /* IMPORTANT TEST */
     public void mergeProps_should_not_merge_super_props_if_fieldOrder_does_not_have_it() throws JSONException {
         assertShuttleSchemaVersion();
 
@@ -287,7 +287,7 @@ public class ShuttleProfilerSpec {
     }
 
     @Test
-    /** IMPORTANT TEST */
+    /* IMPORTANT TEST */
     public void mergeProps_should_not_merge_default_props_if_fieldOrder_does_not_have_it() throws JSONException {
         assertShuttleSchemaVersion();
 
@@ -349,14 +349,14 @@ public class ShuttleProfilerSpec {
 
     @Test /* RAKE-390 */
     public void test_all_possible_header_values() throws JSONException {
-        /**
-         * HEADER 에
-         *
-         * A. 값을 안 넣었을 경우
-         * B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> ""
-         * C. String 타입 바디에 null 을 넣었을 경우 -> ""
-         *    추후 JSONObject.NULL 로 변경
-         * D. String 이 아닌 다른 타입의 헤더에 null 값을 넣었을 경우,
+        /*
+          HEADER 에
+
+          A. 값을 안 넣었을 경우
+          B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> ""
+          C. String 타입 바디에 null 을 넣었을 경우 -> ""
+             추후 JSONObject.NULL 로 변경
+          D. String 이 아닌 다른 타입의 헤더에 null 값을 넣었을 경우,
          */
 
         assertShuttleGeneratorVersion();
@@ -364,12 +364,11 @@ public class ShuttleProfilerSpec {
 
         assertThat(EMPTY_FIELD_VALUE).isEqualTo("");
         String exampleTransactionId;                     /* case A, empty value  */
-        String exampleLogSource = EMPTY_FIELD_VALUE;   /* case B, String type */
         String exampleAppPackage = null;                 /* case B, String type */
         Long exampleSessionId = null;                 /* case C, Long type */
 
         JSONObject userProps = getTestShuttle()
-                .log_source(exampleLogSource)
+                .log_source(EMPTY_FIELD_VALUE)
                 .app_package(exampleAppPackage)
                 .session_id(exampleSessionId)
                 .toJSONObject();
@@ -384,13 +383,13 @@ public class ShuttleProfilerSpec {
 
     @Test /* RAKE-390 */
     public void test_all_possible_body_values() throws JSONException {
-        /**
-         * BODY 에
-         * A. 아무 값도 넣지 않았을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
-         * B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야함
-         * C. String 타입 바디에 null 을 넣었을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
-         *    추후 JSONObject.NULL 로 변경 (키 존재)
-         * D. String 이 아닌 다른 타입의 바디에 null 값을 넣었을 경우 -> 키가 삭제되야 함
+        /*
+          BODY 에
+          A. 아무 값도 넣지 않았을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
+          B. String 타입 바디에 빈 문자열을 넣었을 경우 ("") -> 그대로 나와야함
+          C. String 타입 바디에 null 을 넣었을 경우 -> 키가 삭제되야 함, 추후 JSONObject.NULL 로 변경
+             추후 JSONObject.NULL 로 변경 (키 존재)
+          D. String 이 아닌 다른 타입의 바디에 null 값을 넣었을 경우 -> 키가 삭제되야 함
          */
 
         assertShuttleGeneratorVersion();

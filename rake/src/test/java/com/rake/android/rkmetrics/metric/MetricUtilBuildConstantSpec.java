@@ -67,7 +67,7 @@ public class MetricUtilBuildConstantSpec {
         Process p = Runtime.getRuntime().exec(command);
         BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()));
 
-        String line = null;
+        String line;
         StringBuilder sb = new StringBuilder();
 
         while ((line = br.readLine()) != null) {

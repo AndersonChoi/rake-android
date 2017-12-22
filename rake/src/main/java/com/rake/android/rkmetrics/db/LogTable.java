@@ -20,10 +20,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Created by 1000731 on 2017. 12. 13..
- */
-
 public class LogTable extends Table {
     private static final String TABLE_NAME = "log";
 

@@ -23,7 +23,7 @@ public class EndpointSpec {
 
     @Test
     public void ENDPOINT_생성_검증() {
-        /** ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
+        /* ENDPOINT 추가 또는 변화시에는 이 테스트 코드를 반드시 변경하도록 하드코딩으로 URI 검증 */
 
         String ENDPOINT_DEV = "https://pg.rake.skplanet.com:8443/log/putlog/client";
         String ENDPOINT_LIVE = "https://rake.skplanet.com:8443/log/putlog/client";

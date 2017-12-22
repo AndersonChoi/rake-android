@@ -16,10 +16,6 @@ import org.robolectric.annotation.Config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Created by 1000731 on 2017. 12. 19..
- */
-
 @RunWith(RobolectricTestRunner.class)
 @Config(constants = BuildConfig.class, sdk = 19)
 public class DatabaseOpenHelperSpec {

@@ -7,10 +7,6 @@ import android.database.sqlite.SQLiteException;
 
 import com.rake.android.rkmetrics.util.Logger;
 
-/**
- * Created by 1000731 on 2017. 12. 13..
- */
-
 public class Table {
     private static final String DATABASE_NAME = "rake";
 

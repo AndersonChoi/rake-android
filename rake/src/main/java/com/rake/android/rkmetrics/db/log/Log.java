@@ -2,10 +2,6 @@ package com.rake.android.rkmetrics.db.log;
 
 import org.json.JSONObject;
 
-/**
- * Created by 1000731 on 2017. 12. 13..
- */
-
 public class Log {
     private String url;
     private String token;

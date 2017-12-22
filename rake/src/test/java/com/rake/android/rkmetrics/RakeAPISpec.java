@@ -7,7 +7,6 @@ import android.content.res.Resources;
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.RakeAPI.Env;
 import com.rake.android.rkmetrics.RakeAPI.Logging;
-import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
 
 import org.json.JSONException;
@@ -134,7 +133,7 @@ public class RakeAPISpec {
         String token = TestUtil.genToken();
         JSONObject defaultProps = RakeAPI.getDefaultProps(app, Env.DEV, token, new Date());
 
-        /** 교차 검증, defaultProps Keys <-> DEFAULT_PROPERTY_NAMES */
+        /* 교차 검증, defaultProps Keys <-> DEFAULT_PROPERTY_NAMES */
         for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
             assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
