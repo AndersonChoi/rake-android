@@ -40,6 +40,6 @@ dependencies {
     implementation files('libs/RakeClientTestSentinelShuttle-0.jar')
     implementation 'com.facebook.stetho:stetho:1.5.0'
 
-    // when you develop something on :rake module, enable "compile project..." and disable "compile files..."
+    // 개발편의성을 위해 완성된 jar 파일이 아니라 개발중인 module dependency를 추가함.
     implementation project(':rake')
 }

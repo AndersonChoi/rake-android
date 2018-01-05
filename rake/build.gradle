@@ -6,7 +6,7 @@ apply plugin: 'com.github.kt3k.coveralls'
 
 import java.util.regex.Pattern
 
-version = '0.4.8' // TODO Release build 할 때 version 값을 반드시 확인한다.
+version = '0.5.0' // TODO Release build 할 때 version 값을 반드시 확인한다.
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 
@@ -23,8 +23,8 @@ String RELEASE_JAR_DIR = "$RELEASE_DIR/jar"
 String DIR_AAR = "$CURRENT_PROJECT_DIR/build/outputs/aar"
 String RELEASE_AAR = "${archivesBaseName}-release.aar"
 String PATH_DEBUG_AAR = "$DIR_AAR/$RELEASE_AAR"
-String DIR_TEST_APP_LIBS = "${rootProject.projectDir}/testApp/libs"
-String DIR_EXAMPLE_APP_LIBS = "${rootProject.projectDir}/rake_example/libs"
+String DIR_EXAMPLE_JAVA_APP_LIBS = "${rootProject.projectDir}/rake_example_java/libs"
+String DIR_EXAMPLE_KOTLIN_APP_LIBS = "${rootProject.projectDir}/rake_example_kotlin/libs"
 String LIB_INCLUDED_DIR = "${CURRENT_PROJECT_DIR}/libs/included"
 String BRANCH_NAME = "git rev-parse --abbrev-ref HEAD".execute().text.trim()
 
@@ -295,20 +295,24 @@ tasks.build.doLast {
         into RELEASE_JAR_DIR
     }
 
-    task copyCompleteJarToTestApp(type: Copy) {
+    task copyCompleteJarToKotlinApp(type: Copy) {
+        logger "Clearing old Rake library in the $DIR_EXAMPLE_KOTLIN_APP_LIBS/"
+        delete fileTree(dir:DIR_EXAMPLE_KOTLIN_APP_LIBS, exclude:"RakeClientTestSentinelShuttle-*.jar")
 
-        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_TEST_APP_LIBS}/"
-
+        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_EXAMPLE_KOTLIN_APP_LIBS}/"
         from DIR_AAR
         include COMPLETE_JAR
-        into DIR_TEST_APP_LIBS
+        into DIR_EXAMPLE_KOTLIN_APP_LIBS
+    }
 
+    task copyCompleteJarToJavaApp(type: Copy) {
+        logger "Clearing old Rake library in the $DIR_EXAMPLE_JAVA_APP_LIBS/"
+        delete fileTree(dir:DIR_EXAMPLE_JAVA_APP_LIBS, exclude:"RakeClientTestSentinelShuttle-*.jar")
 
-        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_EXAMPLE_APP_LIBS}/"
-
+        logger "Copying $DIR_AAR/$COMPLETE_JAR to ${DIR_EXAMPLE_JAVA_APP_LIBS}/"
         from DIR_AAR
         include COMPLETE_JAR
-        into DIR_EXAMPLE_APP_LIBS
+        into DIR_EXAMPLE_JAVA_APP_LIBS
     }
 
     task initializeBuildConstant(type: Copy) {
@@ -319,7 +323,8 @@ tasks.build.doLast {
 
     extractJarFromAar.execute()
     zipWithShuttle.execute()
-    copyCompleteJarToTestApp.execute()
+    copyCompleteJarToKotlinApp.execute()
+    copyCompleteJarToJavaApp.execute()
 
     if (BRANCH_NAME.startsWith("release")) {
         createJavadoc.execute()
