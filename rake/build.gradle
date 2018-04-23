@@ -70,7 +70,7 @@ String FILLED_RAKE_ENV = "RakeAPI.Env $VAR_RAKE_ENV = RakeAPI.Env.DEV;"
 
 android {
     compileSdkVersion 26
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
 
     defaultConfig {
         minSdkVersion 14
