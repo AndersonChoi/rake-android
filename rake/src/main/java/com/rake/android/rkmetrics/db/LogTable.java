@@ -91,7 +91,7 @@ public class LogTable extends Table {
     }
 
     private synchronized long getCount() {
-        return queryExecutor(new QueryExecCallback<Long>() {
+        Object queryResult = queryExecutor(new QueryExecCallback<Long>() {
             @Override
             public Long execute(SQLiteDatabase db) {
 
@@ -110,6 +110,8 @@ public class LogTable extends Table {
                 return count;
             }
         });
+
+        return queryResult == null ? -1 : (Long) queryResult;
     }
 
     /**
@@ -124,7 +126,7 @@ public class LogTable extends Table {
             return -1;
         }
 
-        return queryExecutor(new QueryExecCallback<Long>() {
+        Object queryResult = queryExecutor(new QueryExecCallback<Long>() {
             @Override
             public Long execute(SQLiteDatabase db) {
                 String query = "SELECT COUNT(*) FROM " + TABLE_NAME
@@ -143,6 +145,8 @@ public class LogTable extends Table {
                 return count;
             }
         });
+
+        return queryResult == null ? -1 : (Long) queryResult;
     }
 
     /**
@@ -157,7 +161,7 @@ public class LogTable extends Table {
             return false;
         }
 
-        return queryExecutor(new QueryExecCallback<Boolean>() {
+        Object queryResult = queryExecutor(new QueryExecCallback<Boolean>() {
             @Override
             public Boolean execute(SQLiteDatabase db) {
                 String whereClause = Columns.CREATED_AT + " <= " + time;
@@ -166,6 +170,8 @@ public class LogTable extends Table {
                 return affectedRowCount > 0;
             }
         });
+
+        return queryResult == null ? false : (Boolean) queryResult;
     }
 
     /**
@@ -238,12 +244,12 @@ public class LogTable extends Table {
      * @return true if logs are successfully removed
      */
     public synchronized boolean removeLogBundle(final LogBundle logBundle) {
-        if(logBundle == null) {
+        if (logBundle == null) {
             Logger.e("Cannot count data without LogBundle");
             return false;
         }
 
-        return queryExecutor(new QueryExecCallback<Boolean>() {
+        Object queryResult = queryExecutor(new QueryExecCallback<Boolean>() {
             @Override
             public Boolean execute(SQLiteDatabase db) {
                 String whereClause = Columns._ID + " <= " + logBundle.getLast_ID()
@@ -255,5 +261,7 @@ public class LogTable extends Table {
                 return affectedRowCount > 0;
             }
         });
+
+        return queryResult == null ? false : (Boolean) queryResult;
     }
 }

@@ -245,7 +245,12 @@ final class MessageLoop {
 
             Logger.t("[SQLite] Remove expired log (48 hours before)");
 
-            LogTable.getInstance(appContext).removeLogsBefore(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
+            try {
+                LogTable.getInstance(appContext).removeLogsBefore(System.currentTimeMillis() - DATA_EXPIRATION_TIME);
+            } catch (Exception e) {
+                Logger.e("[SQLite] Exception occurred while removing expired log (48 hours before)", e);
+            }
+
             // MessageHandler 생성시 AUTO_FLUSH_BY_TIMER 메시지 전송
             sendEmptyMessageDelayed(Command.AUTO_FLUSH_BY_TIMER.code, INITIAL_FLUSH_DELAY);
         }
