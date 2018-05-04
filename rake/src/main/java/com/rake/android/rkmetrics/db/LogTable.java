@@ -97,7 +97,7 @@ public class LogTable extends Table {
 
                 String query = "SELECT COUNT(*) FROM " + TABLE_NAME;
 
-                long count = -1;
+                long count = -1L;
 
                 Cursor cursor = db.rawQuery(query, null);
 
@@ -111,7 +111,7 @@ public class LogTable extends Table {
             }
         });
 
-        return queryResult == null ? -1 : (Long) queryResult;
+        return queryResult == null ? -1L : (Long) queryResult;
     }
 
     /**
@@ -123,7 +123,7 @@ public class LogTable extends Table {
     public synchronized long getCount(final String token) {
         if (TextUtils.isEmpty(token)) {
             Logger.e("Cannot count data without token");
-            return -1;
+            return -1L;
         }
 
         Object queryResult = queryExecutor(new QueryExecCallback<Long>() {
@@ -146,7 +146,7 @@ public class LogTable extends Table {
             }
         });
 
-        return queryResult == null ? -1 : (Long) queryResult;
+        return queryResult == null ? -1L : (Long) queryResult;
     }
 
     /**
