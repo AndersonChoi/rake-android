@@ -1,12 +1,13 @@
 package com.skplanet.rake.example;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.Button;
 
 import com.rake.android.rkmetrics.RakeAPI;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
+
+import androidx.appcompat.app.AppCompatActivity;
 
 /**
  * This example is made for the purpose of external release.
