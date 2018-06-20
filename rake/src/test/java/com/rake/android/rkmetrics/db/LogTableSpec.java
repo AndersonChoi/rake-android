@@ -2,7 +2,6 @@ package com.rake.android.rkmetrics.db;
 
 import android.content.Context;
 
-import com.rake.android.rkmetrics.BuildConfig;
 import com.rake.android.rkmetrics.config.RakeConfig;
 import com.rake.android.rkmetrics.db.log.Log;
 import com.rake.android.rkmetrics.db.log.LogBundle;
@@ -13,14 +12,12 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(constants = BuildConfig.class, sdk = 19, manifest = Config.NONE)
 public class LogTableSpec {
     private Context context;
 

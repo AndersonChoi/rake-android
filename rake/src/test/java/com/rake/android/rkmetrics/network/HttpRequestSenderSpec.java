@@ -8,7 +8,6 @@ import static org.assertj.core.api.Assertions.*;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.annotation.Config;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -28,7 +27,6 @@ import javax.net.ssl.SSLProtocolException;
 import static com.rake.android.rkmetrics.metric.model.Status.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
 public class HttpRequestSenderSpec {
 
     /**
@@ -97,6 +95,7 @@ public class HttpRequestSenderSpec {
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);
     }
 
+    @Test
     public void handleException_should_mark_RETRY_given_procedure_throw_UnknownHostException() {
         Throwable e = new UnknownHostException("");
         assertFlushStatusReturnedFromHandleResponse(e, RETRY);

@@ -3,8 +3,6 @@ package com.rake.android.rkmetrics.db;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import com.rake.android.rkmetrics.BuildConfig;
-
 import org.apache.commons.lang.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -12,12 +10,10 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(constants = BuildConfig.class, sdk = 19)
 public class DatabaseOpenHelperSpec {
     private DatabaseOpenHelper databaseOpenHelper;
 

@@ -5,7 +5,6 @@ import com.rake.android.rkmetrics.metric.model.Status;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.annotation.Config;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -15,7 +14,6 @@ import java.net.ProtocolException;
 import static org.assertj.core.api.Assertions.*;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
 public class HttpResponseSpec {
     @Test
     public void test_flushStatus_by_responseCode() {
