@@ -228,7 +228,7 @@ task updateRakeEnv(type: Copy) {
 
 gradle.projectsEvaluated { /* do something before compile */
     updateVersionInSource.execute()
-    /** TODO uploadArchive 시에는 reset 해주어야 함 */
+    /* TODO uploadArchive 시에는 reset 해주어야 함 */
     updateMetricToken.execute()
 }
 
