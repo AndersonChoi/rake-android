@@ -10,7 +10,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.EMPTY_FIELD_VALUE;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.FIELD_NAME_BODY;
@@ -47,7 +46,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.failBecauseExceptionWasNotThrown;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
 public class ShuttleProfilerSpec {
 
     Application app = RuntimeEnvironment.application;

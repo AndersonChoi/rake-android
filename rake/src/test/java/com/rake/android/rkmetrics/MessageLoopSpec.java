@@ -5,7 +5,6 @@ import com.rake.android.rkmetrics.MessageLoop.Command;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
-import org.robolectric.annotation.Config;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -15,7 +14,6 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
 public class MessageLoopSpec {
 
     @Test

@@ -15,7 +15,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
-import org.robolectric.annotation.Config;
 
 import java.util.Date;
 import java.util.Iterator;
@@ -27,7 +26,6 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerValueChecker.DEF
 import static org.assertj.core.api.Assertions.assertThat;
 
 @RunWith(RobolectricTestRunner.class)
-@Config(sdk = 19, manifest = Config.NONE)
 public class RakeAPISpec {
 
     private Application app = RuntimeEnvironment.application;
