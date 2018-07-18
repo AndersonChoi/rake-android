@@ -6,7 +6,7 @@ apply plugin: 'com.github.kt3k.coveralls'
 
 import java.util.regex.Pattern
 
-version = '0.5.1' // TODO Release build 할 때 version 값을 반드시 확인한다.
+version = '0.5.2' // TODO Release build 할 때 version 값을 반드시 확인한다.
 group = 'com.skplanet.rake'
 archivesBaseName = 'rake-android'
 

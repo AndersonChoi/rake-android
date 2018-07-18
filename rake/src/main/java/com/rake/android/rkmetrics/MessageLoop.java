@@ -3,6 +3,7 @@ package com.rake.android.rkmetrics;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Message;
+import android.util.DisplayMetrics;
 
 import com.rake.android.rkmetrics.RakeAPI.AutoFlush;
 import com.rake.android.rkmetrics.android.SystemInformation;
@@ -14,9 +15,14 @@ import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.HttpResponse;
+import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
 import com.rake.android.rkmetrics.util.TimeUtil;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -25,6 +31,27 @@ import java.util.concurrent.SynchronousQueue;
 
 import static com.rake.android.rkmetrics.RakeAPI.AutoFlush.ON;
 import static com.rake.android.rkmetrics.metric.MetricUtil.EMPTY_TOKEN;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_BUILD_NUMBER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_RELEASE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_ID;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_MODEL;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LANGUAGE_CODE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LOCAL_TIME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_MANUFACTURER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_NETWORK_TYPE;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_HEIGHT;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_RESOLUTION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_WIDTH;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_OS_NAME;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
 
 /**
  * Manage communication of events with the internal database and the Rake servers (Singleton)
@@ -82,11 +109,15 @@ final class MessageLoop {
     private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
 
+    private JSONObject commonProps;
+
     private MessageLoop(Context appContext) {
         this.appContext = appContext;
 
         // TODO try-catch: retry
         handler = createMessageHandler();
+
+        commonProps = createCommonProps();
     }
 
     /* Class methods */
@@ -137,6 +168,60 @@ final class MessageLoop {
         return ON == autoFlushOption;
     }
 
+    private JSONObject createCommonProps() {
+        JSONObject commonProps = new JSONObject();
+        try {
+            commonProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+            commonProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
+            commonProps.put(PROPERTY_NAME_OS_VERSION, SystemInformation.getOsVersion());
+            commonProps.put(PROPERTY_NAME_MANUFACTURER, SystemInformation.getManufacturer());
+            commonProps.put(PROPERTY_NAME_DEVICE_MODEL, SystemInformation.getDeviceModel());
+            commonProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(appContext));
+            DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(appContext);
+            if (displayMetrics != null) {
+                int displayWidth = displayMetrics.widthPixels;
+                int displayHeight = displayMetrics.heightPixels;
+
+                commonProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
+                commonProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
+                commonProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
+            }
+
+            /*
+             DILTFCO-14 :
+                app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
+                app_release : 앱의 version
+                app_build_number: 앱의 build count
+            */
+            String appVersion = SystemInformation.getAppVersionName(appContext);
+            commonProps.put(PROPERTY_NAME_APP_VERSION, appVersion);
+            commonProps.put(PROPERTY_NAME_APP_RELEASE, appVersion);
+            commonProps.put(PROPERTY_NAME_APP_BUILD_NUMBER, SystemInformation.getAppVersionCode(appContext));
+        } catch (JSONException e) {
+            Logger.e("Cannot initialize common properties");
+        }
+        return commonProps;
+    }
+
+    JSONObject getDefaultPropsByToken(String token, String versionSuffix) throws JSONException {
+        Date now = new Date();
+
+        JSONObject defaultProps = commonProps;
+
+        defaultProps.put(PROPERTY_NAME_TOKEN, token);
+        defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+        defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+
+        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
+
+        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(appContext));
+        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(appContext));
+        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(appContext));
+
+        return defaultProps;
+    }
+
+    @Deprecated
     boolean queueTrackCommand(Log log) {
         if (null == log) {
             Logger.e("Can't track null `Log`");
@@ -147,6 +232,20 @@ final class MessageLoop {
         m.what = Command.TRACK.code;
         m.obj = log;
 
+        queueMessage(m);
+
+        return true;
+    }
+
+    boolean queueTrackCommand(String uri, String token, String versionSuffix, JSONObject superProps, JSONObject shuttle) {
+        if (uri == null || token == null || versionSuffix == null || shuttle == null) {
+            Logger.e("Can't track null `track values`");
+            return false;
+        }
+
+        Message m = Message.obtain();
+        m.what = Command.TRACK.code;
+        m.obj = new TrackValues(uri, token, versionSuffix, superProps, shuttle);
         queueMessage(m);
 
         return true;
@@ -236,6 +335,42 @@ final class MessageLoop {
 
         lastFlushTime = now;
         flushCount = newFlushCount;
+    }
+
+    private class TrackValues {
+        private String uri;
+        private String token;
+        private String versionSuffix;
+        private JSONObject superProps;
+        private JSONObject shuttle;
+
+        TrackValues(String uri, String token, String versionSuffix, JSONObject superProps, JSONObject shuttle) {
+            this.uri = uri;
+            this.token = token;
+            this.versionSuffix = versionSuffix;
+            this.superProps = superProps;
+            this.shuttle = shuttle;
+        }
+
+        String getUri() {
+            return uri;
+        }
+
+        String getToken() {
+            return token;
+        }
+
+        String getVersionSuffix() {
+            return versionSuffix;
+        }
+
+        JSONObject getSuperProps() {
+            return superProps;
+        }
+
+        JSONObject getShuttle() {
+            return shuttle;
+        }
     }
 
     private class MessageHandler extends Handler {
@@ -346,8 +481,15 @@ final class MessageLoop {
             try {
                 switch (Command.fromCode(msg.what)) {
                     case TRACK:
-                        Log log = (Log) msg.obj;
+                        TrackValues trackValues = (TrackValues) msg.obj;
+
+                        JSONObject defaultProps = getDefaultPropsByToken(trackValues.getToken(), trackValues.getVersionSuffix());
+                        JSONObject validShuttle = ShuttleProfiler.createValidShuttle(trackValues.getShuttle(), trackValues.getSuperProps(), defaultProps);
+
+                        Log log = new Log(trackValues.getUri(), trackValues.getToken(), validShuttle);
                         long logQueueLength = LogTable.getInstance(appContext).addLog(log);
+
+                        Logger.d("Tracked JSONObject\n" + validShuttle);
 
                         /* Metric이 아닐 경우에만, 로그 출력 */
                         if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {

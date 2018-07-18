@@ -2,9 +2,6 @@ package com.rake.android.rkmetrics.shuttle;
 
 import android.app.Application;
 
-import static org.assertj.core.api.Assertions.*;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.*;
-
 import com.rake.android.rkmetrics.RakeAPI;
 import com.rake.android.rkmetrics.TestUtil;
 import com.skplanet.pdp.sentinel.shuttle.RakeClientTestSentinelShuttle;
@@ -13,9 +10,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
+
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.META_FIELD_NAME_FIELD_ORDER;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LOG_VERSION;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.extractMeta;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.isShuttle;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.mergeProps;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class ShuttleProfilerSpecHelper {
     // RakeClientTest Header Fields
@@ -60,7 +63,7 @@ public class ShuttleProfilerSpecHelper {
     }
 
     public static JSONObject getDefaultPropsForTest(Application app) throws JSONException {
-        return RakeAPI.getDefaultProps(app, RakeAPI.Env.DEV, TestUtil.genToken(), new Date());
+        return RakeAPI.getDefaultProps(app, TestUtil.genToken());
     }
 
     public static JSONObject getMergedPropsWithEmptySuperPropsForTest(Application app,

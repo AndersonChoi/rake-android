@@ -17,7 +17,6 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
-import java.util.Date;
 import java.util.Iterator;
 import java.util.Locale;
 
@@ -131,7 +130,7 @@ public class RakeAPISpec {
     @Test
     public void test_getDefaultProperties() throws JSONException {
         String token = TestUtil.genToken();
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, Env.DEV, token, new Date());
+        JSONObject defaultProps = RakeAPI.getDefaultProps(app, token);
 
         /* 교차 검증, defaultProps Keys <-> DEFAULT_PROPERTY_NAMES */
         for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {

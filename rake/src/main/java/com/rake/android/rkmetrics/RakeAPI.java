@@ -1,40 +1,13 @@
 package com.rake.android.rkmetrics;
 
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_BUILD_NUMBER;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_RELEASE;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_APP_VERSION;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_BASE_TIME;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_CARRIER_NAME;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_ID;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_DEVICE_MODEL;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LANGUAGE_CODE;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_LOCAL_TIME;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_MANUFACTURER;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_NETWORK_TYPE;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_NAME;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_OS_VERSION;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_RAKE_LIB_VERSION;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_HEIGHT;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_RESOLUTION;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_SCREEN_WIDTH;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_NAME_TOKEN;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_OS_NAME;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfiler.PROPERTY_VALUE_RAKE_LIB;
-
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.util.DisplayMetrics;
 
-import com.rake.android.rkmetrics.android.SystemInformation;
 import com.rake.android.rkmetrics.config.RakeConfig;
-import com.rake.android.rkmetrics.db.log.Log;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
 import com.rake.android.rkmetrics.network.Endpoint;
-import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
 import com.rake.android.rkmetrics.util.Logger;
-import com.rake.android.rkmetrics.util.TimeUtil;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -271,26 +244,14 @@ public final class RakeAPI {
      * @param shuttle pass Shuttle.toJSONObject();
      */
     public void track(JSONObject shuttle) {
-        Date now = new Date();
-
-        JSONObject superProps;
-        JSONObject defaultProps;
-
         /* 최종 소비자 API 예외 처리 */
         try {
-            superProps = getSuperProperties();
-            defaultProps = getDefaultProps(context, env, token, now);
-
-            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(shuttle, superProps, defaultProps);
-
-            String uri = endpoint.getURI();
-            Log log = new Log(uri, token, validShuttle);
-
-            if (MessageLoop.getInstance(context).queueTrackCommand(log)) {
-                Logger.d(tag, "Tracked JSONObject\n" + validShuttle);
-
-                if (Env.DEV == env) /* if Env.DEV, flush immediately */
+            JSONObject superProps = getSuperProperties();
+            if (MessageLoop.getInstance(context).queueTrackCommand(endpoint.getURI(), token, versionSuffix, superProps, shuttle)) {
+                if (Env.DEV == env) {
+                    // if Env.DEV, flush immediately.
                     MessageLoop.getInstance(context).queueFlushCommand();
+                }
             }
         } catch (Exception e) { /* might be JSONException */
             MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
@@ -430,48 +391,13 @@ public final class RakeAPI {
         superProperties = new JSONObject();
     }
 
+    @Deprecated
     public static JSONObject getDefaultProps(Context context, Env env, String token, Date now) throws JSONException {
+        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix);
+    }
 
-        JSONObject defaultProps = new JSONObject();
-
-        defaultProps.put(PROPERTY_NAME_TOKEN, token);
-        defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-        defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
-
-        defaultProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
-        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
-        defaultProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
-        defaultProps.put(PROPERTY_NAME_OS_VERSION, SystemInformation.getOsVersion());
-        defaultProps.put(PROPERTY_NAME_MANUFACTURER, SystemInformation.getManufacturer());
-        defaultProps.put(PROPERTY_NAME_DEVICE_MODEL, SystemInformation.getDeviceModel());
-        defaultProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(context));
-
-        DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(context);
-        if (displayMetrics != null) {
-            int displayWidth = displayMetrics.widthPixels;
-            int displayHeight = displayMetrics.heightPixels;
-
-            defaultProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
-            defaultProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
-            defaultProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
-        }
-
-        /*
-         DILTFCO-14 :
-            app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
-            app_release : 앱의 version
-            app_build_number: 앱의 build count
-        */
-        String appVersion = SystemInformation.getAppVersionName(context);
-        defaultProps.put(PROPERTY_NAME_APP_VERSION, appVersion);
-        defaultProps.put(PROPERTY_NAME_APP_RELEASE, appVersion);
-        defaultProps.put(PROPERTY_NAME_APP_BUILD_NUMBER, SystemInformation.getAppVersionCode(context));
-
-        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(context));
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(context));
-        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(context));
-
-        return defaultProps;
+    public static JSONObject getDefaultProps(Context context, String token) throws JSONException {
+        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix);
     }
 
     private void readSuperProperties() {

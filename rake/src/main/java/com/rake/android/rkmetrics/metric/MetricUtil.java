@@ -20,8 +20,6 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.util.Date;
-
 
 /**
  * 클래스 이름을 바꿀 경우 build.gradle 내에 빌드 변수 또한 변경해야 함
@@ -41,7 +39,7 @@ public final class MetricUtil {
      * 아래의 변수 이름, *스페이스바*, 변수 값 어느 하나라도 변경시 build.gradle 상수와
      * updateMetricToken, getRakeEnv 함수 내의 정규식도 변경해야 함.
      */
-    public static final String BUILD_CONSTANT_BRANCH = "release/0.5.0";
+    public static final String BUILD_CONSTANT_BRANCH = "feature/RAKE-506-rc-android-track_improve";
     public static final String BUILD_CONSTANT_METRIC_TOKEN = "df234e764a5e4c3beaa7831d5b8ad353149495ac";
     static final RakeAPI.Env BUILD_CONSTANT_ENV = RakeAPI.Env.DEV;
 
@@ -176,7 +174,7 @@ public final class MetricUtil {
 
         try {
             JSONObject userProps = metric.toJSONObject();
-            JSONObject defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_ENV, BUILD_CONSTANT_METRIC_TOKEN, new Date());
+            JSONObject defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_METRIC_TOKEN);
             JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
 
             Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
