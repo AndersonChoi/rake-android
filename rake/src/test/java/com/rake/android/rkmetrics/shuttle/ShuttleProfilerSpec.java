@@ -37,7 +37,7 @@ import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADE
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.HEADER_NAME_TRANSACTION_ID;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.assertShuttleGeneratorVersion;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.assertShuttleSchemaVersion;
-import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getDefaultPropsForTest;
+import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getAutoPropsForTest;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getMergedPropsWithEmptySuperPropsForTest;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getShuttleWithMissingField;
 import static com.rake.android.rkmetrics.shuttle.ShuttleProfilerSpecHelper.getTestShuttle;
@@ -160,13 +160,13 @@ public class ShuttleProfilerSpec {
 
         JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject superProps = new JSONObject();
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        JSONObject validShuttle = createValidShuttle(userProps, superProps, defaultProps);
+        JSONObject validShuttle = createValidShuttle(userProps, superProps, autoProps);
 
         ShuttleProfilerValueChecker.hasMeta(validShuttle);
         ShuttleProfilerValueChecker.hasProps(validShuttle);
-        ShuttleProfilerValueChecker.hasDefaultProps(validShuttle, FIELD_NAME_PROPERTIES);
+        ShuttleProfilerValueChecker.hasAutoProps(validShuttle, FIELD_NAME_PROPERTIES);
     }
 
     @Test
@@ -183,14 +183,14 @@ public class ShuttleProfilerSpec {
         assertThat(userProps.has(sampleHeaderKey)).isTrue();
 
         userProps.put(sampleHeaderKey, sampleHeaderValue);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
         JSONObject superProps = new JSONObject();
         superProps.put(sampleHeaderKey, overridedHeaderValue);
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
@@ -212,18 +212,18 @@ public class ShuttleProfilerSpec {
         JSONObject superProps = new JSONObject();
         superProps.put(sampleHeaderKey, sampleHeaderValue);
 
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, sampleHeaderKey, sampleHeaderKey);
     }
 
     @Test
     /* IMPORTANT TEST */
-    public void mergeProps_should_preserve_defaultProps() throws JSONException {
+    public void mergeProps_should_preserve_autoProps() throws JSONException {
         /*
-          사용자가 입력한 필드 중 defaultProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
+          사용자가 입력한 필드 중 autoProps 에 해당하는 키가 있을 경우에, 무조건 덮어 씀
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
         userProps.put(PROPERTY_NAME_RAKE_LIB, "invalid rake_lib");
@@ -234,9 +234,9 @@ public class ShuttleProfilerSpec {
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
 
         String token = TestUtil.genToken();
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
         ShuttleProfilerValueChecker.hasValue(props, FIELD_NAME_PROPERTIES, PROPERTY_NAME_TOKEN, token);
@@ -244,22 +244,22 @@ public class ShuttleProfilerSpec {
 
     @Test
     /* IMPORTANT TEST */
-    public void mergeProps_should_return_props_which_has_body_and_defaultProps() throws JSONException {
+    public void mergeProps_should_return_props_which_has_body_and_autoProps() throws JSONException {
         /*
           mergeProps() 의 결과는,
 
-          defaultProps 를 가지고 있어야 하고,
+          autoProps 를 가지고 있어야 하고,
           _$body 키도 가지고 있어야 함
          */
         JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        JSONObject props = mergeProps(fieldOrder, userProps, null /* null 일 수 있음 */, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, null /* null 일 수 있음 */, autoProps);
 
         assertThat(ShuttleProfilerValueChecker.hasKey(props, FIELD_NAME_BODY, null)).isTrue();
-        assertThat(ShuttleProfilerValueChecker.hasDefaultProps(props, null)).isTrue();
+        assertThat(ShuttleProfilerValueChecker.hasAutoProps(props, null)).isTrue();
     }
 
     @Test
@@ -271,7 +271,7 @@ public class ShuttleProfilerSpec {
         JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
@@ -281,7 +281,7 @@ public class ShuttleProfilerSpec {
 
         superProps.put(invalidPropName, "value");
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         assertThat(props.has(invalidPropName)).isFalse();
     }
@@ -296,7 +296,7 @@ public class ShuttleProfilerSpec {
         JSONObject userProps = getTestShuttle().toJSONObject();
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
         String invalidPropName = PROPERTY_NAME_TOKEN + "_invalid003";
         try { /* 존재하지 않는 필드 이름을 확인하기 위해 */
@@ -304,9 +304,9 @@ public class ShuttleProfilerSpec {
             failBecauseExceptionWasNotThrown(JSONException.class);
         } catch (JSONException e) { /* ignore, success case */ }
 
-        defaultProps.put(invalidPropName, "value");
+        autoProps.put(invalidPropName, "value");
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         assertThat(props.has(invalidPropName)).isFalse();
     }
@@ -335,9 +335,9 @@ public class ShuttleProfilerSpec {
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
         JSONObject superProps = new JSONObject();
         superProps.put(HEADER_NAME_TRANSACTION_ID, superPropsTransactionId);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
         /* normal case */
         assertThat(props.get(HEADER_NAME_LOG_SOURCE)).isEqualTo(userPropsLogSource);

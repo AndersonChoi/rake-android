@@ -84,7 +84,7 @@ public final class RakeAPI {
 
     private Endpoint endpoint;
     private static String versionSuffix;
-    private static String[] defaultPropsToExclude;
+    private static String[] autoPropNamesToExclude;
     private final Env env;
     private final String token;
 
@@ -248,7 +248,7 @@ public final class RakeAPI {
         /* 최종 소비자 API 예외 처리 */
         try {
             JSONObject superProps = getSuperProperties();
-            if (MessageLoop.getInstance(context).queueTrackCommand(endpoint, token, superProps, shuttle, defaultPropsToExclude)) {
+            if (MessageLoop.getInstance(context).queueTrackCommand(endpoint, token, superProps, shuttle, autoPropNamesToExclude)) {
                 if (Env.DEV == env) {
                     // if Env.DEV, flush immediately.
                     MessageLoop.getInstance(context).queueFlushCommand();
@@ -256,7 +256,7 @@ public final class RakeAPI {
             }
         } catch (Exception e) { /* might be JSONException */
             MetricUtil.recordErrorMetric(context, Action.TRACK, token, e);
-            Logger.e(tag, "Failed to track due to superProps or defaultProps", e);
+            Logger.e(tag, "Failed to track due to superProps", e);
         }
     }
 
@@ -394,35 +394,37 @@ public final class RakeAPI {
 
     /**
      * @deprecated as of 0.6.0
+     *
+     * Please use {@link #getAutoProperties(Context, String)} instead.
      */
     @Deprecated
     public static JSONObject getDefaultProps(Context context, Env env, String token, Date now) throws JSONException {
-        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix, defaultPropsToExclude);
+        return MessageLoop.getInstance(context).getAutoPropertiesByToken(token, versionSuffix, autoPropNamesToExclude);
     }
 
     /**
-     * Get default properties which Rake Android collect by default.
+     * Get auto collection properties which Rake Android collects by default.
      * This method returns different results depending on token.
      *
      * @param context application context
      * @param token Rake Token
-     * @return JSONObject default properties by token.
+     * @return JSONObject auto collection properties by token.
      *
      */
-    public static JSONObject getDefaultProps(Context context, String token) throws JSONException {
-        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix, defaultPropsToExclude);
+    public static JSONObject getAutoProperties(Context context, String token) throws JSONException {
+        return MessageLoop.getInstance(context).getAutoPropertiesByToken(token, versionSuffix, autoPropNamesToExclude);
     }
 
     /**
-     * Exclude default properties from auto collection.
+     * Exclude auto collection properties from auto collection.
      * For example, if you don't want to collect "device_id" automatically,
      * call this method and send String[] including "device_id".
      *
-     * @param defaultPropsNames default property names to exclude from auto collection.
+     * @param propNames auto collection property names to exclude from auto collection.
      *
      */
-    public void excludeDefaultProps(String[] defaultPropsNames) {
-        defaultPropsToExclude = defaultPropsNames;
+    public void excludeAutoProperties(String[] propNames) {
+        autoPropNamesToExclude = propNames;
     }
 
     private void readSuperProperties() {

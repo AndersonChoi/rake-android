@@ -174,8 +174,8 @@ public final class MetricUtil {
 
         try {
             JSONObject userProps = metric.toJSONObject();
-            JSONObject defaultProps = RakeAPI.getDefaultProps(context, BUILD_CONSTANT_METRIC_TOKEN);
-            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, defaultProps);
+            JSONObject autoProps = RakeAPI.getAutoProperties(context, BUILD_CONSTANT_METRIC_TOKEN);
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, autoProps);
 
             Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);
 
@@ -189,7 +189,7 @@ public final class MetricUtil {
 
             return recorded;
         } catch (JSONException e) {
-            Logger.e("Can't create defaultProps for metric");
+            Logger.e("Can't create autoProps for metric");
         }
 
         return false;

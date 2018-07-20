@@ -204,33 +204,33 @@ final class MessageLoop {
         return commonProps;
     }
 
-    JSONObject getDefaultPropsByToken(String token, String versionSuffix, String[] defaultPropsToExclude) throws JSONException {
+    JSONObject getAutoPropertiesByToken(String token, String versionSuffix, String[] autoPropNamesToExclude) throws JSONException {
         Date now = new Date();
 
-        JSONObject defaultProps = commonProps;
+        JSONObject autoProps = commonProps;
 
-        defaultProps.put(PROPERTY_NAME_TOKEN, token);
-        defaultProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
-        defaultProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
+        autoProps.put(PROPERTY_NAME_TOKEN, token);
+        autoProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
+        autoProps.put(PROPERTY_NAME_LOCAL_TIME, TimeUtil.getLocalFormatter().format(now));
 
-        defaultProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
+        autoProps.put(PROPERTY_NAME_RAKE_LIB_VERSION, RakeConfig.RAKE_LIB_VERSION + versionSuffix);
 
-        defaultProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(appContext));
-        defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(appContext));
-        defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(appContext));
+        autoProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(appContext));
+        autoProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(appContext));
+        autoProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(appContext));
 
-        if (defaultPropsToExclude != null) {
-            for (String prop : defaultPropsToExclude) {
-                if (defaultProps.has(prop)) {
-                    defaultProps.remove(prop);
+        if (autoPropNamesToExclude != null) {
+            for (String propName : autoPropNamesToExclude) {
+                if (autoProps.has(propName)) {
+                    autoProps.remove(propName);
                 }
             }
         }
 
-        return defaultProps;
+        return autoProps;
     }
 
-    boolean queueTrackCommand(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] defaultPropsToExclude) {
+    boolean queueTrackCommand(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] autoPropNamesToExclude) {
         if (endpoint == null || token == null || shuttle == null) {
             Logger.e("Can't track null `track values`");
             return false;
@@ -238,7 +238,7 @@ final class MessageLoop {
 
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
-        m.obj = new TrackValues(endpoint, token, superProps, shuttle, defaultPropsToExclude);
+        m.obj = new TrackValues(endpoint, token, superProps, shuttle, autoPropNamesToExclude);
         queueMessage(m);
 
         return true;
@@ -336,15 +336,15 @@ final class MessageLoop {
         private String token;
         private JSONObject superProps;
         private JSONObject shuttle;
-        private String[] defaultPropsToExclude;
+        private String[] autoPropNamesToExclude;
 
-        TrackValues(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] defaultPropsToExclude) {
+        TrackValues(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] autoPropNamesToExclude) {
             this.uri = endpoint.getURI();
             this.versionSuffix = endpoint.getVersionSuffix();
             this.token = token;
             this.superProps = superProps;
             this.shuttle = shuttle;
-            this.defaultPropsToExclude = defaultPropsToExclude;
+            this.autoPropNamesToExclude = autoPropNamesToExclude;
         }
     }
 
@@ -372,8 +372,8 @@ final class MessageLoop {
         }
 
         private void track(TrackValues trackValues) throws JSONException {
-            JSONObject defaultProps = getDefaultPropsByToken(trackValues.token, trackValues.versionSuffix, trackValues.defaultPropsToExclude);
-            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(trackValues.shuttle, trackValues.superProps, defaultProps);
+            JSONObject autoProps = getAutoPropertiesByToken(trackValues.token, trackValues.versionSuffix, trackValues.autoPropNamesToExclude);
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(trackValues.shuttle, trackValues.superProps, autoProps);
 
             Log log = new Log(trackValues.uri, trackValues.token, validShuttle);
             long logQueueLength = LogTable.getInstance(appContext).addLog(log);

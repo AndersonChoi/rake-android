@@ -129,18 +129,18 @@ public class RakeAPISpec {
     @Test
     public void test_getDefaultProperties() throws JSONException {
         String token = TestUtil.genToken();
-        JSONObject defaultProps = RakeAPI.getDefaultProps(app, token);
-        System.out.println(defaultProps);
+        JSONObject autoProps = RakeAPI.getAutoProperties(app, token);
+        System.out.println(autoProps);
 
-        /* 교차 검증, defaultProps Keys <-> DEFAULT_PROPERTY_NAMES */
-//        for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
+        /* 교차 검증, autoProps Keys <-> DEFAULT_PROPERTY_NAMES */
+//        for (Iterator<?> keys = autoProps.keys(); keys.hasNext(); ) {
 //            String key = (String) keys.next();
 //            assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
 //            System.out.println();
 //        }
 
         for (String key : DEFAULT_PROPERTY_NAMES) {
-            assertThat(defaultProps.has(key)).isTrue();
+            assertThat(autoProps.has(key)).isTrue();
             System.out.println(key);
         }
     }

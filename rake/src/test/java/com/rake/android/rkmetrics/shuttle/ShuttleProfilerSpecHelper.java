@@ -62,8 +62,8 @@ public class ShuttleProfilerSpecHelper {
         return shuttle;
     }
 
-    public static JSONObject getDefaultPropsForTest(Application app) throws JSONException {
-        return RakeAPI.getDefaultProps(app, TestUtil.genToken());
+    public static JSONObject getAutoPropsForTest(Application app) throws JSONException {
+        return RakeAPI.getAutoProperties(app, TestUtil.genToken());
     }
 
     public static JSONObject getMergedPropsWithEmptySuperPropsForTest(Application app,
@@ -85,9 +85,9 @@ public class ShuttleProfilerSpecHelper {
 
         JSONObject meta = extractMeta(userProps);
         JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-        JSONObject defaultProps = getDefaultPropsForTest(app);
+        JSONObject autoProps = getAutoPropsForTest(app);
 
-        return mergeProps(fieldOrder, userProps, superProps, defaultProps);
+        return mergeProps(fieldOrder, userProps, superProps, autoProps);
     }
 
     public static void assertRequiredHeaderAndBodyFieldsForTestShuttle() throws JSONException {
