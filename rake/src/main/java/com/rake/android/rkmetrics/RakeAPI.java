@@ -84,6 +84,7 @@ public final class RakeAPI {
 
     private Endpoint endpoint;
     private static String versionSuffix;
+    private static String[] defaultPropsToExclude;
     private final Env env;
     private final String token;
 
@@ -247,7 +248,7 @@ public final class RakeAPI {
         /* 최종 소비자 API 예외 처리 */
         try {
             JSONObject superProps = getSuperProperties();
-            if (MessageLoop.getInstance(context).queueTrackCommand(endpoint.getURI(), token, versionSuffix, superProps, shuttle)) {
+            if (MessageLoop.getInstance(context).queueTrackCommand(endpoint, token, superProps, shuttle, defaultPropsToExclude)) {
                 if (Env.DEV == env) {
                     // if Env.DEV, flush immediately.
                     MessageLoop.getInstance(context).queueFlushCommand();
@@ -391,13 +392,37 @@ public final class RakeAPI {
         superProperties = new JSONObject();
     }
 
+    /**
+     * @deprecated as of 0.6.0
+     */
     @Deprecated
     public static JSONObject getDefaultProps(Context context, Env env, String token, Date now) throws JSONException {
-        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix);
+        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix, defaultPropsToExclude);
     }
 
+    /**
+     * Get default properties which Rake Android collect by default.
+     * This method returns different results depending on token.
+     *
+     * @param context application context
+     * @param token Rake Token
+     * @return JSONObject default properties by token.
+     *
+     */
     public static JSONObject getDefaultProps(Context context, String token) throws JSONException {
-        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix);
+        return MessageLoop.getInstance(context).getDefaultPropsByToken(token, versionSuffix, defaultPropsToExclude);
+    }
+
+    /**
+     * Exclude default properties from auto collection.
+     * For example, if you don't want to collect "device_id" automatically,
+     * call this method and send String[] including "device_id".
+     *
+     * @param defaultPropsNames default property names to exclude from auto collection.
+     *
+     */
+    public void excludeDefaultProps(String[] defaultPropsNames) {
+        defaultPropsToExclude = defaultPropsNames;
     }
 
     private void readSuperProperties() {

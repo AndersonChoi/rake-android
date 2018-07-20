@@ -170,6 +170,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         String token = getToken(env);
         if (RakeAPI.Env.DEV == env) {
             devRake = RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
+            devRake.excludeDefaultProps(new String[]{"device_id"});
         } else {
             liveRake = RakeAPI.getInstance(getApplicationContext(), token, env, RakeAPI.Logging.ENABLE);
         }

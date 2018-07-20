@@ -13,6 +13,7 @@ import com.rake.android.rkmetrics.db.log.Log;
 import com.rake.android.rkmetrics.db.log.LogBundle;
 import com.rake.android.rkmetrics.metric.MetricUtil;
 import com.rake.android.rkmetrics.metric.model.Action;
+import com.rake.android.rkmetrics.network.Endpoint;
 import com.rake.android.rkmetrics.network.HttpRequestSender;
 import com.rake.android.rkmetrics.network.HttpResponse;
 import com.rake.android.rkmetrics.shuttle.ShuttleProfiler;
@@ -203,7 +204,7 @@ final class MessageLoop {
         return commonProps;
     }
 
-    JSONObject getDefaultPropsByToken(String token, String versionSuffix) throws JSONException {
+    JSONObject getDefaultPropsByToken(String token, String versionSuffix, String[] defaultPropsToExclude) throws JSONException {
         Date now = new Date();
 
         JSONObject defaultProps = commonProps;
@@ -218,34 +219,26 @@ final class MessageLoop {
         defaultProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(appContext));
         defaultProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(appContext));
 
+        if (defaultPropsToExclude != null) {
+            for (String prop : defaultPropsToExclude) {
+                if (defaultProps.has(prop)) {
+                    defaultProps.remove(prop);
+                }
+            }
+        }
+
         return defaultProps;
     }
 
-    @Deprecated
-    boolean queueTrackCommand(Log log) {
-        if (null == log) {
-            Logger.e("Can't track null `Log`");
-            return false;
-        }
-
-        Message m = Message.obtain();
-        m.what = Command.TRACK.code;
-        m.obj = log;
-
-        queueMessage(m);
-
-        return true;
-    }
-
-    boolean queueTrackCommand(String uri, String token, String versionSuffix, JSONObject superProps, JSONObject shuttle) {
-        if (uri == null || token == null || versionSuffix == null || shuttle == null) {
+    boolean queueTrackCommand(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] defaultPropsToExclude) {
+        if (endpoint == null || token == null || shuttle == null) {
             Logger.e("Can't track null `track values`");
             return false;
         }
 
         Message m = Message.obtain();
         m.what = Command.TRACK.code;
-        m.obj = new TrackValues(uri, token, versionSuffix, superProps, shuttle);
+        m.obj = new TrackValues(endpoint, token, superProps, shuttle, defaultPropsToExclude);
         queueMessage(m);
 
         return true;
@@ -339,37 +332,19 @@ final class MessageLoop {
 
     private class TrackValues {
         private String uri;
-        private String token;
         private String versionSuffix;
+        private String token;
         private JSONObject superProps;
         private JSONObject shuttle;
+        private String[] defaultPropsToExclude;
 
-        TrackValues(String uri, String token, String versionSuffix, JSONObject superProps, JSONObject shuttle) {
-            this.uri = uri;
+        TrackValues(Endpoint endpoint, String token, JSONObject superProps, JSONObject shuttle, String[] defaultPropsToExclude) {
+            this.uri = endpoint.getURI();
+            this.versionSuffix = endpoint.getVersionSuffix();
             this.token = token;
-            this.versionSuffix = versionSuffix;
             this.superProps = superProps;
             this.shuttle = shuttle;
-        }
-
-        String getUri() {
-            return uri;
-        }
-
-        String getToken() {
-            return token;
-        }
-
-        String getVersionSuffix() {
-            return versionSuffix;
-        }
-
-        JSONObject getSuperProps() {
-            return superProps;
-        }
-
-        JSONObject getShuttle() {
-            return shuttle;
+            this.defaultPropsToExclude = defaultPropsToExclude;
         }
     }
 
@@ -394,6 +369,25 @@ final class MessageLoop {
             return hasMessages(Command.MANUAL_FLUSH.code)
                     || hasMessages(Command.AUTO_FLUSH_BY_TIMER.code)
                     || hasMessages(Command.AUTO_FLUSH_BY_COUNT.code);
+        }
+
+        private void track(TrackValues trackValues) throws JSONException {
+            JSONObject defaultProps = getDefaultPropsByToken(trackValues.token, trackValues.versionSuffix, trackValues.defaultPropsToExclude);
+            JSONObject validShuttle = ShuttleProfiler.createValidShuttle(trackValues.shuttle, trackValues.superProps, defaultProps);
+
+            Log log = new Log(trackValues.uri, trackValues.token, validShuttle);
+            long logQueueLength = LogTable.getInstance(appContext).addLog(log);
+
+            Logger.d("Tracked JSONObject\n" + validShuttle);
+
+            /* Metric이 아닐 경우에만, 로그 출력 */
+            if (!log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {
+                Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
+            }
+
+            if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
+                sendEmptyMessage(Command.AUTO_FLUSH_BY_COUNT.code);
+            }
         }
 
         /**
@@ -481,24 +475,7 @@ final class MessageLoop {
             try {
                 switch (Command.fromCode(msg.what)) {
                     case TRACK:
-                        TrackValues trackValues = (TrackValues) msg.obj;
-
-                        JSONObject defaultProps = getDefaultPropsByToken(trackValues.getToken(), trackValues.getVersionSuffix());
-                        JSONObject validShuttle = ShuttleProfiler.createValidShuttle(trackValues.getShuttle(), trackValues.getSuperProps(), defaultProps);
-
-                        Log log = new Log(trackValues.getUri(), trackValues.getToken(), validShuttle);
-                        long logQueueLength = LogTable.getInstance(appContext).addLog(log);
-
-                        Logger.d("Tracked JSONObject\n" + validShuttle);
-
-                        /* Metric이 아닐 경우에만, 로그 출력 */
-                        if (null != log && !log.getToken().equals(MetricUtil.BUILD_CONSTANT_METRIC_TOKEN)) {
-                            Logger.t("[SQLite] total log count in SQLite (including metric): " + logQueueLength);
-                        }
-
-                        if (logQueueLength >= RakeConfig.TRACK_MAX_LOG_COUNT && isAutoFlushON()) {
-                            sendEmptyMessage(Command.AUTO_FLUSH_BY_COUNT.code);
-                        }
+                        track((TrackValues) msg.obj);
                         break;
                     case MANUAL_FLUSH:
                         flush(Command.MANUAL_FLUSH.name());
