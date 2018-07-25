@@ -416,15 +416,16 @@ public final class RakeAPI {
     }
 
     /**
-     * Exclude auto collection properties from auto collection.
+     * Exclude auto collection properties from auto collection.<br/>
      * For example, if you don't want to collect "device_id" automatically,
-     * call this method and send String[] including "device_id".
+     * call this method and send String[] including "device_id".<br/>
+     * Please call this method before {@link #track(JSONObject)} if you want to apply your setting.
      *
-     * @param propNames auto collection property names to exclude from auto collection.
+     * @param properties auto collection property names to exclude from auto collection.
      *
      */
-    public void excludeAutoProperties(String[] propNames) {
-        autoPropNamesToExclude = propNames;
+    public void excludeAutoProperties(String[] properties) {
+        autoPropNamesToExclude = properties;
     }
 
     private void readSuperProperties() {
