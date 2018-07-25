@@ -63,7 +63,8 @@ public class ShuttleProfilerSpecHelper {
     }
 
     public static JSONObject getAutoPropsForTest(Application app) throws JSONException {
-        return RakeAPI.getAutoProperties(app, TestUtil.genToken());
+        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), RakeAPI.Env.DEV, RakeAPI.Logging.ENABLE);
+        return r.getAutoProperties(app);
     }
 
     public static JSONObject getMergedPropsWithEmptySuperPropsForTest(Application app,

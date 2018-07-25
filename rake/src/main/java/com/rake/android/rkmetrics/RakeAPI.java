@@ -84,7 +84,7 @@ public final class RakeAPI {
 
     private Endpoint endpoint;
     private static String versionSuffix;
-    private static String[] autoPropNamesToExclude;
+    private String[] autoPropNamesToExclude;
     private final Env env;
     private final String token;
 
@@ -395,11 +395,12 @@ public final class RakeAPI {
     /**
      * @deprecated as of 0.6.0
      *
-     * Please use {@link #getAutoProperties(Context, String)} instead.
+     * Please use {@link #getAutoProperties(Context)} instead.
      */
     @Deprecated
     public static JSONObject getDefaultProps(Context context, Env env, String token, Date now) throws JSONException {
-        return MessageLoop.getInstance(context).getAutoPropertiesByToken(token, versionSuffix, autoPropNamesToExclude);
+
+        return MessageLoop.getInstance(context).getAutoPropertiesByToken(token, versionSuffix, null);
     }
 
     /**
@@ -407,11 +408,10 @@ public final class RakeAPI {
      * This method returns different results depending on token.
      *
      * @param context application context
-     * @param token Rake Token
      * @return JSONObject auto collection properties by token.
      *
      */
-    public static JSONObject getAutoProperties(Context context, String token) throws JSONException {
+    public JSONObject getAutoProperties(Context context) throws JSONException {
         return MessageLoop.getInstance(context).getAutoPropertiesByToken(token, versionSuffix, autoPropNamesToExclude);
     }
 

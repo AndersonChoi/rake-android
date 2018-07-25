@@ -20,6 +20,8 @@ import com.skplanet.pdp.sentinel.shuttle.RakeClientMetricSentinelShuttle;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.Date;
+
 
 /**
  * 클래스 이름을 바꿀 경우 build.gradle 내에 빌드 변수 또한 변경해야 함
@@ -174,7 +176,7 @@ public final class MetricUtil {
 
         try {
             JSONObject userProps = metric.toJSONObject();
-            JSONObject autoProps = RakeAPI.getAutoProperties(context, BUILD_CONSTANT_METRIC_TOKEN);
+            JSONObject autoProps = RakeAPI.getDefaultProps(context, null, BUILD_CONSTANT_METRIC_TOKEN, new Date());
             JSONObject validShuttle = ShuttleProfiler.createValidShuttle(userProps, null, autoProps);
 
             Log log = new Log(MetricUtil.getURI(context), MetricUtil.BUILD_CONSTANT_METRIC_TOKEN, validShuttle);

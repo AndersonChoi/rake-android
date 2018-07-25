@@ -17,6 +17,7 @@ import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
 import org.robolectric.annotation.Config;
 
+import java.util.Iterator;
 import java.util.Locale;
 
 import static com.rake.android.rkmetrics.TestUtil.failWhenSuccess;
@@ -127,17 +128,17 @@ public class RakeAPISpec {
     }
 
     @Test
-    public void test_getDefaultProperties() throws JSONException {
-        String token = TestUtil.genToken();
-        JSONObject autoProps = RakeAPI.getAutoProperties(app, token);
+    public void test_getAutoProperties() throws JSONException {
+        RakeAPI r = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        JSONObject autoProps = r.getAutoProperties(app);
         System.out.println(autoProps);
 
         /* 교차 검증, autoProps Keys <-> DEFAULT_PROPERTY_NAMES */
-//        for (Iterator<?> keys = autoProps.keys(); keys.hasNext(); ) {
-//            String key = (String) keys.next();
-//            assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
-//            System.out.println();
-//        }
+        for (Iterator<?> keys = autoProps.keys(); keys.hasNext(); ) {
+            String key = (String) keys.next();
+            assertThat(DEFAULT_PROPERTY_NAMES.contains(key)).isTrue();
+            System.out.println();
+        }
 
         for (String key : DEFAULT_PROPERTY_NAMES) {
             assertThat(autoProps.has(key)).isTrue();
@@ -171,6 +172,56 @@ public class RakeAPISpec {
         Configuration config = res.getConfiguration();
         config.locale = locale;
         res.updateConfiguration(config, res.getDisplayMetrics());
+    }
+
+    @Test
+    public void test_excludeAutoProperties() {
+        RakeAPI r1 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.DEV, Logging.ENABLE);
+        RakeAPI r2 = RakeAPI.getInstance(app, TestUtil.genToken(), Env.LIVE, Logging.ENABLE);
+
+        // r1에서는 device_id 제외
+        r1.excludeAutoProperties(new String[]{"device_id"});
+
+        try {
+            JSONObject autoProps1 = r1.getAutoProperties(app);
+            JSONObject autoProps2 = r2.getAutoProperties(app);
+
+            // autoProps1은 device_id가 없어야 함
+            assertThat(autoProps1.has("device_id")).isFalse();
+            // autoProps2는 device_id가 있어야 함
+            assertThat(autoProps2.has("device_id")).isTrue();
+
+        } catch (JSONException e) {
+           System.out.println(e.getMessage());
+        }
+
+        // 리셋
+        r1.excludeAutoProperties(new String[]{});
+
+        try {
+            JSONObject autoProps1 = r1.getAutoProperties(app);
+            JSONObject autoProps2 = r2.getAutoProperties(app);
+
+            // autoProps1은 device_id가 있어야 함
+            assertThat(autoProps1.has("device_id")).isTrue();
+            // autoProps2는 device_id가 있어야 함
+            assertThat(autoProps2.has("device_id")).isTrue();
+
+        } catch (JSONException e) {
+            System.out.println(e.getMessage());
+        }
+
+        // 자동수집 항목에 해당하지 않는 값 제외 시도
+        r1.excludeAutoProperties(new String[]{"NON_AUTO_PROPERTY"});
+        try {
+            JSONObject autoProps1 = r1.getAutoProperties(app);
+
+            // autoProps1은 NON_AUTO_PROPERTY가 없어야 함
+            assertThat(autoProps1.has("NON_AUTO_PROPERTY")).isFalse();
+
+        } catch (JSONException e) {
+            System.out.println(e.getMessage());
+        }
     }
 }
 

@@ -110,15 +110,11 @@ final class MessageLoop {
     private long avgFlushFrequency = 0;
     private long lastFlushTime = -1;
 
-    private JSONObject commonProps;
-
     private MessageLoop(Context appContext) {
         this.appContext = appContext;
 
         // TODO try-catch: retry
         handler = createMessageHandler();
-
-        commonProps = createCommonProps();
     }
 
     /* Class methods */
@@ -169,45 +165,10 @@ final class MessageLoop {
         return ON == autoFlushOption;
     }
 
-    private JSONObject createCommonProps() {
-        JSONObject commonProps = new JSONObject();
-        try {
-            commonProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
-            commonProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
-            commonProps.put(PROPERTY_NAME_OS_VERSION, SystemInformation.getOsVersion());
-            commonProps.put(PROPERTY_NAME_MANUFACTURER, SystemInformation.getManufacturer());
-            commonProps.put(PROPERTY_NAME_DEVICE_MODEL, SystemInformation.getDeviceModel());
-            commonProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(appContext));
-            DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(appContext);
-            if (displayMetrics != null) {
-                int displayWidth = displayMetrics.widthPixels;
-                int displayHeight = displayMetrics.heightPixels;
-
-                commonProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
-                commonProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
-                commonProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
-            }
-
-            /*
-             DILTFCO-14 :
-                app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
-                app_release : 앱의 version
-                app_build_number: 앱의 build count
-            */
-            String appVersion = SystemInformation.getAppVersionName(appContext);
-            commonProps.put(PROPERTY_NAME_APP_VERSION, appVersion);
-            commonProps.put(PROPERTY_NAME_APP_RELEASE, appVersion);
-            commonProps.put(PROPERTY_NAME_APP_BUILD_NUMBER, SystemInformation.getAppVersionCode(appContext));
-        } catch (JSONException e) {
-            Logger.e("Cannot initialize common properties");
-        }
-        return commonProps;
-    }
-
     JSONObject getAutoPropertiesByToken(String token, String versionSuffix, String[] autoPropNamesToExclude) throws JSONException {
         Date now = new Date();
 
-        JSONObject autoProps = commonProps;
+        JSONObject autoProps = new JSONObject();
 
         autoProps.put(PROPERTY_NAME_TOKEN, token);
         autoProps.put(PROPERTY_NAME_BASE_TIME, TimeUtil.getBaseFormatter().format(now));
@@ -218,6 +179,33 @@ final class MessageLoop {
         autoProps.put(PROPERTY_NAME_CARRIER_NAME, SystemInformation.getCurrentNetworkOperator(appContext));
         autoProps.put(PROPERTY_NAME_NETWORK_TYPE, SystemInformation.getWifiConnected(appContext));
         autoProps.put(PROPERTY_NAME_LANGUAGE_CODE, SystemInformation.getLanguageCode(appContext));
+
+        autoProps.put(PROPERTY_NAME_RAKE_LIB, PROPERTY_VALUE_RAKE_LIB);
+        autoProps.put(PROPERTY_NAME_OS_NAME, PROPERTY_VALUE_OS_NAME);
+        autoProps.put(PROPERTY_NAME_OS_VERSION, SystemInformation.getOsVersion());
+        autoProps.put(PROPERTY_NAME_MANUFACTURER, SystemInformation.getManufacturer());
+        autoProps.put(PROPERTY_NAME_DEVICE_MODEL, SystemInformation.getDeviceModel());
+        autoProps.put(PROPERTY_NAME_DEVICE_ID, SystemInformation.getDeviceId(appContext));
+        DisplayMetrics displayMetrics = SystemInformation.getDisplayMetrics(appContext);
+        if (displayMetrics != null) {
+            int displayWidth = displayMetrics.widthPixels;
+            int displayHeight = displayMetrics.heightPixels;
+
+            autoProps.put(PROPERTY_NAME_SCREEN_HEIGHT, displayWidth);
+            autoProps.put(PROPERTY_NAME_SCREEN_WIDTH, displayHeight);
+            autoProps.put(PROPERTY_NAME_SCREEN_RESOLUTION, "" + displayWidth + "*" + displayHeight);
+        }
+
+            /*
+             DILTFCO-14 :
+                app_version : iOS는 앱의 build count, Android는 앱의 version을 수집중 (current state)
+                app_release : 앱의 version
+                app_build_number: 앱의 build count
+            */
+        String appVersion = SystemInformation.getAppVersionName(appContext);
+        autoProps.put(PROPERTY_NAME_APP_VERSION, appVersion);
+        autoProps.put(PROPERTY_NAME_APP_RELEASE, appVersion);
+        autoProps.put(PROPERTY_NAME_APP_BUILD_NUMBER, SystemInformation.getAppVersionCode(appContext));
 
         if (autoPropNamesToExclude != null) {
             for (String propName : autoPropNamesToExclude) {
