@@ -1,0 +1,19 @@
+local.properties
+bin
+gen
+demo/Hello Mixpanel/libs/
+test/libs/
+./Mixpanel*-rake-*.jar
+
+.gradle/
+build/
+bin/
+
+.project
+.classpath
+.settings/
+
+gradlew/
+
+.idea
+*.iml
