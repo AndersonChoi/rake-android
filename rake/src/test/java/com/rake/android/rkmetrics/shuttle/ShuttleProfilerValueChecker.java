@@ -140,7 +140,7 @@ public class ShuttleProfilerValueChecker {
         return isValid;
     }
 
-    static boolean hasDefaultProps(JSONObject json, String depth1Key) {
+    static boolean hasAutoProps(JSONObject json, String depth1Key) {
         if (null == json) return false;
 
         boolean isValid = true;

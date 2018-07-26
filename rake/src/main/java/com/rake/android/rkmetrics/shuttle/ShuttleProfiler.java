@@ -94,16 +94,16 @@ public class ShuttleProfiler {
 
     /**
      * 1. META 를 extract
-     * 2. fieldOrder 를 이용해 userProps, superProps, defaultProps 를 머지해 props 생성
+     * 2. fieldOrder 를 이용해 userProps, superProps, autoProps 를 머지해 props 생성
      * 3. props 에 META 를 추가하여 돌려줌
      */
     public static JSONObject createValidShuttle(JSONObject userProps,
                                                 JSONObject superProps,
-                                                JSONObject defaultProps) {
+                                                JSONObject autoProps) {
 
         /* superProps 는 null 일 경우 mergeProps() 내에서 빈 JSONObject 생성하여 실행하므로 검사하지 않음 */
-        if (null == userProps || null == defaultProps) {
-            Logger.e("Can't create valid shuttle using null userProps, defaultProps");
+        if (null == userProps || null == autoProps) {
+            Logger.e("Can't create valid shuttle using null userProps, autoProps");
             return null;
         }
 
@@ -112,7 +112,7 @@ public class ShuttleProfiler {
         try {
             JSONObject meta = extractMeta(userProps);
             JSONObject fieldOrder = meta.getJSONObject(META_FIELD_NAME_FIELD_ORDER);
-            JSONObject props = mergeProps(fieldOrder, userProps, superProps, defaultProps);
+            JSONObject props = mergeProps(fieldOrder, userProps, superProps, autoProps);
 
             if (null != props) {
                 meta.put(FIELD_NAME_PROPERTIES, props);
@@ -147,14 +147,14 @@ public class ShuttleProfiler {
 
 
     /**
-     * userProps, superProps, defaultProps 가 merge 될 경우, 같은 Key 에 대해
+     * userProps, superProps, autoProps 가 merge 될 경우, 같은 Key 에 대해
      * <p>
      * - superProps 는 userProps 가 비어있지 않을 경우 덮어쓰지 않음
-     * - defaultProps 는 항상 덮어 씀
+     * - autoProps 는 항상 덮어 씀
      * <p>
      * 우선순위는,
      * <p>
-     * superProps < userProps < defaultProps
+     * superProps < userProps < autoProps
      *
      * @throws JSONException
      * @throws NullPointerException
@@ -162,7 +162,7 @@ public class ShuttleProfiler {
     static JSONObject mergeProps(JSONObject fieldOrder,
                                  JSONObject userProps,
                                  JSONObject superProps,
-                                 JSONObject defaultProps)
+                                 JSONObject autoProps)
             throws JSONException, NullPointerException {
 
         JSONObject props = new JSONObject();
@@ -200,12 +200,12 @@ public class ShuttleProfiler {
         }
 
         /* 2. Insert auto-collected fields */
-        for (Iterator<?> keys = defaultProps.keys(); keys.hasNext(); ) {
+        for (Iterator<?> keys = autoProps.keys(); keys.hasNext(); ) {
             String key = (String) keys.next();
 
             /* merge super props with default props */
             if (fieldOrder.has(key)) {
-                props.put(key, defaultProps.get(key));
+                props.put(key, autoProps.get(key));
             }
         }
 
