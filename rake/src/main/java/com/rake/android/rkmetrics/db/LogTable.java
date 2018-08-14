@@ -220,9 +220,8 @@ public class LogTable extends Table {
 
                         logBundle.addLog(json);
 
-                        if (cursor.isLast()) {
-                            logBundle.setLast_ID(getStringFromCursor(cursor, Columns._ID));
-                        }
+                        // logBundle별로 last_ID를 가장 최신의 것으로 업데이트 
+                        logBundle.setLast_ID(getStringFromCursor(cursor, Columns._ID));
 
                         logBundleMap.put(token, logBundle);
                     }
