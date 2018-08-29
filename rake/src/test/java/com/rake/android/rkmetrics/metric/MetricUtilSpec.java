@@ -69,7 +69,7 @@ public class MetricUtilSpec {
         HttpResponse fakeResponse = new HttpResponse(0, "body", 0L);
 
         boolean b = recordFlushMetric(app, "MANUAL_FLUSH", 0L, l1, fakeResponse);
-        assertThat(!b);
+        assertThat(b).isEqualTo(false);
 
     }
 }

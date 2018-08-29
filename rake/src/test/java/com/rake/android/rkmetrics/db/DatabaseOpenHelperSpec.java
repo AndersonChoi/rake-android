@@ -39,7 +39,7 @@ public class DatabaseOpenHelperSpec {
         String[] expectedColumnNames = {LogTable.Columns.URL, LogTable.Columns.TOKEN, LogTable.Columns.LOG, LogTable.Columns.CREATED_AT};
 
         for (String expectedColumn : expectedColumnNames) {
-            assertThat(ArrayUtils.contains(columnNames, expectedColumn));
+            assertThat(ArrayUtils.contains(columnNames, expectedColumn)).isEqualTo(true);
         }
     }
 
