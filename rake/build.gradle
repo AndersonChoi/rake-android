@@ -102,10 +102,10 @@ dependencies {
     testImplementation fileTree(include: ['*.jar'], dir: 'libs/test')
     testImplementation 'junit:junit:4.12'
     testImplementation 'org.assertj:assertj-core:3.8.0'
-    testImplementation 'com.github.tomakehurst:wiremock:1.55'
+    testImplementation 'com.github.tomakehurst:wiremock:2.18.0'
     testImplementation 'ch.qos.logback:logback-core:1.2.3'
     testImplementation 'ch.qos.logback:logback-classic:1.2.3'
-    implementation 'org.robolectric:robolectric:4.0-alpha-2'
+    implementation 'org.robolectric:robolectric:4.0-alpha-3'
 }
 
 coveralls {

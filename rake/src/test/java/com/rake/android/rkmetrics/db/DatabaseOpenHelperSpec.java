@@ -3,13 +3,14 @@ package com.rake.android.rkmetrics.db;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.robolectric.RobolectricTestRunner;
 import org.robolectric.RuntimeEnvironment;
+
+import java.util.Arrays;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -39,7 +40,7 @@ public class DatabaseOpenHelperSpec {
         String[] expectedColumnNames = {LogTable.Columns.URL, LogTable.Columns.TOKEN, LogTable.Columns.LOG, LogTable.Columns.CREATED_AT};
 
         for (String expectedColumn : expectedColumnNames) {
-            assertThat(ArrayUtils.contains(columnNames, expectedColumn)).isEqualTo(true);
+            assertThat(Arrays.asList(columnNames).contains(expectedColumn)).isEqualTo(true);
         }
     }
 
