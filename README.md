@@ -15,7 +15,8 @@
 자세한 내용은 위키를 참조해주세요.
 
 - [Rake Android: Getting Started](https://github.com/skpdi/rake-document/wiki/1.-Rake-Android-(%ED%95%9C%EA%B5%AD%EC%96%B4))
-- [Rake Android: App Example](https://github.com/skpdi/rake-android/tree/master/rake_example)
+- [Rake Android: App Example(Java)](https://github.com/skpdi/rake-android/tree/master/rake_example_java)
+- [Rake Android: App Example(Kotlin)](https://github.com/skpdi/rake-android/tree/master/rake_example_kotlin)
 - [Rake Android: API](http://skpdi.github.io/rake-android/docs/0.4.7/com/rake/android/rkmetrics/RakeAPI.html)
 
 ## Development
